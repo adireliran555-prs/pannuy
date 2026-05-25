@@ -37,10 +37,22 @@ export default function SupplierLoginPage() {
 
   const onSubmit = async (data: FormData) => {
     setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setPhone(data.phone);
-    setIsLoading(false);
-    setStage("otp");
+    try {
+      const res = await fetch("/api/supplier/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: data.phone }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setOtpError(json.error ?? "שגיאה בשליחת קוד");
+        return;
+      }
+      setPhone(data.phone);
+      setStage("otp");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleOtpChange = async (value: string) => {
@@ -48,9 +60,21 @@ export default function SupplierLoginPage() {
     setOtpError("");
     if (value.length === 6) {
       setIsLoading(true);
-      await new Promise((r) => setTimeout(r, 600));
-      setIsLoading(false);
-      router.push("/supplier/dashboard");
+      try {
+        const res = await fetch("/api/supplier/auth/verify-otp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phone, otp: value }),
+        });
+        const json = await res.json();
+        if (!res.ok) {
+          setOtpError(json.error ?? "קוד שגוי");
+          return;
+        }
+        router.push("/supplier/dashboard");
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -87,7 +111,7 @@ export default function SupplierLoginPage() {
                     type="tel"
                     ltr
                     helperText="ישלח קוד אימות ב-SMS"
-                    error={errors.phone?.message}
+                    error={errors.phone?.message ?? otpError}
                     {...register("phone")}
                   />
                   <Phone className="absolute left-3 top-9 h-4 w-4 text-text-muted pointer-events-none" />
@@ -143,8 +167,15 @@ export default function SupplierLoginPage() {
                     setOtp("");
                     setOtpError("");
                     setIsLoading(true);
-                    await new Promise((r) => setTimeout(r, 500));
-                    setIsLoading(false);
+                    try {
+                      await fetch("/api/supplier/auth/send-otp", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ phone }),
+                      });
+                    } finally {
+                      setIsLoading(false);
+                    }
                   }}
                   isLoading={isLoading}
                 >
