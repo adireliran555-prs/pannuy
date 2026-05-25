@@ -22,7 +22,6 @@ const REGIONS = [
 
 const schema = z.object({
   weddingDate: z.string().min(1, "חובה לבחור תאריך"),
-  weddingAreas: z.array(z.string()).min(1, "חובה לבחור לפחות אזור אחד"),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -44,7 +43,7 @@ export default function WeddingPage() {
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { weddingAreas: [] },
+    defaultValues: { weddingDate: "" },
   });
 
   const toggleArea = (id: string) => {
@@ -60,16 +59,9 @@ export default function WeddingPage() {
       return;
     }
     setIsLoading(true);
-    try {
-      await new Promise((r) => setTimeout(r, 600));
-      const params = new URLSearchParams({
-        date: data.weddingDate,
-        areas: selectedAreas.join(","),
-      });
-      router.push(`/search?${params.toString()}`);
-    } finally {
-      setIsLoading(false);
-    }
+    const params = new URLSearchParams({ date: data.weddingDate, areas: selectedAreas.join(",") });
+    router.push(`/search?${params.toString()}`);
+    setIsLoading(false);
   };
 
   return (
@@ -96,9 +88,7 @@ export default function WeddingPage() {
           </div>
 
           <form
-            onSubmit={handleSubmit((data) =>
-              onSubmit({ ...data, weddingAreas: selectedAreas })
-            )}
+            onSubmit={handleSubmit(onSubmit)}
             className="space-y-5"
           >
             {/* Wedding Date */}
