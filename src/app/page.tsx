@@ -179,10 +179,10 @@ export default async function HomePage() {
           <div className="flex gap-4 overflow-x-auto pb-4 sm:grid sm:grid-cols-4 snap-x snap-mandatory">
             {[
               {
-                title: "צלמות חתונה",
+                title: "צילום חתונה",
                 emoji: "📸",
-                desc: "מקצועיות ומנוסות",
-                href: "/search?category=צלמות",
+                desc: "מקצועי ומנוסה",
+                href: "/search?category=PHOTOGRAPHER",
                 active: true,
                 bg: "bg-gradient-to-br from-rose-100 to-rose-200",
               },
@@ -331,7 +331,7 @@ export default async function HomePage() {
           <div className="text-center mb-10">
             <span className="text-sm font-bold text-primary uppercase tracking-widest">השראה</span>
             <h2 className="text-3xl font-black text-text-main mt-2">חתונות אמיתיות</h2>
-            <p className="text-text-muted mt-2">צולמו על ידי הצלמים שלנו</p>
+            <p className="text-text-muted mt-2">צולמו על ידי הצלמ.ות שלנו</p>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {[

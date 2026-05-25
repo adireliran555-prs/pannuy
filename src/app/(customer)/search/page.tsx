@@ -111,8 +111,8 @@ function SearchContent() {
       <div className="sticky top-0 z-30 bg-white border-b border-border shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-3 pb-0 flex items-center gap-3 overflow-x-auto">
           {[
-            { id: "PHOTOGRAPHER", label: "צלמות חתונה", emoji: "📸", active: true },
-            { id: "VIDEOGRAPHER", label: "צלמי וידאו", emoji: "🎬", active: false },
+            { id: "PHOTOGRAPHER", label: "צילום חתונה", emoji: "📸", active: true },
+            { id: "VIDEOGRAPHER", label: "צילום וידאו", emoji: "🎬", active: false },
             { id: "BRIDAL_SUITE", label: "מקומות התארגנות", emoji: "🏛️", active: false },
             { id: "DJ", label: "DJ ומוסיקה", emoji: "🎧", active: false },
             { id: "FLORIST", label: "עיצוב פרחוני", emoji: "💐", active: false },

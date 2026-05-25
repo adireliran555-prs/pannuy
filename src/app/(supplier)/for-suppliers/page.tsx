@@ -40,7 +40,7 @@ export default function ForSuppliersPage() {
 
         <div className="relative z-10 text-center px-6 max-w-3xl mx-auto">
           <span className="inline-block bg-primary/20 border border-primary/40 text-primary font-bold text-sm px-4 py-1.5 rounded-full mb-6">
-            לצלמות חתונה
+            לצלמ.ות חתונה
           </span>
           <h1 className="text-4xl sm:text-6xl font-black text-white leading-tight mb-4">
             הציגו את האמנות שלכם

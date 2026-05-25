@@ -30,8 +30,8 @@ import EmptyState from "@/components/ui/EmptyState";
 import { formatPrice, cn } from "@/lib/utils";
 
 const CATEGORY_LABELS: Record<string, string> = {
-  PHOTOGRAPHER: "צלמות חתונה",
-  VIDEOGRAPHER: "צלמי וידאו",
+  PHOTOGRAPHER: "צילום חתונה",
+  VIDEOGRAPHER: "צילום וידאו",
   BRIDAL_SUITE: "מקומות התארגנות",
   DJ: "DJ ומוסיקה",
   FLORIST: "עיצוב פרחוני",
