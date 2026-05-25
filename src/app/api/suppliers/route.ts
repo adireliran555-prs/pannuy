@@ -79,37 +79,48 @@ export async function GET(request: NextRequest) {
         : {}),
     };
 
-    const [suppliers, total] = await Promise.all([
-      prisma.supplier.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: [{ ratingAvg: "desc" }, { ratingCount: "desc" }],
-        select: {
-          id: true,
-          slug: true,
-          name: true,
-          category: true,
-          city: true,
-          serviceAreas: true,
-          basePriceFrom: true,
-          basePriceTo: true,
-          ratingAvg: true,
-          ratingCount: true,
-          isVerified: true,
-          photos: {
-            where: { type: { in: ["PROFILE", "COVER"] } },
-            orderBy: { sortOrder: "asc" },
-          },
-        },
-      }),
+    const select = {
+      id: true,
+      slug: true,
+      name: true,
+      category: true,
+      city: true,
+      serviceAreas: true,
+      basePriceFrom: true,
+      basePriceTo: true,
+      ratingAvg: true,
+      ratingCount: true,
+      isVerified: true,
+      photos: {
+        where: { type: { in: ["PROFILE", "COVER"] as ("PROFILE" | "COVER")[] } },
+        orderBy: { sortOrder: "asc" as const },
+      },
+    };
+
+    const orderBy = [{ ratingAvg: "desc" as const }, { ratingCount: "desc" as const }];
+
+    let [suppliers, total] = await Promise.all([
+      prisma.supplier.findMany({ where, skip, take: limit, orderBy, select }),
       prisma.supplier.count({ where }),
     ]);
+
+    // Always show suppliers: if area filter yields nothing, fall back to all
+    let areaFallback = false;
+    if (total === 0 && area) {
+      const whereNoArea = { ...where };
+      delete (whereNoArea as Record<string, unknown>).serviceAreas;
+      [suppliers, total] = await Promise.all([
+        prisma.supplier.findMany({ where: whereNoArea, skip, take: limit, orderBy, select }),
+        prisma.supplier.count({ where: whereNoArea }),
+      ]);
+      areaFallback = true;
+    }
 
     const result = {
       success: true,
       data: {
         suppliers,
+        areaFallback,
         pagination: {
           total,
           page,

@@ -60,7 +60,7 @@ function SearchContent() {
 
   const effectiveArea = selectedAreas.length > 0 ? selectedAreas[0] : filters.city || undefined;
 
-  const { suppliers, total, totalPages, isLoading } = useSuppliers({
+  const { suppliers, total, totalPages, areaFallback, isLoading } = useSuppliers({
     area: effectiveArea,
     priceMax: filters.priceMax || undefined,
     ratingMin: filters.ratingMin || undefined,
@@ -329,8 +329,8 @@ function SearchContent() {
 
       {/* ── Results ── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-        {/* Count */}
-        <div className="mb-5">
+        {/* Count + fallback notice */}
+        <div className="mb-5 space-y-2">
           {isLoading ? (
             <div className="h-6 w-48 bg-gray-200 rounded-full animate-pulse" />
           ) : (
@@ -338,6 +338,11 @@ function SearchContent() {
               נמצאו{" "}
               <span className="text-text-main font-bold">{total}</span>
               {" "}ספקים {locationLabel}
+            </p>
+          )}
+          {!isLoading && areaFallback && effectiveArea && (
+            <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 inline-block">
+              לא נמצאו ספקים ב{effectiveArea} — מציגים את כל הספקים הזמינים
             </p>
           )}
         </div>
@@ -349,14 +354,6 @@ function SearchContent() {
               <SupplierCardSkeleton key={i} />
             ))}
           </div>
-        ) : suppliers.length === 0 ? (
-          <EmptyState
-            emoji="🔍"
-            title="לא נמצאו ספקים"
-            description="נסו לשנות את הפילטרים או לחפש באזור אחר"
-            ctaLabel="נקי פילטרים"
-            onCta={() => setFilters({ city: "", priceMax: 0, ratingMin: 0, sortBy: "relevance" })}
-          />
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -79,6 +79,7 @@ async function fetcher(url: string) {
     total: pagination.total ?? raw.total ?? 0,
     page: pagination.page ?? raw.page ?? 1,
     totalPages: pagination.totalPages ?? raw.totalPages ?? 1,
+    areaFallback: raw.areaFallback ?? false,
   };
 }
 
@@ -94,6 +95,7 @@ export function useSuppliers(filters: SuppliersFilters = {}) {
     total: data?.total ?? 0,
     page: data?.page ?? 1,
     totalPages: data?.totalPages ?? 1,
+    areaFallback: data?.areaFallback ?? false,
     isLoading,
     error,
     mutate,
