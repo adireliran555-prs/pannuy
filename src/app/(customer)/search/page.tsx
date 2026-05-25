@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { SlidersHorizontal, X, ChevronDown, Star } from "lucide-react";
 import { useSuppliers, NormalizedSupplier } from "@/hooks/useSuppliers";
@@ -34,7 +34,29 @@ function SearchContent() {
   const [showFilterDrawer, setShowFilterDrawer] = useState(false);
   const [cityInput, setCityInput] = useState(filters.city);
   const [showCitySuggestions, setShowCitySuggestions] = useState(false);
+  const [showPriceDropdown, setShowPriceDropdown] = useState(false);
+  const [showRatingDropdown, setShowRatingDropdown] = useState(false);
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [page, setPage] = useState(1);
+
+  const filterBarRef = useRef<HTMLDivElement>(null);
+
+  const closeAllDropdowns = () => {
+    setShowCitySuggestions(false);
+    setShowPriceDropdown(false);
+    setShowRatingDropdown(false);
+    setShowSortDropdown(false);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (filterBarRef.current && !filterBarRef.current.contains(e.target as Node)) {
+        closeAllDropdowns();
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const effectiveArea = selectedAreas.length > 0 ? selectedAreas[0] : filters.city || undefined;
 
@@ -112,7 +134,7 @@ function SearchContent() {
         </div>
 
       {/* ── Filter chips ── */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-3 overflow-x-auto">
+        <div ref={filterBarRef} className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-3 overflow-x-auto">
           {/* Mobile: filter button */}
           <button
             onClick={() => setShowFilterDrawer(true)}
@@ -132,7 +154,7 @@ function SearchContent() {
             {/* Location */}
             <div className="relative">
               <button
-                onClick={() => setShowCitySuggestions((v) => !v)}
+                onClick={() => { closeAllDropdowns(); setShowCitySuggestions((v) => !v); }}
                 className={cn(
                   "flex items-center gap-2 px-4 py-2.5 rounded-full border-2 text-sm font-semibold transition-colors whitespace-nowrap max-w-[200px]",
                   locationDisplay
@@ -183,8 +205,9 @@ function SearchContent() {
             </div>
 
             {/* Price */}
-            <div className="relative group">
+            <div className="relative">
               <button
+                onClick={() => { closeAllDropdowns(); setShowPriceDropdown((v) => !v); }}
                 className={cn(
                   "flex items-center gap-2 px-4 py-2.5 rounded-full border-2 text-sm font-semibold transition-colors whitespace-nowrap",
                   filters.priceMax > 0
@@ -194,28 +217,31 @@ function SearchContent() {
               >
                 {filters.priceMax > 0 ? `עד ₪${filters.priceMax.toLocaleString("he-IL")}` : "מחיר"}
                 {filters.priceMax > 0 ? (
-                  <X className="h-3.5 w-3.5" onClick={() => clearFilter("priceMax")} />
+                  <X className="h-3.5 w-3.5" onClick={(e) => { e.stopPropagation(); clearFilter("priceMax"); }} />
                 ) : (
                   <ChevronDown className="h-3.5 w-3.5" />
                 )}
               </button>
-              <div className="hidden group-hover:block absolute top-full mt-1 z-40 bg-white border border-border rounded-2xl shadow-xl p-4 min-w-[200px]">
-                <p className="text-xs font-bold text-text-muted mb-2 uppercase tracking-wide">מחיר מקסימלי</p>
-                {[3000, 5000, 8000, 12000].map((price) => (
-                  <button
-                    key={price}
-                    className="block w-full text-right px-3 py-2 text-sm hover:bg-primary-light rounded-lg transition-colors"
-                    onClick={() => setFilters((f) => ({ ...f, priceMax: price }))}
-                  >
-                    עד ₪{price.toLocaleString("he-IL")}
-                  </button>
-                ))}
-              </div>
+              {showPriceDropdown && (
+                <div className="absolute top-full mt-1 z-50 bg-white border border-border rounded-2xl shadow-xl p-4 min-w-[200px]">
+                  <p className="text-xs font-bold text-text-muted mb-2 uppercase tracking-wide">מחיר מקסימלי</p>
+                  {[3000, 5000, 8000, 12000].map((price) => (
+                    <button
+                      key={price}
+                      className="block w-full text-right px-3 py-2 text-sm hover:bg-primary-light rounded-lg transition-colors"
+                      onClick={() => { setFilters((f) => ({ ...f, priceMax: price })); setShowPriceDropdown(false); }}
+                    >
+                      עד ₪{price.toLocaleString("he-IL")}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Rating */}
-            <div className="relative group">
+            <div className="relative">
               <button
+                onClick={() => { closeAllDropdowns(); setShowRatingDropdown((v) => !v); }}
                 className={cn(
                   "flex items-center gap-2 px-4 py-2.5 rounded-full border-2 text-sm font-semibold transition-colors whitespace-nowrap",
                   filters.ratingMin > 0
@@ -225,49 +251,56 @@ function SearchContent() {
               >
                 {filters.ratingMin > 0 ? `${filters.ratingMin}+ ⭐` : "דירוג"}
                 {filters.ratingMin > 0 ? (
-                  <X className="h-3.5 w-3.5" onClick={() => clearFilter("ratingMin")} />
+                  <X className="h-3.5 w-3.5" onClick={(e) => { e.stopPropagation(); clearFilter("ratingMin"); }} />
                 ) : (
                   <ChevronDown className="h-3.5 w-3.5" />
                 )}
               </button>
-              <div className="hidden group-hover:block absolute top-full mt-1 z-40 bg-white border border-border rounded-2xl shadow-xl p-4">
-                {[4, 4.5, 4.8].map((r) => (
-                  <button
-                    key={r}
-                    className="flex items-center gap-2 w-full text-right px-3 py-2 text-sm hover:bg-primary-light rounded-lg transition-colors"
-                    onClick={() => setFilters((f) => ({ ...f, ratingMin: r }))}
-                  >
-                    <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
-                    {r}+ ומעלה
-                  </button>
-                ))}
-              </div>
+              {showRatingDropdown && (
+                <div className="absolute top-full mt-1 z-50 bg-white border border-border rounded-2xl shadow-xl p-4 min-w-[160px]">
+                  {[4, 4.5, 4.8].map((r) => (
+                    <button
+                      key={r}
+                      className="flex items-center gap-2 w-full text-right px-3 py-2 text-sm hover:bg-primary-light rounded-lg transition-colors"
+                      onClick={() => { setFilters((f) => ({ ...f, ratingMin: r })); setShowRatingDropdown(false); }}
+                    >
+                      <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
+                      {r}+ ומעלה
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="flex-1" />
 
             {/* Sort */}
-            <div className="relative group">
-              <button className="flex items-center gap-2 px-4 py-2.5 rounded-full border-2 border-border text-sm font-semibold text-text-main hover:border-primary transition-colors whitespace-nowrap">
+            <div className="relative">
+              <button
+                onClick={() => { closeAllDropdowns(); setShowSortDropdown((v) => !v); }}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-full border-2 border-border text-sm font-semibold text-text-main hover:border-primary transition-colors whitespace-nowrap"
+              >
                 מיון: {SORT_LABELS[filters.sortBy]}
                 <ChevronDown className="h-3.5 w-3.5" />
               </button>
-              <div className="hidden group-hover:block absolute top-full left-0 mt-1 z-40 bg-white border border-border rounded-2xl shadow-xl overflow-hidden min-w-[160px]">
-                {(Object.keys(SORT_LABELS) as Filters["sortBy"][]).map((key) => (
-                  <button
-                    key={key}
-                    className={cn(
-                      "block w-full text-right px-4 py-3 text-sm transition-colors",
-                      filters.sortBy === key
-                        ? "bg-primary-light text-primary font-semibold"
-                        : "hover:bg-gray-50 text-text-main"
-                    )}
-                    onClick={() => setFilters((f) => ({ ...f, sortBy: key }))}
-                  >
-                    {SORT_LABELS[key]}
-                  </button>
-                ))}
-              </div>
+              {showSortDropdown && (
+                <div className="absolute top-full left-0 mt-1 z-50 bg-white border border-border rounded-2xl shadow-xl overflow-hidden min-w-[160px]">
+                  {(Object.keys(SORT_LABELS) as Filters["sortBy"][]).map((key) => (
+                    <button
+                      key={key}
+                      className={cn(
+                        "block w-full text-right px-4 py-3 text-sm transition-colors",
+                        filters.sortBy === key
+                          ? "bg-primary-light text-primary font-semibold"
+                          : "hover:bg-gray-50 text-text-main"
+                      )}
+                      onClick={() => { setFilters((f) => ({ ...f, sortBy: key })); setShowSortDropdown(false); }}
+                    >
+                      {SORT_LABELS[key]}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
