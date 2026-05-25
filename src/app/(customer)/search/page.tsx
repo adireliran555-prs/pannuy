@@ -148,23 +148,45 @@ function SearchContent() {
         </div>
 
       {/* ── Filter chips ── */}
-        <div ref={filterBarRef} className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-3 overflow-x-auto">
-          {/* Mobile: filter button */}
-          <button
-            onClick={() => setShowFilterDrawer(true)}
-            className="sm:hidden flex items-center gap-2 px-4 py-2.5 rounded-full border-2 border-border text-sm font-semibold text-text-main whitespace-nowrap hover:border-primary transition-colors"
-          >
-            <SlidersHorizontal className="h-4 w-4" />
-            פילטרים
-            {activeFilterCount > 0 && (
-              <span className="bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {activeFilterCount}
-              </span>
-            )}
-          </button>
+        <div ref={filterBarRef} className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
 
-          {/* Desktop filters */}
-          <div className="hidden sm:flex items-center gap-3 flex-1">
+          {/* Mobile row: filter button + active chips (scrollable) */}
+          <div className="sm:hidden flex items-center gap-3 overflow-x-auto pb-1">
+            <button
+              onClick={() => setShowFilterDrawer(true)}
+              className="flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-full border-2 border-border text-sm font-semibold text-text-main whitespace-nowrap hover:border-primary transition-colors"
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+              פילטרים
+              {activeFilterCount > 0 && (
+                <span className="bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+            {selectedAreas.map((area) => (
+              <button
+                key={area}
+                onClick={() => setSelectedAreas((prev) => prev.filter((a) => a !== area))}
+                className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 bg-primary text-white rounded-full text-xs font-semibold whitespace-nowrap"
+              >
+                {area}
+                <X className="h-3 w-3" />
+              </button>
+            ))}
+            {!selectedAreas.length && filters.city && (
+              <button
+                onClick={() => clearFilter("city")}
+                className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 bg-primary text-white rounded-full text-xs font-semibold whitespace-nowrap"
+              >
+                {filters.city}
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+
+          {/* Desktop filters — no overflow so dropdowns can extend below */}
+          <div className="hidden sm:flex items-center gap-3">
             {/* Location */}
             <div className="relative">
               <button
@@ -340,26 +362,6 @@ function SearchContent() {
             </div>
           </div>
 
-          {/* Active filter chips (mobile) */}
-          {selectedAreas.map((area) => (
-            <button
-              key={area}
-              onClick={() => setSelectedAreas((prev) => prev.filter((a) => a !== area))}
-              className="sm:hidden flex items-center gap-1 px-3 py-1.5 bg-primary text-white rounded-full text-xs font-semibold whitespace-nowrap"
-            >
-              {area}
-              <X className="h-3 w-3" />
-            </button>
-          ))}
-          {!selectedAreas.length && filters.city && (
-            <button
-              onClick={() => clearFilter("city")}
-              className="sm:hidden flex items-center gap-1 px-3 py-1.5 bg-primary text-white rounded-full text-xs font-semibold whitespace-nowrap"
-            >
-              {filters.city}
-              <X className="h-3 w-3" />
-            </button>
-          )}
         </div>
       </div>
 
