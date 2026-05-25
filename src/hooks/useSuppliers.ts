@@ -14,7 +14,6 @@ export interface NormalizedSupplier {
   category: string;
   isAvailable?: boolean;
   isSaved?: boolean;
-  responseTime?: string;
 }
 
 interface SuppliersFilters {
@@ -53,7 +52,6 @@ function normalizeSupplier(s: any): NormalizedSupplier {
     category: s.category ?? "PHOTOGRAPHER",
     isAvailable: s.isAvailable,
     isSaved: s.isSaved ?? false,
-    responseTime: s.responseTime,
   };
 }
 

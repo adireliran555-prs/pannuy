@@ -51,7 +51,6 @@ export default function SimilarSuppliers({ currentSupplierId, category }: Simila
                   priceFrom={s.priceFrom}
                   priceTo={s.priceTo}
                   category={s.category}
-                  responseTime={s.responseTime}
                 />
               ))}
         </div>

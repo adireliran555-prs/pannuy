@@ -243,7 +243,7 @@ function SearchContent() {
               )}>
                 {filters.date ? `📅 ${new Date(filters.date).toLocaleDateString("he-IL", { day: "numeric", month: "short" })}` : "📅 תאריך החתונה"}
                 {filters.date && (
-                  <X className="h-3.5 w-3.5" onClick={(e) => { e.preventDefault(); setFilters((f) => ({ ...f, date: "" })); }} />
+                  <X className="h-3.5 w-3.5" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setFilters((f) => ({ ...f, date: "" })); }} />
                 )}
                 <input
                   type="date"
@@ -425,7 +425,6 @@ function SearchContent() {
                   category={supplier.category}
                   isAvailable={supplier.isAvailable}
                   isSaved={supplier.isSaved}
-                  responseTime={supplier.responseTime}
                 />
               ))}
             </div>
