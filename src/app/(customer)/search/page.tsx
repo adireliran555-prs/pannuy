@@ -57,6 +57,7 @@ function SearchContent() {
   }, []);
 
   const filterBarRef = useRef<HTMLDivElement>(null);
+  const dateInputRef = useRef<HTMLInputElement>(null);
 
   const closeAllDropdowns = () => {
     setShowAreaDropdown(false);
@@ -235,24 +236,29 @@ function SearchContent() {
 
             {/* Date */}
             <div className="relative">
-              <label className={cn(
-                "flex items-center gap-2 px-4 py-2.5 rounded-full border-2 text-sm font-semibold transition-colors whitespace-nowrap cursor-pointer",
-                filters.date
-                  ? "border-primary bg-primary text-white"
-                  : "border-border text-text-main hover:border-primary"
-              )}>
+              <button
+                type="button"
+                onClick={() => dateInputRef.current?.showPicker()}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2.5 rounded-full border-2 text-sm font-semibold transition-colors whitespace-nowrap cursor-pointer",
+                  filters.date
+                    ? "border-primary bg-primary text-white"
+                    : "border-border text-text-main hover:border-primary"
+                )}
+              >
                 {filters.date ? `📅 ${new Date(filters.date).toLocaleDateString("he-IL", { day: "numeric", month: "short" })}` : "📅 תאריך החתונה"}
                 {filters.date && (
                   <X className="h-3.5 w-3.5" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setFilters((f) => ({ ...f, date: "" })); }} />
                 )}
-                <input
-                  type="date"
-                  value={filters.date}
-                  min={new Date().toISOString().split("T")[0]}
-                  onChange={(e) => setFilters((f) => ({ ...f, date: e.target.value }))}
-                  className="absolute inset-0 opacity-0 cursor-pointer w-full"
-                />
-              </label>
+              </button>
+              <input
+                ref={dateInputRef}
+                type="date"
+                value={filters.date}
+                min={new Date().toISOString().split("T")[0]}
+                onChange={(e) => setFilters((f) => ({ ...f, date: e.target.value }))}
+                className="absolute opacity-0 pointer-events-none w-0 h-0"
+              />
             </div>
 
             {/* Price */}
