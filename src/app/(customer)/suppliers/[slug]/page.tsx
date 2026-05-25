@@ -25,6 +25,7 @@ import PhotoGallery from "@/components/common/PhotoGallery";
 import PackageCard from "@/components/common/PackageCard";
 import ReviewCard from "@/components/common/ReviewCard";
 import AvailabilityCalendar from "@/components/common/AvailabilityCalendar";
+import SimilarSuppliers from "@/components/common/SimilarSuppliers";
 import EmptyState from "@/components/ui/EmptyState";
 import { formatPrice, cn } from "@/lib/utils";
 
@@ -35,6 +36,15 @@ const CATEGORY_LABELS: Record<string, string> = {
   DJ: "DJ ומוסיקה",
   FLORIST: "עיצוב פרחוני",
   CATERING: "קייטרינג",
+};
+
+const MARKET_PRICE_RANGES: Record<string, { min: number; max: number; avg: number }> = {
+  PHOTOGRAPHER: { min: 3000, max: 15000, avg: 8500 },
+  VIDEOGRAPHER: { min: 4000, max: 18000, avg: 9000 },
+  BRIDAL_SUITE: { min: 800, max: 5000, avg: 2500 },
+  DJ: { min: 2500, max: 8000, avg: 4500 },
+  FLORIST: { min: 3000, max: 20000, avg: 9000 },
+  CATERING: { min: 150, max: 500, avg: 280 },
 };
 
 const RECENTLY_VIEWED_KEY = "pannuy_recently_viewed";
@@ -347,6 +357,12 @@ export default function SupplierProfilePage({ params }: PageProps) {
                   )}
                 </p>
                 <p className="text-xs text-text-muted mt-0.5">מחיר לחבילת בסיס</p>
+                {MARKET_PRICE_RANGES[supplier.category] && (
+                  <p className="text-xs text-text-muted mt-1">
+                    טווח שוק: {formatPrice(MARKET_PRICE_RANGES[supplier.category].min)}–{formatPrice(MARKET_PRICE_RANGES[supplier.category].max)}
+                    <span className="text-text-main font-semibold"> · ממוצע {formatPrice(MARKET_PRICE_RANGES[supplier.category].avg)}</span>
+                  </p>
+                )}
               </div>
 
               {/* Response stats */}
@@ -402,6 +418,9 @@ export default function SupplierProfilePage({ params }: PageProps) {
           </aside>
         </div>
       </div>
+
+      {/* ── Similar Suppliers ── */}
+      <SimilarSuppliers currentSupplierId={supplier.id} category={supplier.category} />
 
       {/* ── Mobile sticky CTA ── */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-sm border-t border-border px-4 py-3 flex gap-3">

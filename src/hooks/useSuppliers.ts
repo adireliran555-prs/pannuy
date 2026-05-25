@@ -14,6 +14,7 @@ export interface NormalizedSupplier {
   category: string;
   isAvailable?: boolean;
   isSaved?: boolean;
+  responseTime?: string;
 }
 
 interface SuppliersFilters {
@@ -52,6 +53,7 @@ function normalizeSupplier(s: any): NormalizedSupplier {
     category: s.category ?? "PHOTOGRAPHER",
     isAvailable: s.isAvailable,
     isSaved: s.isSaved ?? false,
+    responseTime: s.responseTime,
   };
 }
 
@@ -64,7 +66,7 @@ function buildUrl(filters: SuppliersFilters): string {
   if (filters.priceMax) params.set("priceMax", String(filters.priceMax));
   if (filters.ratingMin) params.set("ratingMin", String(filters.ratingMin));
   if (filters.page) params.set("page", String(filters.page));
-  if (filters.limit) params.set("limit", String(filters.limit));
+  if (filters.limit !== undefined) params.set("limit", String(filters.limit));
   return `/api/suppliers?${params.toString()}`;
 }
 

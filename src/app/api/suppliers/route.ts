@@ -91,6 +91,7 @@ export async function GET(request: NextRequest) {
       ratingAvg: true,
       ratingCount: true,
       isVerified: true,
+      responseTime: true,
       photos: {
         where: { type: { in: ["PROFILE", "COVER"] as ("PROFILE" | "COVER")[] } },
         orderBy: { sortOrder: "asc" as const },

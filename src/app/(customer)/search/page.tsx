@@ -430,6 +430,7 @@ function SearchContent() {
                   category={supplier.category}
                   isAvailable={supplier.isAvailable}
                   isSaved={supplier.isSaved}
+                  responseTime={supplier.responseTime}
                 />
               ))}
             </div>

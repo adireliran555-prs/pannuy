@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Heart, MapPin, CheckCircle } from "lucide-react";
+import { Heart, MapPin, CheckCircle, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatPrice } from "@/lib/utils";
 import Stars from "@/components/ui/Stars";
@@ -31,6 +31,7 @@ interface SupplierCardProps {
   category: string;
   isAvailable?: boolean;
   isSaved?: boolean;
+  responseTime?: string;
   onSave?: (id: string, saved: boolean) => void;
   className?: string;
 }
@@ -49,6 +50,7 @@ export default function SupplierCard({
   category,
   isAvailable,
   isSaved: initialSaved = false,
+  responseTime,
   onSave,
   className,
 }: SupplierCardProps) {
@@ -147,6 +149,14 @@ export default function SupplierCard({
 
         {/* Rating */}
         <Stars rating={rating} count={ratingCount} size="sm" />
+
+        {/* Response time */}
+        {responseTime && (
+          <div className="flex items-center gap-1 text-text-muted text-xs">
+            <Clock className="h-3 w-3 flex-shrink-0" />
+            <span>מגיבים {responseTime}</span>
+          </div>
+        )}
 
         {/* Price */}
         <div className="pt-1 border-t border-border/50">

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Camera, CheckCircle, Star, Search, Calendar, ArrowLeft } from "lucide-react";
 import Navbar from "@/components/common/Navbar";
 import SupplierCard from "@/components/common/SupplierCard";
@@ -318,6 +319,59 @@ export default async function HomePage() {
                 {...supplier}
               />
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════
+          REAL WEDDINGS GALLERY
+      ══════════════════════════════════════ */}
+      <section className="py-20 px-6 bg-surface">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-10">
+            <span className="text-sm font-bold text-primary uppercase tracking-widest">השראה</span>
+            <h2 className="text-3xl font-black text-text-main mt-2">חתונות אמיתיות</h2>
+            <p className="text-text-muted mt-2">צולמו על ידי הצלמים שלנו</p>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {[
+              { seed: "wedding1", caption: "תל אביב · יולי 2024" },
+              { seed: "wedding2", caption: "ירושלים · אוגוסט 2024" },
+              { seed: "wedding3", caption: "הרצליה · ספטמבר 2024" },
+              { seed: "wedding4", caption: "נתניה · אוקטובר 2024" },
+              { seed: "wedding5", caption: "רמת גן · נובמבר 2024" },
+              { seed: "wedding6", caption: "פתח תקווה · דצמבר 2024" },
+              { seed: "wedding7", caption: "חיפה · ינואר 2025" },
+              { seed: "wedding8", caption: "רחובות · פברואר 2025" },
+            ].map(({ seed, caption }, i) => (
+              <div
+                key={seed}
+                className={`relative overflow-hidden rounded-2xl bg-primary-light group cursor-pointer ${i === 0 || i === 5 ? "row-span-2" : ""}`}
+              >
+                <div className={`relative w-full ${i === 0 || i === 5 ? "aspect-[3/4]" : "aspect-square"}`}>
+                  <Image
+                    src={`https://picsum.photos/seed/${seed}/600/800`}
+                    alt={caption}
+                    fill
+                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                    unoptimized
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <p className="absolute bottom-3 right-3 text-white text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    {caption}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="text-center mt-8">
+            <Link
+              href="/search"
+              className="inline-flex items-center gap-2 bg-white border-2 border-primary text-primary font-bold px-6 py-3 rounded-full hover:bg-primary hover:text-white transition-all duration-200"
+            >
+              מצאו צלם לחתונה שלכם
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
           </div>
         </div>
       </section>
