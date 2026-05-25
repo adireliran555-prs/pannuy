@@ -1,26 +1,180 @@
+@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 
+@theme {
+  /* Brand Colors */
+  --color-primary: #C4956A;
+  --color-primary-dark: #A67B52;
+  --color-primary-light: #F0E0CC;
+  --color-surface: #FAFAF8;
+  --color-text-main: #1A1A1A;
+  --color-text-muted: #6B7280;
+  --color-border: #E5E0D8;
+
+  /* Font */
+  --font-family-sans: 'Heebo', sans-serif;
+  --font-family-heebo: 'Heebo', sans-serif;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #FAFAF8;
+  --foreground: #1A1A1A;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Reset & Base */
+*, *::before, *::after {
+  box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Heebo', sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  /* Disable Hebrew auto-hyphenation */
+  hyphens: none;
+  -webkit-hyphens: none;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #E5E0D8;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #C4956A;
+}
+
+/* Selection Color */
+::selection {
+  background: #F0E0CC;
+  color: #1A1A1A;
+}
+::-moz-selection {
+  background: #F0E0CC;
+  color: #1A1A1A;
+}
+
+/* Focus ring */
+:focus-visible {
+  outline: 2px solid #C4956A;
+  outline-offset: 2px;
+}
+
+/* Smooth transitions for interactive elements */
+a, button {
+  transition: all 200ms ease;
+}
+
+/* RTL number display */
+.ltr {
+  direction: ltr;
+  unicode-bidi: bidi-override;
+}
+
+/* Skeleton shimmer animation */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    #f0ece6 25%,
+    #f8f5f0 50%,
+    #f0ece6 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Heart animation */
+@keyframes heartPop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+.heart-pop {
+  animation: heartPop 200ms ease;
+}
+
+/* Page transition */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-enter {
+  animation: fadeInUp 300ms ease forwards;
+}
+
+/* Masonry grid helper */
+.masonry-grid {
+  column-count: 2;
+  column-gap: 12px;
+}
+
+@media (min-width: 768px) {
+  .masonry-grid {
+    column-count: 3;
+  }
+}
+
+.masonry-item {
+  break-inside: avoid;
+  margin-bottom: 12px;
+}
+
+/* Star rating */
+.star-filled {
+  color: #F59E0B;
+  fill: #F59E0B;
+}
+
+.star-empty {
+  color: #D1D5DB;
+  fill: #D1D5DB;
+}
+
+/* Calendar */
+.calendar-day-available:hover {
+  background-color: #F0E0CC;
+  color: #1A1A1A;
+}
+
+.calendar-day-selected {
+  background-color: #C4956A;
+  color: white;
+}
+
+.calendar-day-blocked {
+  color: #D1D5DB;
+  cursor: not-allowed;
+}
+
+.calendar-day-today {
+  box-shadow: inset 0 0 0 2px #C4956A;
 }

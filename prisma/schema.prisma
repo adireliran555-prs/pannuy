@@ -1,13 +1,222 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+model User {
+  id              String    @id @default(uuid())
+  phone           String    @unique
+  name            String
+  email           String?
+  weddingDate     DateTime?
+  weddingArea     String?
+  weddingAreaLat  Float?
+  weddingAreaLng  Float?
+  sessionToken    String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  meetings      Meeting[]      @relation("CustomerMeetings")
+  saved         SavedSupplier[]
+  reviews       Review[]
+  notifications Notification[]
+}
+
+model Otp {
+  id        String   @id @default(uuid())
+  phone     String
+  hash      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([phone])
+}
+
+model Supplier {
+  id                  String    @id @default(uuid())
+  slug                String    @unique
+  name                String
+  phone               String    @unique
+  email               String?
+  category            Category  @default(PHOTOGRAPHER)
+  bioHe               String?   @db.Text
+  city                String?
+  serviceAreas        String[]
+  basePriceFrom       Int?
+  basePriceTo         Int?
+  ratingAvg           Float     @default(0)
+  ratingCount         Int       @default(0)
+  isVerified          Boolean   @default(false)
+  isActive            Boolean   @default(false)
+  googleCalendarId    String?
+  googleRefreshToken  String?
+  googleAccessToken   String?
+  googleTokenExpiry   DateTime?
+  responseRate        Float?
+  sessionToken        String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  photos        SupplierPhoto[]
+  packages      SupplierPackage[]
+  availability  AvailabilitySlot[]
+  meetings      Meeting[]          @relation("SupplierMeetings")
+  reviews       Review[]
+  savedBy       SavedSupplier[]
+  notifications Notification[]
+
+  @@index([category])
+  @@index([isActive, isVerified])
+}
+
+enum Category {
+  PHOTOGRAPHER
+  BRIDAL_SUITE
+  VIDEOGRAPHER
+  FLORIST
+  DJ
+  CATERING
+}
+
+model SupplierPhoto {
+  id            String    @id @default(uuid())
+  supplierId    String
+  cloudinaryUrl String
+  publicId      String
+  type          PhotoType @default(PORTFOLIO)
+  sortOrder     Int       @default(0)
+  createdAt     DateTime  @default(now())
+
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@index([supplierId])
+}
+
+enum PhotoType {
+  PROFILE
+  COVER
+  PORTFOLIO
+}
+
+model SupplierPackage {
+  id         String   @id @default(uuid())
+  supplierId String
+  nameHe     String
+  descHe     String?  @db.Text
+  price      Int
+  hours      Int?
+  includes   String[]
+  isPopular  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+}
+
+model AvailabilitySlot {
+  id            String             @id @default(uuid())
+  supplierId    String
+  date          DateTime           @db.Date
+  startTime     String
+  endTime       String
+  isBlocked     Boolean            @default(true)
+  source        AvailabilitySource @default(MANUAL)
+  googleEventId String?
+  syncedAt      DateTime           @default(now())
+
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@unique([supplierId, date, googleEventId])
+  @@index([supplierId, date])
+}
+
+enum AvailabilitySource {
+  GOOGLE
+  MANUAL
+}
+
+model Meeting {
+  id            String        @id @default(uuid())
+  customerId    String
+  supplierId    String
+  requestedDate DateTime      @db.Date
+  startTime     String
+  endTime       String
+  status        MeetingStatus @default(PENDING)
+  meetingType   MeetingType   @default(VIDEO)
+  customerNotes String?       @db.Text
+  supplierNotes String?       @db.Text
+  googleEventId String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  customer User     @relation("CustomerMeetings", fields: [customerId], references: [id])
+  supplier Supplier @relation("SupplierMeetings", fields: [supplierId], references: [id])
+  review   Review?
+
+  @@index([customerId])
+  @@index([supplierId])
+  @@index([requestedDate])
+}
+
+enum MeetingStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+  CANCELLED
+  COMPLETED
+}
+
+enum MeetingType {
+  VIDEO
+  PHONE
+  IN_PERSON
+}
+
+model Review {
+  id         String   @id @default(uuid())
+  customerId String
+  supplierId String
+  meetingId  String   @unique
+  rating     Int
+  textHe     String?  @db.Text
+  photos     String[]
+  isVisible  Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  customer User     @relation(fields: [customerId], references: [id])
+  supplier Supplier @relation(fields: [supplierId], references: [id])
+  meeting  Meeting  @relation(fields: [meetingId], references: [id])
+
+  @@index([supplierId])
+}
+
+model SavedSupplier {
+  id         String   @id @default(uuid())
+  customerId String
+  supplierId String
+  createdAt  DateTime @default(now())
+
+  customer User     @relation(fields: [customerId], references: [id])
+  supplier Supplier @relation(fields: [supplierId], references: [id])
+
+  @@unique([customerId, supplierId])
+}
+
+model Notification {
+  id         String   @id @default(uuid())
+  userId     String?
+  supplierId String?
+  type       String
+  titleHe    String
+  bodyHe     String
+  isRead     Boolean  @default(false)
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  user     User?     @relation(fields: [userId], references: [id])
+  supplier Supplier? @relation(fields: [supplierId], references: [id])
 }
