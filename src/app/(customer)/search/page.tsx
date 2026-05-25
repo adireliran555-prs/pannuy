@@ -3,18 +3,26 @@
 import { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { SlidersHorizontal, X, ChevronDown, Star } from "lucide-react";
+import { SlidersHorizontal, X, ChevronDown, Star, Check } from "lucide-react";
 import { useSuppliers, NormalizedSupplier } from "@/hooks/useSuppliers";
 import SupplierCard from "@/components/common/SupplierCard";
 import { SupplierCardSkeleton } from "@/components/ui/Skeleton";
 import EmptyState from "@/components/ui/EmptyState";
 import Button from "@/components/ui/Button";
-import { ISRAELI_CITIES, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+
+const REGIONS = [
+  { id: "מרכז", label: "מרכז", emoji: "🏙️" },
+  { id: "תל אביב", label: "תל אביב", emoji: "🌆" },
+  { id: "ירושלים", label: "ירושלים", emoji: "🕌" },
+  { id: "צפון", label: "צפון", emoji: "🌿" },
+  { id: "דרום", label: "דרום", emoji: "🌵" },
+  { id: "שרון", label: "השרון", emoji: "🌊" },
+];
 
 const RECENTLY_VIEWED_KEY = "pannuy_recently_viewed";
 
 interface Filters {
-  city: string;
   date: string;
   priceMax: number;
   ratingMin: number;
@@ -29,7 +37,6 @@ function SearchContent() {
   const initialAreas = areasParam ? areasParam.split(",").filter(Boolean) : [];
 
   const [filters, setFilters] = useState<Filters>({
-    city: searchParams.get("city") || "",
     date: searchParams.get("date") || "",
     priceMax: 0,
     ratingMin: 0,
@@ -38,8 +45,7 @@ function SearchContent() {
   const [selectedAreas, setSelectedAreas] = useState<string[]>(initialAreas);
   const [recentlyViewed, setRecentlyViewed] = useState<string[]>([]);
   const [showFilterDrawer, setShowFilterDrawer] = useState(false);
-  const [cityInput, setCityInput] = useState(filters.city);
-  const [showCitySuggestions, setShowCitySuggestions] = useState(false);
+  const [showAreaDropdown, setShowAreaDropdown] = useState(false);
   const [showPriceDropdown, setShowPriceDropdown] = useState(false);
   const [showRatingDropdown, setShowRatingDropdown] = useState(false);
   const [showSortDropdown, setShowSortDropdown] = useState(false);
@@ -53,7 +59,7 @@ function SearchContent() {
   const filterBarRef = useRef<HTMLDivElement>(null);
 
   const closeAllDropdowns = () => {
-    setShowCitySuggestions(false);
+    setShowAreaDropdown(false);
     setShowPriceDropdown(false);
     setShowRatingDropdown(false);
     setShowSortDropdown(false);
@@ -69,10 +75,8 @@ function SearchContent() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const effectiveArea = selectedAreas.length > 0 ? selectedAreas[0] : filters.city || undefined;
-
   const { suppliers, total, totalPages, areaFallback, isLoading } = useSuppliers({
-    area: effectiveArea,
+    areas: selectedAreas.length > 0 ? selectedAreas : undefined,
     date: filters.date || undefined,
     priceMax: filters.priceMax || undefined,
     ratingMin: filters.ratingMin || undefined,
@@ -80,20 +84,15 @@ function SearchContent() {
   });
 
   const activeFilterCount = [
-    selectedAreas.length > 0 || filters.city,
+    selectedAreas.length > 0,
     !!filters.date,
     filters.priceMax > 0,
     filters.ratingMin > 0,
   ].filter(Boolean).length;
 
-  const filteredCities = ISRAELI_CITIES.filter((c) =>
-    c.includes(cityInput)
-  ).slice(0, 6);
-
   const clearFilter = (key: keyof Filters) => {
-    const defaults: Record<keyof Filters, string | number> = { city: "", date: "", priceMax: 0, ratingMin: 0, sortBy: "relevance" };
+    const defaults: Record<keyof Filters, string | number> = { date: "", priceMax: 0, ratingMin: 0, sortBy: "relevance" };
     setFilters((f) => ({ ...f, [key]: defaults[key] }));
-    if (key === "city") setCityInput("");
   };
 
   const SORT_LABELS: Record<Filters["sortBy"], string> = {
@@ -103,15 +102,8 @@ function SearchContent() {
     priceDesc: "מחיר יורד",
   };
 
-  const locationLabel = selectedAreas.length > 0
-    ? `ב${selectedAreas.join(", ")}`
-    : filters.city
-    ? `ב${filters.city}`
-    : "בכל הארץ";
-
-  const locationDisplay = selectedAreas.length > 0
-    ? selectedAreas.join(", ")
-    : filters.city || "";
+  const locationLabel = selectedAreas.length > 0 ? `ב${selectedAreas.join(", ")}` : "בכל הארץ";
+  const locationDisplay = selectedAreas.length > 0 ? selectedAreas.join(", ") : "";
 
   return (
     <div className="min-h-screen bg-surface">
@@ -174,25 +166,16 @@ function SearchContent() {
                 <X className="h-3 w-3" />
               </button>
             ))}
-            {!selectedAreas.length && filters.city && (
-              <button
-                onClick={() => clearFilter("city")}
-                className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 bg-primary text-white rounded-full text-xs font-semibold whitespace-nowrap"
-              >
-                {filters.city}
-                <X className="h-3 w-3" />
-              </button>
-            )}
           </div>
 
           {/* Desktop filters — no overflow so dropdowns can extend below */}
           <div className="hidden sm:flex items-center gap-3">
-            {/* Location */}
+            {/* Area (region pills) */}
             <div className="relative">
               <button
-                onClick={() => { closeAllDropdowns(); setShowCitySuggestions((v) => !v); }}
+                onClick={() => { closeAllDropdowns(); setShowAreaDropdown((v) => !v); }}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2.5 rounded-full border-2 text-sm font-semibold transition-colors whitespace-nowrap max-w-[200px]",
+                  "flex items-center gap-2 px-4 py-2.5 rounded-full border-2 text-sm font-semibold transition-colors whitespace-nowrap max-w-[220px]",
                   locationDisplay
                     ? "border-primary bg-primary text-white"
                     : "border-border text-text-main hover:border-primary"
@@ -202,40 +185,50 @@ function SearchContent() {
                 {locationDisplay ? (
                   <X
                     className="h-3.5 w-3.5 flex-shrink-0"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedAreas([]);
-                      clearFilter("city");
-                    }}
+                    onClick={(e) => { e.stopPropagation(); setSelectedAreas([]); }}
                   />
                 ) : (
                   <ChevronDown className="h-3.5 w-3.5 flex-shrink-0" />
                 )}
               </button>
-              {showCitySuggestions && (
-                <div className="absolute top-full mt-1 z-40 bg-white border border-border rounded-2xl shadow-xl min-w-[180px] overflow-hidden">
-                  <div className="p-2">
-                    <input
-                      autoFocus
-                      value={cityInput}
-                      onChange={(e) => setCityInput(e.target.value)}
-                      placeholder="הקלידו עיר..."
-                      className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:outline-none focus:border-primary"
-                    />
+              {showAreaDropdown && (
+                <div className="absolute top-full mt-1 z-50 bg-white border border-border rounded-2xl shadow-xl p-3 min-w-[260px]">
+                  <p className="text-xs font-bold text-text-muted uppercase tracking-wide mb-2">בחרו אזורים</p>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {REGIONS.map(({ id, label, emoji }) => {
+                      const selected = selectedAreas.includes(id);
+                      return (
+                        <button
+                          key={id}
+                          onClick={() => setSelectedAreas((prev) =>
+                            prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]
+                          )}
+                          className={cn(
+                            "relative flex flex-col items-center gap-0.5 py-2 px-1 rounded-xl border-2 text-xs font-semibold transition-all",
+                            selected
+                              ? "border-primary bg-primary text-white"
+                              : "border-border bg-white text-text-main hover:border-primary/50"
+                          )}
+                        >
+                          {selected && (
+                            <span className="absolute top-1 left-1 w-3.5 h-3.5 bg-white/30 rounded-full flex items-center justify-center">
+                              <Check className="h-2 w-2 text-white" />
+                            </span>
+                          )}
+                          <span>{emoji}</span>
+                          <span>{label}</span>
+                        </button>
+                      );
+                    })}
                   </div>
-                  {filteredCities.map((c) => (
+                  {selectedAreas.length > 0 && (
                     <button
-                      key={c}
-                      className="w-full text-right px-4 py-2.5 text-sm hover:bg-primary-light text-text-main transition-colors"
-                      onClick={() => {
-                        setFilters((f) => ({ ...f, city: c }));
-                        setCityInput(c);
-                        setShowCitySuggestions(false);
-                      }}
+                      onClick={() => { setSelectedAreas([]); setShowAreaDropdown(false); }}
+                      className="mt-2 w-full text-xs text-text-muted hover:text-primary transition-colors text-center"
                     >
-                      {c}
+                      נקה בחירה
                     </button>
-                  ))}
+                  )}
                 </div>
               )}
             </div>
@@ -399,9 +392,9 @@ function SearchContent() {
               {" "}ספקים {locationLabel}
             </p>
           )}
-          {!isLoading && areaFallback && effectiveArea && (
+          {!isLoading && areaFallback && selectedAreas.length > 0 && (
             <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 inline-block">
-              לא נמצאו ספקים ב{effectiveArea} — מציגים את כל הספקים הזמינים
+              לא נמצאו ספקים ב{selectedAreas.join(", ")} — מציגים את כל הספקים הזמינים
             </p>
           )}
         </div>
@@ -487,18 +480,21 @@ function SearchContent() {
             <div>
               <label className="text-sm font-bold text-text-main block mb-2">אזור</label>
               <div className="grid grid-cols-3 gap-2">
-                {["תל אביב", "ירושלים", "חיפה", "הרצליה", "נתניה", "ראשון לציון"].map((c) => (
+                {REGIONS.map(({ id, label, emoji }) => (
                   <button
-                    key={c}
-                    onClick={() => setFilters((f) => ({ ...f, city: c }))}
+                    key={id}
+                    onClick={() => setSelectedAreas((prev) =>
+                      prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]
+                    )}
                     className={cn(
-                      "py-2 px-3 rounded-xl border-2 text-sm font-medium transition-colors",
-                      filters.city === c
+                      "flex flex-col items-center gap-0.5 py-2 px-1 rounded-xl border-2 text-xs font-semibold transition-colors",
+                      selectedAreas.includes(id)
                         ? "border-primary bg-primary text-white"
                         : "border-border text-text-main"
                     )}
                   >
-                    {c}
+                    <span>{emoji}</span>
+                    <span>{label}</span>
                   </button>
                 ))}
               </div>
@@ -551,8 +547,8 @@ function SearchContent() {
                 variant="secondary"
                 fullWidth
                 onClick={() => {
-                  setFilters({ city: "", date: "", priceMax: 0, ratingMin: 0, sortBy: "relevance" });
-                  setCityInput("");
+                  setFilters({ date: "", priceMax: 0, ratingMin: 0, sortBy: "relevance" });
+                  setSelectedAreas([]);
                 }}
               >
                 נקי הכל

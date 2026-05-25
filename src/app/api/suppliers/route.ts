@@ -11,7 +11,8 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl;
 
-    const area = searchParams.get("area") ?? undefined;
+    const areasParam = searchParams.get("areas") ?? undefined;
+    const areas = areasParam ? areasParam.split(",").filter(Boolean) : undefined;
     const date = searchParams.get("date") ?? undefined;
     const categoryParam = searchParams.get("category") ?? undefined;
     const priceMin = searchParams.get("priceMin")
@@ -37,7 +38,7 @@ export async function GET(request: NextRequest) {
 
     // Cache key based on all params
     const paramsHash = createHash("md5")
-      .update(JSON.stringify({ area, date, category, priceMin, priceMax, ratingMin, page, limit }))
+      .update(JSON.stringify({ areas, date, category, priceMin, priceMax, ratingMin, page, limit }))
       .digest("hex");
     const cacheKey = `search:${paramsHash}`;
 
@@ -70,11 +71,11 @@ export async function GET(request: NextRequest) {
       isActive: true,
       isVerified: true,
       ...(category ? { category } : {}),
-      ...(area ? { serviceAreas: { has: area } } : {}),
+      ...(areas && areas.length > 0 ? { serviceAreas: { hasSome: areas } } : {}),
       ...(priceMin !== undefined ? { basePriceFrom: { gte: priceMin } } : {}),
       ...(priceMax !== undefined ? { basePriceTo: { lte: priceMax } } : {}),
       ...(ratingMin !== undefined ? { ratingAvg: { gte: ratingMin } } : {}),
-      ...(blockedSupplierIds
+      ...(blockedSupplierIds && blockedSupplierIds.length > 0
         ? { id: { notIn: blockedSupplierIds } }
         : {}),
     };
@@ -107,7 +108,7 @@ export async function GET(request: NextRequest) {
 
     // Always show suppliers: if area filter yields nothing, fall back to all
     let areaFallback = false;
-    if (total === 0 && area) {
+    if (total === 0 && areas && areas.length > 0) {
       const whereNoArea = { ...where };
       delete (whereNoArea as Record<string, unknown>).serviceAreas;
       [suppliers, total] = await Promise.all([

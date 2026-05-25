@@ -18,7 +18,7 @@ export interface NormalizedSupplier {
 }
 
 interface SuppliersFilters {
-  area?: string;
+  areas?: string[];
   date?: string;
   category?: string;
   priceMin?: number;
@@ -59,7 +59,7 @@ function normalizeSupplier(s: any): NormalizedSupplier {
 
 function buildUrl(filters: SuppliersFilters): string {
   const params = new URLSearchParams();
-  if (filters.area) params.set("area", filters.area);
+  if (filters.areas && filters.areas.length > 0) params.set("areas", filters.areas.join(","));
   if (filters.date) params.set("date", filters.date);
   if (filters.category) params.set("category", filters.category);
   if (filters.priceMin) params.set("priceMin", String(filters.priceMin));
