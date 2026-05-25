@@ -327,8 +327,8 @@ export default function SupplierProfilePage({ params }: PageProps) {
               >
                 <CheckCircle className="h-4 w-4" />
                 {supplier.isAvailable
-                  ? "פנוי/ה לתאריך שלך ✓"
-                  : "לא פנוי/ה לתאריך שלך"}
+                  ? "פנוי לתאריך שלכם ✓"
+                  : "לא פנוי לתאריך שלכם"}
               </div>
 
               {/* CTA */}
@@ -337,7 +337,7 @@ export default function SupplierProfilePage({ params }: PageProps) {
                 fullWidth
                 onClick={() => router.push(`/book/${supplier.id}`)}
               >
-                קבעי פגישה
+                קבעו פגישה
               </Button>
 
               <button

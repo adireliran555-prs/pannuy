@@ -101,7 +101,7 @@ export default function SupplierCalendarPage() {
         <div>
           <h1 className="text-2xl font-black text-text-main">לוח זמנים</h1>
           <p className="text-text-muted text-sm mt-1">
-            נהלי את הזמינות שלך
+            נהלו את הזמינות שלכם
           </p>
         </div>
 
@@ -114,7 +114,7 @@ export default function SupplierCalendarPage() {
             <div className="flex-1">
               <h3 className="font-bold text-text-main">חברי Google Calendar</h3>
               <p className="text-text-muted text-sm mt-0.5">
-                סנכרון אוטומטי של הזמינות שלך — כשיש לך אירוע, פנוי תסמן אותו אוטומטית
+                סנכרון אוטומטי של הזמינות שלכם — כשיש לכם אירוע, פנוי תסמן אותו אוטומטית
               </p>
             </div>
             <Button

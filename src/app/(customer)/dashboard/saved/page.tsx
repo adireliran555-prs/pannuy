@@ -38,7 +38,7 @@ export default function SavedPage() {
           {!isLoading && saved.length > 0 && (
             <Link href="/search">
               <Button variant="secondary" size="sm">
-                גלי עוד
+                גלו עוד
               </Button>
             </Link>
           )}
@@ -55,8 +55,8 @@ export default function SavedPage() {
           <EmptyState
             emoji="🤍"
             title="עדיין לא שמרת ספקים"
-            description="לחצי על הלב בכרטיס הספק כדי לשמור אותה לטובת עתיד"
-            ctaLabel="גלי ספקים"
+            description="לחצו על הלב בכרטיס הספק כדי לשמור אותו לעתיד"
+            ctaLabel="גלו ספקים"
             onCta={() => router.push("/search")}
           />
         ) : (

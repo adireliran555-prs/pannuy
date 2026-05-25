@@ -8,15 +8,15 @@ const FAQS = [
   },
   {
     q: "כמה זמן לוקח להקים פרופיל?",
-    a: "פחות מ-15 דקות. תמלאי פרטים בסיסיים, תעלי תמונות מתיק העבודות שלך, ותגדירי חבילות ומחירים. אנחנו נבצע אימות קצר ותהיי חיה!",
+    a: "פחות מ-15 דקות. תמלאו פרטים בסיסיים, תעלו תמונות מתיק העבודות שלכם, ותגדירו חבילות ומחירים. נבצע אימות קצר ותהיו פעילים!",
   },
   {
     q: "איך מנהלים את הזמינות?",
-    a: "ניתן לסנכרן אוטומטית עם Google Calendar שלך, או לנהל ידנית ישירות בפלטפורמה. כשיש לך אירוע ביומן, פנוי תסמן את היום כחסום אוטומטית.",
+    a: "ניתן לסנכרן אוטומטית עם Google Calendar שלכם, או לנהל ידנית ישירות בפלטפורמה. כשיש לכם אירוע ביומן, פנוי תסמן את היום כחסום אוטומטית.",
   },
   {
-    q: "מה קורה כשכלה מבקשת פגישה?",
-    a: "תקבלי התראה מיידית, תוכלי לאשר או לדחות תוך שניות, ותתקשרי עם הכלה ישירות דרך הפלטפורמה. ללא ביניים.",
+    q: "מה קורה כשזוג מבקש פגישה?",
+    a: "תקבלו התראה מיידית, תוכלו לאשר או לדחות תוך שניות, ותתקשרו עם הזוג ישירות דרך הפלטפורמה. ללא ביניים.",
   },
 ];
 
@@ -43,18 +43,18 @@ export default function ForSuppliersPage() {
             לצלמות חתונה
           </span>
           <h1 className="text-4xl sm:text-6xl font-black text-white leading-tight mb-4">
-            הציגי את האמנות שלך
+            הציגו את האמנות שלכם
             <br />
-            <span className="text-primary">לאלפי כלות</span>
+            <span className="text-primary">לאלפי זוגות</span>
           </h1>
           <p className="text-lg text-white/80 mb-8 max-w-xl mx-auto leading-relaxed">
-            הצטרפי לפנוי — הפלטפורמה המובילה לספקי חתונות בישראל. לקבל לידים איכותיים ולנהל פגישות בקלות.
+            הצטרפו לפנוי — הפלטפורמה המובילה לספקי חתונות בישראל. לקבל לידים איכותיים ולנהל פגישות בקלות.
           </p>
           <Link
             href="/supplier/join"
             className="inline-flex items-center gap-2 bg-primary text-white font-bold text-lg px-10 py-5 rounded-full shadow-2xl hover:shadow-primary/30 hover:bg-primary-dark transition-all duration-200 hover:-translate-y-0.5"
           >
-            הצטרפי בחינם
+            הצטרפו בחינם
             <ChevronLeft className="h-5 w-5" />
           </Link>
           <p className="mt-4 text-white/50 text-sm">
@@ -88,7 +88,7 @@ export default function ForSuppliersPage() {
               למה פנוי?
             </h2>
             <p className="text-text-muted mt-2 max-w-xl mx-auto">
-              הכלים שאת צריכה כדי להצליח, במקום אחד
+              הכלים שצריכים להצליח, במקום אחד
             </p>
           </div>
 
@@ -97,19 +97,19 @@ export default function ForSuppliersPage() {
               {
                 icon: Calendar,
                 title: "לוח שנה חכם",
-                desc: "סנכרון Google Calendar, ניהול זמינות בזמן אמת. כלות רואות רק תאריכים שאת פנויה בהם.",
+                desc: "סנכרון Google Calendar, ניהול זמינות בזמן אמת. זוגות רואים רק תאריכים שאתם פנויים.",
                 color: "bg-blue-100 text-blue-600",
               },
               {
                 icon: TrendingUp,
                 title: "לידים איכותיים",
-                desc: "כלות מוכנות לרכישה, ללא בזבוז זמן. כל פנייה מגיעה עם פרטי החתונה ותאריך הנישואין.",
+                desc: "זוגות מוכנים לרכישה, ללא בזבוז זמן. כל פנייה מגיעה עם פרטי החתונה ותאריך הנישואין.",
                 color: "bg-amber-100 text-amber-600",
               },
               {
                 icon: Camera,
                 title: "ניהול עסקי",
-                desc: "כלים לניהול פגישות, ביקורות ואנליטיקה. ראי כמה כלות צפו בפרופיל ואיפה מגיעות הפניות.",
+                desc: "כלים לניהול פגישות, ביקורות ואנליטיקה. ראו כמה זוגות צפו בפרופיל ואיפה מגיעות הפניות.",
                 color: "bg-green-100 text-green-600",
               },
             ].map(({ icon: Icon, title, desc, color }) => (
@@ -141,20 +141,20 @@ export default function ForSuppliersPage() {
             {[
               {
                 step: "01",
-                title: "צרי פרופיל",
-                desc: "מלאי פרטים בסיסיים, הוסיפי תמונות מתיק העבודות שלך, והגדירי חבילות ומחירים.",
+                title: "צרו פרופיל",
+                desc: "מלאו פרטים בסיסיים, הוסיפו תמונות מתיק העבודות שלכם, והגדירו חבילות ומחירים.",
                 time: "15 דקות",
               },
               {
                 step: "02",
-                title: "חברי לוח שנה",
-                desc: "סנכרן את Google Calendar שלך לניהול זמינות אוטומטי. כשאת תפוסה, פנוי תדאג שכלות לא יבקשו.",
+                title: "חברו לוח שנה",
+                desc: "סנכרנו את Google Calendar שלכם. כשאתם תפוסים, פנוי יסמן תאריכים חסומים אוטומטית.",
                 time: "2 דקות",
               },
               {
                 step: "03",
-                title: "קבלי פניות",
-                desc: "כלות יפנו אליך ישירות, תאשרי פגישות, ותנהלי הכל מהפאנל שלך.",
+                title: "קבלו פניות",
+                desc: "זוגות יפנו אליכם ישירות, תאשרו פגישות, ותנהלו הכל מהפאנל שלכם.",
                 time: "מתמשך",
               },
             ].map(({ step, title, desc, time }, idx) => (
@@ -200,7 +200,7 @@ export default function ForSuppliersPage() {
                 name: "טל חיון",
                 city: "ירושלים",
                 rating: 5,
-                text: "הפלטפורמה הכי ידידותית שנתקלתי בה. הפרופיל שלי מביא לידים איכותיים מכלות שבאמת רוצות להתקדם.",
+                text: "הפלטפורמה הכי ידידותית שנתקלתי בה. הפרופיל שלי מביא לידים איכותיים מזוגות שבאמת רוצים להתקדם.",
               },
             ].map(({ name, city, rating, text }) => (
               <div
@@ -260,13 +260,13 @@ export default function ForSuppliersPage() {
             מוכנה להתחיל?
           </h2>
           <p className="text-lg text-text-muted mb-8">
-            הצטרפי לקהילת הספקים שלנו וקבלי גישה לאלפי כלות חדשות בכל חודש
+            הצטרפו לקהילת הספקים שלנו וקבלו גישה לאלפי זוגות חדשים בכל חודש
           </p>
           <Link
             href="/supplier/join"
             className="inline-flex items-center gap-2 bg-primary text-white font-bold text-xl px-12 py-5 rounded-full shadow-xl hover:shadow-2xl hover:bg-primary-dark transition-all duration-200 hover:-translate-y-1"
           >
-            הצטרפי בחינם
+            הצטרפו בחינם
             <ChevronLeft className="h-5 w-5" />
           </Link>
           <div className="mt-6 flex items-center justify-center gap-6 text-sm text-text-muted">
@@ -285,7 +285,7 @@ export default function ForSuppliersPage() {
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-white/50">
           <span className="text-2xl font-black text-primary">פנוי</span>
           <div className="flex gap-6">
-            <Link href="/" className="hover:text-white/80 transition-colors">לכלות</Link>
+            <Link href="/" className="hover:text-white/80 transition-colors">לזוגות</Link>
             <Link href="#" className="hover:text-white/80 transition-colors">תנאי שימוש</Link>
             <Link href="#" className="hover:text-white/80 transition-colors">פרטיות</Link>
           </div>

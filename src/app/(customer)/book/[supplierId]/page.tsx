@@ -12,7 +12,7 @@ import { formatHebrewDate, formatPrice } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
 const STEPS = [
-  { label: "בחרי מועד" },
+  { label: "בחרו מועד" },
   { label: "פרטי הפגישה" },
   { label: "אישור" },
 ];
@@ -97,10 +97,10 @@ export default function BookPage({ params }: PageProps) {
             הפגישה נקבעה! 🎉
           </h1>
           <p className="text-text-muted">
-            {supplier.name} תאשר את הפגישה בהקדם. תישלח אליך הודעה.
+            {supplier.name} תאשר את הפגישה בהקדם.
           </p>
           <p className="text-sm text-text-muted animate-pulse">
-            מעבירה אותך לפגישות שלך...
+            מעבירים לפגישות שלכם...
           </p>
         </div>
       </div>
@@ -142,10 +142,10 @@ export default function BookPage({ params }: PageProps) {
             <div className="space-y-6">
               <div>
                 <h2 className="text-xl font-black text-text-main mb-1">
-                  בחרי מועד לפגישה
+                  בחרו מועד לפגישה
                 </h2>
                 <p className="text-text-muted text-sm">
-                  בחרי תאריך ושעה מתאימים
+                  בחרו תאריך ושעה מתאימים
                 </p>
               </div>
               <AvailabilityCalendar
@@ -158,7 +158,7 @@ export default function BookPage({ params }: PageProps) {
                 disabled={!selectedDate || !selectedTime}
                 onClick={() => setStep(2)}
               >
-                המשיכי
+                המשיכו
               </Button>
             </div>
           )}
@@ -168,7 +168,7 @@ export default function BookPage({ params }: PageProps) {
             <div className="space-y-6">
               <div>
                 <h2 className="text-xl font-black text-text-main mb-1">
-                  איך תרצי להיפגש?
+                  איך תרצו להיפגש?
                 </h2>
                 <p className="text-text-muted text-sm">
                   {selectedDate && formatHebrewDate(selectedDate)} בשעה{" "}
@@ -211,7 +211,7 @@ export default function BookPage({ params }: PageProps) {
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="ספרי לנו על החתונה שלך, ואיזה קונספט אתם מחפשים..."
+                  placeholder="ספרו לנו על החתונה שלכם, ואיזה קונספט אתם מחפשים..."
                   rows={4}
                   className="w-full rounded-xl border-2 border-border px-4 py-3 text-base text-text-main placeholder:text-text-muted focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 resize-none"
                 />
@@ -223,7 +223,7 @@ export default function BookPage({ params }: PageProps) {
                   חזרה
                 </Button>
                 <Button fullWidth disabled={!meetingType} onClick={() => setStep(3)}>
-                  המשיכי
+                  המשיכו
                 </Button>
               </div>
             </div>
@@ -237,7 +237,7 @@ export default function BookPage({ params }: PageProps) {
                   אישור פגישה
                 </h2>
                 <p className="text-text-muted text-sm">
-                  בדקי את הפרטים ואשרי
+                  בדקו את הפרטים ואשרו
                 </p>
               </div>
 
@@ -291,7 +291,7 @@ export default function BookPage({ params }: PageProps) {
 
               <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-sm text-green-700">
                 <CheckCircle className="h-4 w-4 inline ml-2" />
-                הפגישה חינמית ואינה מחייבת בחירה בספקית
+                הפגישה חינמית ואינה מחייבת בחירה בספק
               </div>
 
               <div className="flex gap-3">
@@ -309,7 +309,7 @@ export default function BookPage({ params }: PageProps) {
                   isLoading={isLoading}
                   onClick={handleConfirm}
                 >
-                  אשרי פגישה ✓
+                  אשרו פגישה ✓
                 </Button>
               </div>
             </div>

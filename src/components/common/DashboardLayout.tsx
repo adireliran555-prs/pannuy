@@ -27,7 +27,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             <div className="bg-white rounded-2xl border border-border p-4 sticky top-24">
               <div className="mb-4 px-2">
                 <h2 className="font-bold text-text-main text-lg">האזור שלי</h2>
-                <p className="text-text-muted text-sm">נהלי את החתונה שלך</p>
+                <p className="text-text-muted text-sm">נהלו את החתונה שלכם</p>
               </div>
               <nav className="space-y-1">
                 {NAV_ITEMS.map(({ href, label, icon: Icon }) => {

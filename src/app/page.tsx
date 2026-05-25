@@ -63,9 +63,9 @@ export default async function HomePage() {
 
           {/* Main tagline */}
           <h1 className="text-2xl sm:text-4xl font-bold text-text-main leading-tight mb-4">
-            מצאי את הספקים המושלמים
+            מצאו את הספקים המושלמים
             <br />
-            <span className="text-primary">לחתונה שלך</span>
+            <span className="text-primary">לחתונה שלכם</span>
           </h1>
 
           {/* Sub-tagline */}
@@ -79,7 +79,7 @@ export default async function HomePage() {
               href="/start"
               className="inline-flex items-center gap-2 bg-primary text-white font-bold text-lg px-8 py-4 rounded-full shadow-lg hover:shadow-xl hover:bg-primary-dark transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
             >
-              התחילי עכשיו
+              התחילו עכשיו
               <ArrowLeft className="h-5 w-5" />
             </Link>
             <Link
@@ -87,21 +87,21 @@ export default async function HomePage() {
               className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm text-text-main font-semibold text-base px-6 py-4 rounded-full border-2 border-border hover:border-primary/40 transition-all duration-200"
             >
               <Search className="h-4 w-4" />
-              גלי ספקים
+              גלו ספקים
             </Link>
           </div>
 
           <p className="mt-6 text-sm text-text-muted">
-            כבר רשומה?{" "}
+            כבר רשומים?{" "}
             <Link href="/start" className="text-primary font-semibold underline underline-offset-2">
-              התחברי
+              התחברו
             </Link>
           </p>
         </div>
 
         {/* Scroll indicator */}
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 text-text-muted">
-          <span className="text-xs font-medium">גלגלי למטה</span>
+          <span className="text-xs font-medium">גללו למטה</span>
           <div className="w-6 h-10 rounded-full border-2 border-text-muted/30 flex items-start justify-center pt-1.5">
             <div className="w-1 h-2 bg-text-muted/50 rounded-full animate-bounce" />
           </div>
@@ -127,22 +127,22 @@ export default async function HomePage() {
               {
                 step: "1",
                 icon: Calendar,
-                title: "בחרי תאריך ואזור",
-                desc: "ספרי לנו מתי ואיפה החתונה שלך, ואנחנו נמצא את הספקים שפנויים עבורך",
+                title: "בחרו תאריך ואזור",
+                desc: "ספרו לנו מתי ואיפה החתונה שלכם, ואנחנו נמצא את הספקים שפנויים עבורכם",
                 color: "bg-rose-100 text-rose-600",
               },
               {
                 step: "2",
                 icon: Search,
-                title: "גלי ספקים פנויים",
+                title: "גלו ספקים פנויים",
                 desc: "עיין בפרופילים, תיקי עבודות, חבילות ומחירים — הכל במקום אחד",
                 color: "bg-amber-100 text-amber-600",
               },
               {
                 step: "3",
                 icon: CheckCircle,
-                title: "קבעי פגישה",
-                desc: "בחרי זמן נוח ותאמי פגישת היכרות ישירות — ללא אימיילים, ללא הפתעות",
+                title: "קבעו פגישה",
+                desc: "בחרו זמן נוח ותאמו פגישת היכרות ישירות — ללא אימיילים, ללא הפתעות",
                 color: "bg-emerald-100 text-emerald-600",
               },
             ].map(({ step, icon: Icon, title, desc, color }) => (
@@ -171,7 +171,7 @@ export default async function HomePage() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-10">
             <h2 className="text-3xl font-black text-text-main">
-              גלי לפי קטגוריה
+              גלו לפי קטגוריה
             </h2>
           </div>
 
@@ -223,7 +223,7 @@ export default async function HomePage() {
                 <h3 className="font-bold text-text-main">{title}</h3>
                 {active ? (
                   <span className="text-xs font-semibold text-primary">
-                    גלי עכשיו →
+                    גלו עכשיו →
                   </span>
                 ) : (
                   <span className="inline-flex items-center text-xs font-bold bg-gray-800 text-white px-2.5 py-0.5 rounded-full w-fit">
@@ -254,7 +254,7 @@ export default async function HomePage() {
               href="/search"
               className="text-sm font-semibold text-primary hover:text-primary-dark transition-colors flex items-center gap-1"
             >
-              ראי הכל
+              ראו הכל
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </div>
@@ -300,13 +300,13 @@ export default async function HomePage() {
             מוכנה להתחיל?
           </h2>
           <p className="text-lg text-text-muted mb-8">
-            הצטרפי לאלפי כלות שמצאו את הספקים המושלמים שלהן דרך פנוי
+            הצטרפו לאלפי זוגות שמצאו את הספקים המושלמים שלהם דרך פנוי
           </p>
           <Link
             href="/start"
             className="inline-flex items-center gap-2 bg-primary text-white font-bold text-xl px-10 py-5 rounded-full shadow-xl hover:shadow-2xl hover:bg-primary-dark transition-all duration-200 hover:-translate-y-1"
           >
-            התחילי בחינם
+            התחילו בחינם
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <p className="mt-4 text-sm text-text-muted">
@@ -324,15 +324,15 @@ export default async function HomePage() {
             <div className="sm:col-span-2">
               <div className="text-3xl font-black text-primary mb-2">פנוי</div>
               <p className="text-white/60 text-sm leading-relaxed max-w-xs">
-                הפלטפורמה המובילה לחיפוש ספקי חתונה בישראל. מחברות בין כלות לספקים המושלמים עבורן.
+                הפלטפורמה המובילה לחיפוש ספקי חתונה בישראל. מחברים בין זוגות לספקים המושלמים עבורם.
               </p>
             </div>
             <div>
               <h4 className="font-bold mb-3 text-sm text-white/80 uppercase tracking-widest">
-                לכלות
+                לזוגות
               </h4>
               <ul className="space-y-2 text-sm text-white/60">
-                <li><Link href="/search" className="hover:text-white transition-colors">חפשי ספקים</Link></li>
+                <li><Link href="/search" className="hover:text-white transition-colors">חפשו ספקים</Link></li>
                 <li><Link href="/dashboard/meetings" className="hover:text-white transition-colors">הפגישות שלי</Link></li>
                 <li><Link href="/dashboard/saved" className="hover:text-white transition-colors">שמורות</Link></li>
               </ul>
@@ -342,7 +342,7 @@ export default async function HomePage() {
                 לספקים
               </h4>
               <ul className="space-y-2 text-sm text-white/60">
-                <li><Link href="/for-suppliers" className="hover:text-white transition-colors">הצטרפי לפנוי</Link></li>
+                <li><Link href="/for-suppliers" className="hover:text-white transition-colors">הצטרפו לפנוי</Link></li>
                 <li><Link href="/supplier/dashboard" className="hover:text-white transition-colors">פאנל ספקים</Link></li>
               </ul>
             </div>

@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import Button from "@/components/ui/Button";
 
 const MOBILE_NAV = [
-  { href: "/search", label: "גלי", icon: Search },
+  { href: "/search", label: "גלו", icon: Search },
   { href: "/dashboard/saved", label: "שמורים", icon: Heart },
   { href: "/dashboard/meetings", label: "פגישות", icon: Calendar },
   { href: "/dashboard/profile", label: "פרופיל", icon: User },
@@ -44,7 +44,7 @@ export default function Navbar() {
                     : "text-text-muted hover:text-text-main"
                 )}
               >
-                גלי ספקים
+                גלו ספקים
               </Link>
               <Link
                 href="/for-suppliers"

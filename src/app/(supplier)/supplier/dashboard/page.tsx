@@ -74,7 +74,7 @@ export default function SupplierDashboardPage() {
             שלום, {SUPPLIER.name.split(" ")[0]} 👋
           </h1>
           <p className="text-text-muted mt-1">
-            הנה מה שמחכה לך היום
+            הנה מה שמחכה לכם היום
           </p>
         </div>
 
@@ -102,7 +102,7 @@ export default function SupplierDashboardPage() {
                 בקשות ממתינות
               </h2>
               <Link href="/supplier/bookings" className="text-sm font-semibold text-primary hover:text-primary-dark flex items-center gap-1">
-                ראי הכל
+                ראו הכל
                 <ArrowLeft className="h-3.5 w-3.5" />
               </Link>
             </div>
@@ -120,7 +120,7 @@ export default function SupplierDashboardPage() {
 
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-text-main text-sm">
-                      כלה — {formatHebrewDate(meeting.date)}
+                      זוג — {formatHebrewDate(meeting.date)}
                     </p>
                     <div className="flex items-center gap-2 text-xs text-text-muted mt-0.5">
                       <span dir="ltr">{meeting.time}</span>
@@ -151,7 +151,7 @@ export default function SupplierDashboardPage() {
                 הפגישות הקרובות
               </h2>
               <Link href="/supplier/bookings" className="text-sm font-semibold text-primary hover:text-primary-dark flex items-center gap-1">
-                ראי הכל
+                ראו הכל
                 <ArrowLeft className="h-3.5 w-3.5" />
               </Link>
             </div>
@@ -174,7 +174,7 @@ export default function SupplierDashboardPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-text-main text-sm">
-                      כלה · {MEETING_TYPE_LABELS[meeting.type]}
+                      זוג · {MEETING_TYPE_LABELS[meeting.type]}
                     </p>
                     <p className="text-xs text-text-muted mt-0.5 ltr">{meeting.time}</p>
                   </div>
@@ -188,7 +188,7 @@ export default function SupplierDashboardPage() {
         {/* Profile completion */}
         <section>
           <h2 className="text-lg font-black text-text-main mb-4">
-            השלמת הפרופיל שלך
+            השלמת הפרופיל שלכם
           </h2>
           <div className="bg-white rounded-2xl border border-border p-6 space-y-4">
             {/* Progress bar */}
@@ -243,7 +243,7 @@ export default function SupplierDashboardPage() {
 
             <Link href="/supplier/profile">
               <Button variant="secondary" fullWidth size="sm">
-                עדכני פרופיל
+                עדכנו פרופיל
               </Button>
             </Link>
           </div>
@@ -256,8 +256,8 @@ export default function SupplierDashboardPage() {
               <TrendingUp className="h-6 w-6 text-white" />
             </div>
             <div className="flex-1">
-              <p className="font-bold text-text-main">הפרופיל שלך קיבל 124 צפיות החודש</p>
-              <p className="text-sm text-text-muted mt-0.5">ראי את כל הנתונים שלך</p>
+              <p className="font-bold text-text-main">הפרופיל שלכם קיבל 124 צפיות החודש</p>
+              <p className="text-sm text-text-muted mt-0.5">ראו את כל הנתונים שלכם</p>
             </div>
             <Link href="/supplier/analytics">
               <Button size="sm" variant="secondary">

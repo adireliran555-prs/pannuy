@@ -33,7 +33,7 @@ function normalizeSupplier(s: any) {
     reviews: (s.reviews ?? []).map((r: { customer?: { name?: string }; textHe?: string; text?: string; createdAt?: string; date?: string; [key: string]: unknown }) => ({
       ...r,
       text: r.textHe ?? r.text ?? "",
-      reviewerName: r.customer?.name ?? "כלה",
+      reviewerName: r.customer?.name ?? "אורח",
       date: r.date ?? r.createdAt ?? new Date().toISOString(),
     })),
   };

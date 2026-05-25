@@ -74,7 +74,7 @@ export default function SupplierBookingsPage() {
             ניהול פגישות
           </h1>
           <p className="text-text-muted text-sm mt-1">
-            אשרי, דחי ונהלי את כל הפגישות שלך
+            אשרו, דחו ונהלו את כל הפגישות שלכם
           </p>
         </div>
 
@@ -141,7 +141,7 @@ export default function SupplierBookingsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2 flex-wrap">
                         <p className="font-bold text-text-main">
-                          כלה (לקוחה)
+                          זוג (לקוח/ה)
                         </p>
                         {activeTab === "pending" && (
                           <Badge variant="warning" size="sm">
@@ -194,7 +194,7 @@ export default function SupplierBookingsPage() {
                         className="flex-1"
                       >
                         <CheckCircle className="h-4 w-4" />
-                        אשרי פגישה
+                        אשרו פגישה
                       </Button>
                       <Button
                         variant="danger"

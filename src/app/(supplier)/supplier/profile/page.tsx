@@ -86,7 +86,7 @@ export default function SupplierProfilePage() {
             הפרופיל שלי
           </h1>
           <p className="text-text-muted text-sm mt-1">
-            עדכני את הפרטים שמוצגים לכלות
+            עדכנו את הפרטים שמוצגים לזוגות
           </p>
         </div>
 
@@ -226,7 +226,7 @@ export default function SupplierProfilePage() {
           <div className="space-y-5">
             <div className="bg-white rounded-2xl border border-border p-6">
               <p className="text-sm font-semibold text-text-main mb-3">
-                הוסיפי תמונה (קישור URL)
+                הוסיפו תמונה (קישור URL)
               </p>
               <div className="flex gap-2">
                 <input
@@ -240,11 +240,11 @@ export default function SupplierProfilePage() {
                 />
                 <Button onClick={addPhoto} disabled={!photoUrlInput.trim() || photos.length >= 20} size="sm">
                   <Plus className="h-4 w-4" />
-                  הוסיפי
+                  הוסיפו
                 </Button>
               </div>
               <p className="text-xs text-text-muted mt-2">
-                {photos.length}/20 תמונות · לחצי על תמונה לבחירתה כתמונת פרופיל
+                {photos.length}/20 תמונות · לחצו על תמונה לבחירתה כתמונת פרופיל
               </p>
             </div>
 
@@ -287,7 +287,7 @@ export default function SupplierProfilePage() {
               {photos.length < 20 && (
                 <div className="aspect-square rounded-2xl border-2 border-dashed border-border flex flex-col items-center justify-center text-text-muted hover:border-primary hover:text-primary transition-colors cursor-pointer">
                   <Upload className="h-6 w-6 mb-1" />
-                  <span className="text-xs font-medium">הוסיפי</span>
+                  <span className="text-xs font-medium">הוסיפו</span>
                 </div>
               )}
             </div>
@@ -397,7 +397,7 @@ export default function SupplierProfilePage() {
                   <div className="flex gap-2">
                     <input
                       type="text"
-                      placeholder="הוסיפי פריט..."
+                      placeholder="הוסיפו פריט..."
                       value={pkg.includeInput}
                       onChange={(e) => {
                         const updated = [...packages];

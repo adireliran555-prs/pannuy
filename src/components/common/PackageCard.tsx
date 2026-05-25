@@ -74,7 +74,7 @@ export default function PackageCard({
             variant={isPopular ? "primary" : "secondary"}
             className="mt-2"
           >
-            בחרי חבילה
+            בחרו חבילה
           </Button>
         )}
       </div>

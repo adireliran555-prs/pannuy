@@ -70,7 +70,7 @@ export default function StartPage() {
         // For demo: any 6-digit code works
         router.push("/start/wedding");
       } catch {
-        setOtpError("קוד שגוי. נסי שנית.");
+        setOtpError("קוד שגוי. נסו שנית.");
         setOtp("");
       } finally {
         setIsLoading(false);
@@ -95,7 +95,7 @@ export default function StartPage() {
             פנוי
           </Link>
           <p className="text-text-muted mt-1 text-sm">
-            מצאי את הספקים המושלמים לחתונה שלך
+            מצאו את הספקים המושלמים לחתונה שלכם
           </p>
         </div>
 
@@ -114,7 +114,7 @@ export default function StartPage() {
                   היי! נשמח להכיר 👋
                 </h1>
                 <p className="text-text-muted text-sm mt-1">
-                  מלאי פרטים בסיסיים כדי להמשיך
+                  מלאו פרטים בסיסיים כדי להמשיך
                 </p>
               </div>
 
@@ -133,10 +133,12 @@ export default function StartPage() {
                   <Input
                     label="מספר טלפון"
                     placeholder="05X-XXXXXXX"
-                    type="tel"
+                    type="text"
+                    inputMode="tel"
                     ltr
+                    className="pl-10"
                     error={errors.phone?.message}
-                    helperText="נשלח אליך קוד אימות ב-SMS"
+                    helperText="ישלח קוד אימות ב-SMS"
                     {...register("phone")}
                   />
                   <Phone className="absolute left-3 top-9 h-4 w-4 text-text-muted pointer-events-none" />
@@ -149,12 +151,12 @@ export default function StartPage() {
                   size="lg"
                   className="mt-2"
                 >
-                  המשיכי
+                  המשיכו
                 </Button>
               </form>
 
               <p className="text-center text-sm text-text-muted">
-                בלחיצה על כפתור &apos;המשיכי&apos; אני מסכימה ל
+                בלחיצה על &apos;המשיכו&apos; מסכימים ל
                 <Link href="#" className="text-primary font-semibold">
                   תנאי השימוש
                 </Link>
@@ -197,7 +199,7 @@ export default function StartPage() {
                   onClick={resendOtp}
                   isLoading={isLoading}
                 >
-                  שלחי שנית
+                  שלחו שנית
                 </Button>
               </div>
 
@@ -218,9 +220,9 @@ export default function StartPage() {
 
         {/* Footer note */}
         <p className="text-center text-xs text-text-muted mt-6">
-          כבר יש לך חשבון?{" "}
+          כבר יש לכם חשבון?{" "}
           <Link href="/start" className="text-primary font-semibold">
-            התחברי
+            התחברו
           </Link>
         </p>
       </div>

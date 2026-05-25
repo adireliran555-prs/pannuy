@@ -65,7 +65,7 @@ export default function ProfilePage() {
             הפרופיל שלי
           </h1>
           <p className="text-text-muted text-sm mt-1">
-            עדכני את הפרטים שלך
+            עדכנו את הפרטים שלכם
           </p>
         </div>
 
@@ -86,7 +86,7 @@ export default function ProfilePage() {
             </div>
             <div>
               <p className="font-bold text-text-main">שרה ישראלי</p>
-              <p className="text-text-muted text-sm">כלה בדרך 💍</p>
+              <p className="text-text-muted text-sm">זוג בדרך 💍</p>
             </div>
           </div>
 

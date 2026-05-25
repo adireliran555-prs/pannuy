@@ -173,7 +173,7 @@ export default function SupplierJoinPage() {
             פנוי
           </Link>
           <p className="text-text-muted text-sm mt-1">
-            הצטרפי לקהילת הספקים
+            הצטרפו לקהילת הספקים
           </p>
         </div>
 
@@ -198,16 +198,18 @@ export default function SupplierJoinPage() {
               <form onSubmit={handleSubmit(onStep1Submit)} className="space-y-4">
                 <Input
                   label="שם מלא"
-                  placeholder="שם הספקת"
+                  placeholder="שם מלא"
                   error={errors.name?.message}
                   {...register("name")}
                 />
                 <Input
                   label="מספר טלפון"
                   placeholder="05X-XXXXXXX"
-                  type="tel"
+                  type="text"
+                  inputMode="tel"
                   ltr
-                  helperText="נשלח אליך קוד אימות ב-SMS"
+                  className="pl-10"
+                  helperText="ישלח קוד אימות ב-SMS"
                   error={errors.phone?.message}
                   {...register("phone")}
                 />
@@ -220,7 +222,7 @@ export default function SupplierJoinPage() {
                   {...register("email")}
                 />
                 <Button type="submit" fullWidth size="lg" isLoading={isLoading}>
-                  המשיכי
+                  המשיכו
                 </Button>
               </form>
             </>
@@ -253,7 +255,7 @@ export default function SupplierJoinPage() {
                 fullWidth
                 onClick={() => { setStage("form"); setOtp(""); }}
               >
-                שני מספר טלפון
+                שנו מספר טלפון
               </Button>
             </>
           )}
@@ -266,7 +268,7 @@ export default function SupplierJoinPage() {
                   הפרופיל שלי 📸
                 </h1>
                 <p className="text-text-muted text-sm mt-1">
-                  ספרי לכלות מי את
+                  ספרו לזוגות מי אתם
                 </p>
               </div>
 
@@ -316,7 +318,7 @@ export default function SupplierJoinPage() {
                     onChange={(e) => setSelectedCity(e.target.value)}
                     className="w-full rounded-xl border border-border px-4 py-3 text-base text-text-main focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                   >
-                    <option value="">בחרי עיר...</option>
+                    <option value="">בחרו עיר...</option>
                     {ISRAELI_CITIES.map((c) => (
                       <option key={c} value={c}>{c}</option>
                     ))}
@@ -361,7 +363,7 @@ export default function SupplierJoinPage() {
                   <textarea
                     value={bio}
                     onChange={(e) => e.target.value.length <= 500 && setBio(e.target.value)}
-                    placeholder="ספרי לכלות מי את, מה הסגנון שלך, וכמה ניסיון יש לך..."
+                    placeholder="ספרו לזוגות מי אתם, מה הסגנון שלכם, וכמה ניסיון יש לכם..."
                     rows={5}
                     className="w-full rounded-xl border border-border px-4 py-3 text-base text-text-main placeholder:text-text-muted focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 resize-none"
                   />
@@ -374,7 +376,7 @@ export default function SupplierJoinPage() {
                 disabled={!selectedCity || selectedAreas.length === 0 || bio.length < 20}
                 onClick={() => setStep(3)}
               >
-                המשיכי
+                המשיכו
               </Button>
             </>
           )}
@@ -387,12 +389,12 @@ export default function SupplierJoinPage() {
                   תמונות 🖼
                 </h1>
                 <p className="text-text-muted text-sm mt-1">
-                  הוסיפי תמונות מתיק העבודות שלך
+                  הוסיפו תמונות מתיק העבודות שלכם
                 </p>
               </div>
 
               <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
-                בגרסה המלאה תוכלי להעלות תמונות ישירות. כרגע, הוסיפי קישורי URL לתמונות שלך.
+                בגרסה המלאה תוכלו להעלות תמונות ישירות. כרגע, הוסיפו קישורי URL לתמונות שלכם.
               </div>
 
               {/* URL input */}
@@ -412,7 +414,7 @@ export default function SupplierJoinPage() {
                   size="sm"
                 >
                   <Plus className="h-4 w-4" />
-                  הוסיפי
+                  הוסיפו
                 </Button>
               </div>
 
@@ -445,7 +447,7 @@ export default function SupplierJoinPage() {
               {photos.length === 0 && (
                 <div className="border-2 border-dashed border-border rounded-2xl p-10 text-center text-text-muted">
                   <p className="text-4xl mb-2">📷</p>
-                  <p className="font-medium">הוסיפי תמונות מתיק העבודות</p>
+                  <p className="font-medium">הוסיפו תמונות מתיק העבודות</p>
                   <p className="text-sm mt-1">עד 20 תמונות</p>
                 </div>
               )}
@@ -455,7 +457,7 @@ export default function SupplierJoinPage() {
                   <ChevronRight className="h-4 w-4" />
                 </Button>
                 <Button fullWidth size="lg" onClick={() => setStep(4)}>
-                  המשיכי
+                  המשיכו
                 </Button>
               </div>
 
@@ -463,7 +465,7 @@ export default function SupplierJoinPage() {
                 onClick={() => setStep(4)}
                 className="w-full text-center text-sm text-text-muted hover:text-primary transition-colors"
               >
-                דלגי לעת עתה
+                דלגו לעת עתה
               </button>
             </>
           )}
@@ -588,7 +590,7 @@ export default function SupplierJoinPage() {
                     className="w-full flex items-center justify-center gap-2 py-4 border-2 border-dashed border-border rounded-2xl text-text-muted hover:border-primary hover:text-primary transition-colors font-medium text-sm"
                   >
                     <Plus className="h-4 w-4" />
-                    הוסיפי חבילה
+                    הוסיפו חבילה
                   </button>
                 )}
               </div>
@@ -603,7 +605,7 @@ export default function SupplierJoinPage() {
                   isLoading={isLoading}
                   onClick={handleFinalSubmit}
                 >
-                  שלחי לאישור 🎉
+                  שלחו לאישור 🎉
                 </Button>
               </div>
             </>

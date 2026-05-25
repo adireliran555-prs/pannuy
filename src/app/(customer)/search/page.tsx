@@ -294,7 +294,7 @@ function SearchContent() {
           <EmptyState
             emoji="🔍"
             title="לא נמצאו ספקים"
-            description="נסי לשנות את הפילטרים או לחפש באזור אחר"
+            description="נסו לשנות את הפילטרים או לחפש באזור אחר"
             ctaLabel="נקי פילטרים"
             onCta={() => setFilters({ city: "", priceMax: 0, ratingMin: 0, sortBy: "relevance" })}
           />

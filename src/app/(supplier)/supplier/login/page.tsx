@@ -75,7 +75,7 @@ export default function SupplierLoginPage() {
                   כניסה לפאנל הספקים 📸
                 </h1>
                 <p className="text-text-muted text-sm mt-1">
-                  הכניסי את מספר הטלפון שלך
+                  הכניסו את מספר הטלפון שלכם
                 </p>
               </div>
 
@@ -86,7 +86,7 @@ export default function SupplierLoginPage() {
                     placeholder="05X-XXXXXXX"
                     type="tel"
                     ltr
-                    helperText="נשלח אליך קוד אימות ב-SMS"
+                    helperText="ישלח קוד אימות ב-SMS"
                     error={errors.phone?.message}
                     {...register("phone")}
                   />
@@ -94,14 +94,14 @@ export default function SupplierLoginPage() {
                 </div>
 
                 <Button type="submit" fullWidth size="lg" isLoading={isLoading}>
-                  שלחי קוד אימות
+                  שלחו קוד אימות
                 </Button>
               </form>
 
               <p className="text-center text-sm text-text-muted">
                 עדיין לא נרשמת?{" "}
                 <Link href="/supplier/join" className="text-primary font-semibold">
-                  הצטרפי לפנוי
+                  הצטרפו לפנוי
                 </Link>
               </p>
             </>
@@ -148,7 +148,7 @@ export default function SupplierLoginPage() {
                   }}
                   isLoading={isLoading}
                 >
-                  שלחי שנית
+                  שלחו שנית
                 </Button>
               </div>
 
@@ -161,7 +161,7 @@ export default function SupplierLoginPage() {
                   setOtp("");
                 }}
               >
-                שני מספר טלפון
+                שנו מספר טלפון
               </Button>
             </>
           )}
@@ -169,9 +169,9 @@ export default function SupplierLoginPage() {
 
         {/* Back to customer */}
         <p className="text-center text-xs text-text-muted mt-6">
-          את כלה?{" "}
+          אתם זוג?{" "}
           <Link href="/start" className="text-primary font-semibold">
-            כניסה לפלטפורמת הכלות
+            כניסה לפלטפורמת הזוגות
           </Link>
         </p>
       </div>

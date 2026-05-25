@@ -34,7 +34,7 @@ export default function SupplierDashboardLayout({
                   צ
                 </div>
                 <h2 className="font-bold text-text-main text-base">פאנל הספקים</h2>
-                <p className="text-text-muted text-xs">ניהול העסק שלך</p>
+                <p className="text-text-muted text-xs">ניהול העסק שלכם</p>
               </div>
               <nav className="space-y-1">
                 {NAV_ITEMS.map(({ href, label, icon: Icon }) => {

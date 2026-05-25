@@ -28,12 +28,12 @@ const WEEK_DATA = [12, 18, 9, 22, 15, 8, 3]; // views per day
 const MAX_BAR = Math.max(...WEEK_DATA);
 
 const RECENT_ACTIVITY = [
-  { text: "כלה מתל אביב צפתה בפרופיל שלך", time: "לפני 3 דקות" },
-  { text: "כלה מירושלים שמרה את הפרופיל שלך", time: "לפני 18 דקות" },
-  { text: "כלה מרמת גן ביקשה פגישה", time: "לפני שעה" },
-  { text: "כלה מהרצליה צפתה בחבילות שלך", time: "לפני שעתיים" },
-  { text: "כלה מחיפה שמרה את הפרופיל שלך", time: "לפני 3 שעות" },
-  { text: "כלה מנתניה ביקשה פגישה", time: "לפני 5 שעות" },
+  { text: "זוג מתל אביב צפה בפרופיל שלכם", time: "לפני 3 דקות" },
+  { text: "זוג מירושלים שמר את הפרופיל שלכם", time: "לפני 18 דקות" },
+  { text: "זוג מרמת גן ביקשה פגישה", time: "לפני שעה" },
+  { text: "זוג מהרצליה צפה בחבילות שלכם", time: "לפני שעתיים" },
+  { text: "זוג מחיפה שמר את הפרופיל שלכם", time: "לפני 3 שעות" },
+  { text: "זוג מנתניה ביקשה פגישה", time: "לפני 5 שעות" },
 ];
 
 export default function SupplierAnalyticsPage() {
@@ -82,7 +82,7 @@ export default function SupplierAnalyticsPage() {
         <div>
           <h1 className="text-2xl font-black text-text-main">אנליטיקה</h1>
           <p className="text-text-muted text-sm mt-1">
-            ראי כמה כלות צפו בפרופיל ואיפה מגיעות הפניות
+            ראו כמה זוגות צפו בפרופיל ואיפה מגיעות הפניות
           </p>
         </div>
 
@@ -197,7 +197,7 @@ export default function SupplierAnalyticsPage() {
               </h4>
               <p className="text-text-muted text-sm leading-relaxed">
                 פרופילים עם 10+ תמונות מקבלים בממוצע פי 2.5 יותר פניות.
-                הוסיפי תמונות נוספות מתיק העבודות שלך כדי לשפר את התוצאות.
+                הוסיפו תמונות נוספות מתיק העבודות שלכם כדי לשפר את התוצאות.
               </p>
             </div>
           </div>

@@ -77,10 +77,10 @@ export default function WeddingPage() {
 
           <div>
             <h1 className="text-2xl font-black text-text-main">
-              ספרי לנו על החתונה שלך 💍
+              ספרו לנו על החתונה שלכם 💍
             </h1>
             <p className="text-text-muted text-sm mt-1">
-              נוכל למצוא עבורך ספקים פנויים
+              נוכל למצוא עבורכם ספקים פנויים
             </p>
           </div>
 
@@ -166,7 +166,7 @@ export default function WeddingPage() {
               size="lg"
               className="mt-4"
             >
-              מצאי ספקים 🔍
+              מצאו ספקים 🔍
             </Button>
           </form>
         </div>

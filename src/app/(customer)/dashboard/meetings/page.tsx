@@ -82,7 +82,7 @@ export default function MeetingsPage() {
             הפגישות שלי
           </h1>
           <p className="text-text-muted text-sm mt-1">
-            נהלי את כל הפגישות עם הספקים
+            נהלו את כל הפגישות עם הספקים
           </p>
         </div>
 
@@ -144,10 +144,10 @@ export default function MeetingsPage() {
             }
             description={
               activeTab === "upcoming"
-                ? "קבעי פגישה עם ספק שאהבת"
+                ? "קבעו פגישה עם ספק שאהבתם"
                 : undefined
             }
-            ctaLabel={activeTab === "upcoming" ? "חפשי ספקים" : undefined}
+            ctaLabel={activeTab === "upcoming" ? "חפשו ספקים" : undefined}
             onCta={
               activeTab === "upcoming"
                 ? () => (window.location.href = "/search")
@@ -261,10 +261,10 @@ export default function MeetingsPage() {
               מוכנה להתחיל לחפש? 📸
             </p>
             <p className="text-text-muted text-sm mb-4">
-              גלי ספקים פנויים בתאריך ובאזור שלך
+              גלו ספקים פנויים בתאריך ובאזור שלכם
             </p>
             <Link href="/search">
-              <Button>גלי ספקים</Button>
+              <Button>גלו ספקים</Button>
             </Link>
           </div>
         )}

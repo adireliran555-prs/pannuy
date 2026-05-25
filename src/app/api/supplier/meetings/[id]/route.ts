@@ -94,8 +94,8 @@ export async function PATCH(
           titleHe: action === "confirm" ? "הפגישה אושרה!" : "הפגישה נדחתה",
           bodyHe:
             action === "confirm"
-              ? `הפגישה שלך ב-${meeting.requestedDate.toISOString().slice(0, 10)} אושרה`
-              : `הפגישה שלך ב-${meeting.requestedDate.toISOString().slice(0, 10)} נדחתה`,
+              ? `הפגישה שלכם ב-${meeting.requestedDate.toISOString().slice(0, 10)} אושרה`
+              : `הפגישה שלכם ב-${meeting.requestedDate.toISOString().slice(0, 10)} נדחתה`,
           metadata: { meetingId: id },
         },
       });
