@@ -15,9 +15,9 @@ const REGIONS = [
   { id: "מרכז", label: "מרכז", emoji: "🏙️" },
   { id: "תל אביב", label: "תל אביב", emoji: "🌆" },
   { id: "ירושלים", label: "ירושלים", emoji: "🕌" },
-  { id: "צפון", label: "צפון", emoji: "🌿" },
-  { id: "דרום", label: "דרום", emoji: "🌵" },
-  { id: "שרון", label: "השרון", emoji: "🌊" },
+  { id: "הצפון", label: "צפון", emoji: "🌿" },
+  { id: "הדרום", label: "דרום", emoji: "🌵" },
+  { id: "השרון", label: "השרון", emoji: "🌊" },
 ];
 
 const schema = z.object({
