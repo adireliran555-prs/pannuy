@@ -93,7 +93,7 @@ export default function SupplierCard({
         {/* Save button */}
         <button
           onClick={handleSave}
-          aria-label={saved ? "הסר משמורות" : "שמרי"}
+          aria-label={saved ? "הסר משמורות" : "שמרו"}
           className="absolute top-3 left-3 w-9 h-9 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-md hover:scale-110 transition-transform duration-200"
         >
           <Heart
@@ -105,21 +105,26 @@ export default function SupplierCard({
           />
         </button>
 
-        {/* Available badge */}
-        {isAvailable !== undefined && (
-          <div className="absolute top-3 right-3">
-            {isAvailable ? (
+        {/* Badges top-right */}
+        <div className="absolute top-3 right-3 flex flex-col gap-1 items-end">
+          {rating >= 4.8 && ratingCount >= 10 && (
+            <span className="inline-flex items-center gap-1 bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">
+              ⭐ מומלץ
+            </span>
+          )}
+          {isAvailable !== undefined && (
+            isAvailable ? (
               <span className="inline-flex items-center gap-1 bg-green-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-sm">
                 <CheckCircle className="h-3 w-3" />
-                פנויה
+                פנוי
               </span>
             ) : (
               <span className="inline-flex items-center bg-gray-800/80 text-white text-xs font-semibold px-2.5 py-1 rounded-full">
-                לא פנויה
+                לא פנוי
               </span>
-            )}
-          </div>
-        )}
+            )
+          )}
+        </div>
       </div>
 
       {/* Content */}

@@ -237,6 +237,58 @@ export default async function HomePage() {
       </section>
 
       {/* ══════════════════════════════════════
+          HOW IT WORKS
+      ══════════════════════════════════════ */}
+      <section className="py-20 px-6 bg-white">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-12">
+            <span className="text-sm font-bold text-primary uppercase tracking-widest">תהליך פשוט</span>
+            <h2 className="text-3xl sm:text-4xl font-black text-text-main mt-2">
+              מחיפוש לחתונה המושלמת — בשלושה שלבים
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
+            {/* Connector line (desktop) */}
+            <div className="hidden md:block absolute top-10 left-1/6 right-1/6 h-0.5 bg-gradient-to-r from-primary/20 via-primary to-primary/20" />
+            {[
+              {
+                step: "1",
+                emoji: "💍",
+                title: "הכניסו את תאריך החתונה",
+                desc: "הכניסו את תאריך החתונה והאזור שלכם. פנוי יסנן אוטומטית ספקים שפנויים בתאריך שלכם.",
+                color: "bg-rose-50 border-rose-200",
+              },
+              {
+                step: "2",
+                emoji: "🔍",
+                title: "גלו ובחרו ספקים",
+                desc: "עיינו בפרופילים, תיקי עבודות, ביקורות אמיתיות ומחירים — הכל במקום אחד.",
+                color: "bg-amber-50 border-amber-200",
+              },
+              {
+                step: "3",
+                emoji: "📅",
+                title: "קבעו פגישה חינמית",
+                desc: "שלחו בקשת פגישה ישירות. ללא עמלה, ללא תיווך. הספק מגיב תוך שעות.",
+                color: "bg-green-50 border-green-200",
+              },
+            ].map(({ step, emoji, title, desc, color }) => (
+              <div key={step} className={`relative flex flex-col items-center text-center p-8 rounded-3xl border-2 ${color}`}>
+                <div className="w-16 h-16 rounded-full bg-white border-4 border-white shadow-lg flex items-center justify-center text-3xl mb-4 relative z-10">
+                  {emoji}
+                </div>
+                <div className="absolute -top-3 right-6 w-7 h-7 rounded-full bg-primary text-white text-xs font-black flex items-center justify-center shadow">
+                  {step}
+                </div>
+                <h3 className="font-black text-text-main text-lg mb-2">{title}</h3>
+                <p className="text-text-muted text-sm leading-relaxed">{desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════
           FEATURED SUPPLIERS
       ══════════════════════════════════════ */}
       <section className="py-20 px-6 bg-white">

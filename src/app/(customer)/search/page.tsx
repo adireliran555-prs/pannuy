@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, Suspense } from "react";
+import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { SlidersHorizontal, X, ChevronDown, Star } from "lucide-react";
 import { useSuppliers, NormalizedSupplier } from "@/hooks/useSuppliers";
@@ -10,8 +11,11 @@ import EmptyState from "@/components/ui/EmptyState";
 import Button from "@/components/ui/Button";
 import { ISRAELI_CITIES, cn } from "@/lib/utils";
 
+const RECENTLY_VIEWED_KEY = "pannuy_recently_viewed";
+
 interface Filters {
   city: string;
+  date: string;
   priceMax: number;
   ratingMin: number;
   sortBy: "relevance" | "rating" | "priceAsc" | "priceDesc";
@@ -26,11 +30,13 @@ function SearchContent() {
 
   const [filters, setFilters] = useState<Filters>({
     city: searchParams.get("city") || "",
+    date: searchParams.get("date") || "",
     priceMax: 0,
     ratingMin: 0,
     sortBy: "relevance",
   });
   const [selectedAreas, setSelectedAreas] = useState<string[]>(initialAreas);
+  const [recentlyViewed, setRecentlyViewed] = useState<string[]>([]);
   const [showFilterDrawer, setShowFilterDrawer] = useState(false);
   const [cityInput, setCityInput] = useState(filters.city);
   const [showCitySuggestions, setShowCitySuggestions] = useState(false);
@@ -38,6 +44,11 @@ function SearchContent() {
   const [showRatingDropdown, setShowRatingDropdown] = useState(false);
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    const stored: string[] = JSON.parse(localStorage.getItem(RECENTLY_VIEWED_KEY) ?? "[]");
+    setRecentlyViewed(stored);
+  }, []);
 
   const filterBarRef = useRef<HTMLDivElement>(null);
 
@@ -62,6 +73,7 @@ function SearchContent() {
 
   const { suppliers, total, totalPages, areaFallback, isLoading } = useSuppliers({
     area: effectiveArea,
+    date: filters.date || undefined,
     priceMax: filters.priceMax || undefined,
     ratingMin: filters.ratingMin || undefined,
     page,
@@ -69,6 +81,7 @@ function SearchContent() {
 
   const activeFilterCount = [
     selectedAreas.length > 0 || filters.city,
+    !!filters.date,
     filters.priceMax > 0,
     filters.ratingMin > 0,
   ].filter(Boolean).length;
@@ -78,7 +91,8 @@ function SearchContent() {
   ).slice(0, 6);
 
   const clearFilter = (key: keyof Filters) => {
-    setFilters((f) => ({ ...f, [key]: key === "sortBy" ? "relevance" : key === "city" ? "" : 0 }));
+    const defaults: Record<keyof Filters, string | number> = { city: "", date: "", priceMax: 0, ratingMin: 0, sortBy: "relevance" };
+    setFilters((f) => ({ ...f, [key]: defaults[key] }));
     if (key === "city") setCityInput("");
   };
 
@@ -204,6 +218,28 @@ function SearchContent() {
               )}
             </div>
 
+            {/* Date */}
+            <div className="relative">
+              <label className={cn(
+                "flex items-center gap-2 px-4 py-2.5 rounded-full border-2 text-sm font-semibold transition-colors whitespace-nowrap cursor-pointer",
+                filters.date
+                  ? "border-primary bg-primary text-white"
+                  : "border-border text-text-main hover:border-primary"
+              )}>
+                {filters.date ? `📅 ${new Date(filters.date).toLocaleDateString("he-IL", { day: "numeric", month: "short" })}` : "📅 תאריך החתונה"}
+                {filters.date && (
+                  <X className="h-3.5 w-3.5" onClick={(e) => { e.preventDefault(); setFilters((f) => ({ ...f, date: "" })); }} />
+                )}
+                <input
+                  type="date"
+                  value={filters.date}
+                  min={new Date().toISOString().split("T")[0]}
+                  onChange={(e) => setFilters((f) => ({ ...f, date: e.target.value }))}
+                  className="absolute inset-0 opacity-0 cursor-pointer w-full"
+                />
+              </label>
+            </div>
+
             {/* Price */}
             <div className="relative">
               <button
@@ -326,6 +362,27 @@ function SearchContent() {
           )}
         </div>
       </div>
+
+      {/* ── Recently Viewed ── */}
+      {recentlyViewed.length > 0 && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-5 pb-0">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm font-semibold text-text-muted">צפיתם לאחרונה</p>
+            <button onClick={() => { localStorage.removeItem(RECENTLY_VIEWED_KEY); setRecentlyViewed([]); }} className="text-xs text-text-muted hover:text-text-main transition-colors">נקה</button>
+          </div>
+          <div className="flex gap-3 overflow-x-auto pb-2">
+            {recentlyViewed.map((slug) => (
+              <Link
+                key={slug}
+                href={`/suppliers/${slug}`}
+                className="flex-shrink-0 text-xs font-medium text-primary bg-primary-light border border-primary/20 px-3 py-1.5 rounded-full hover:bg-primary hover:text-white transition-colors"
+              >
+                {slug.replace(/-/g, " ")}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ── Results ── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
@@ -491,7 +548,7 @@ function SearchContent() {
                 variant="secondary"
                 fullWidth
                 onClick={() => {
-                  setFilters({ city: "", priceMax: 0, ratingMin: 0, sortBy: "relevance" });
+                  setFilters({ city: "", date: "", priceMax: 0, ratingMin: 0, sortBy: "relevance" });
                   setCityInput("");
                 }}
               >
