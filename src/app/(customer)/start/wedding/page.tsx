@@ -6,15 +6,23 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { MapPin, CalendarDays } from "lucide-react";
+import { MapPin, CalendarDays, Check } from "lucide-react";
 import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
 import StepProgress from "@/components/ui/StepProgress";
-import { ISRAELI_CITIES } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+
+const REGIONS = [
+  { id: "מרכז", label: "מרכז", emoji: "🏙️" },
+  { id: "תל אביב", label: "תל אביב", emoji: "🌆" },
+  { id: "ירושלים", label: "ירושלים", emoji: "🕌" },
+  { id: "צפון", label: "צפון", emoji: "🌿" },
+  { id: "דרום", label: "דרום", emoji: "🌵" },
+  { id: "שרון", label: "השרון", emoji: "🌊" },
+];
 
 const schema = z.object({
   weddingDate: z.string().min(1, "חובה לבחור תאריך"),
-  weddingCity: z.string().min(2, "חובה לבחור עיר"),
+  weddingAreas: z.array(z.string()).min(1, "חובה לבחור לפחות אזור אחד"),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -27,33 +35,36 @@ const STEPS = [
 export default function WeddingPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [cityQuery, setCityQuery] = useState("");
-  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedAreas, setSelectedAreas] = useState<string[]>([]);
+  const [areasError, setAreasError] = useState("");
 
   const {
     register,
     handleSubmit,
-    setValue,
-    watch,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
+    defaultValues: { weddingAreas: [] },
   });
 
-  const selectedCity = watch("weddingCity");
-
-  const filteredCities = ISRAELI_CITIES.filter((city) =>
-    city.includes(cityQuery)
-  ).slice(0, 8);
+  const toggleArea = (id: string) => {
+    setSelectedAreas((prev) =>
+      prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]
+    );
+    setAreasError("");
+  };
 
   const onSubmit = async (data: FormData) => {
+    if (selectedAreas.length === 0) {
+      setAreasError("חובה לבחור לפחות אזור אחד");
+      return;
+    }
     setIsLoading(true);
     try {
-      // In production: PATCH /api/user with wedding details
       await new Promise((r) => setTimeout(r, 600));
       const params = new URLSearchParams({
         date: data.weddingDate,
-        city: data.weddingCity,
+        areas: selectedAreas.join(","),
       });
       router.push(`/search?${params.toString()}`);
     } finally {
@@ -84,7 +95,12 @@ export default function WeddingPage() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          <form
+            onSubmit={handleSubmit((data) =>
+              onSubmit({ ...data, weddingAreas: selectedAreas })
+            )}
+            className="space-y-5"
+          >
             {/* Wedding Date */}
             <div className="space-y-1.5">
               <label className="text-sm font-semibold text-text-main flex items-center gap-1.5">
@@ -107,55 +123,41 @@ export default function WeddingPage() {
               )}
             </div>
 
-            {/* City with autocomplete */}
-            <div className="space-y-1.5 relative">
+            {/* Region multi-select */}
+            <div className="space-y-2">
               <label className="text-sm font-semibold text-text-main flex items-center gap-1.5">
                 <MapPin className="h-4 w-4 text-primary" />
-                עיר החתונה
+                אזור החתונה
+                <span className="text-text-muted font-normal text-xs">(ניתן לבחור מספר אזורים)</span>
               </label>
-              <input
-                type="text"
-                placeholder="הקלידי שם עיר..."
-                value={cityQuery || selectedCity || ""}
-                onChange={(e) => {
-                  setCityQuery(e.target.value);
-                  setValue("weddingCity", "");
-                  setShowSuggestions(true);
-                }}
-                onFocus={() => setShowSuggestions(true)}
-                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                className={`w-full rounded-xl border px-4 py-3 text-base transition-all duration-200
-                  bg-white text-text-main placeholder:text-text-muted
-                  border-border focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20
-                  ${errors.weddingCity ? "border-red-400" : ""}`}
-              />
-              <input type="hidden" {...register("weddingCity")} />
-
-              {/* Suggestions dropdown */}
-              {showSuggestions && cityQuery && filteredCities.length > 0 && (
-                <div className="absolute z-20 w-full bg-white border border-border rounded-xl shadow-xl mt-1 overflow-hidden">
-                  {filteredCities.map((city) => (
+              <div className="grid grid-cols-3 gap-2">
+                {REGIONS.map(({ id, label, emoji }) => {
+                  const selected = selectedAreas.includes(id);
+                  return (
                     <button
-                      key={city}
+                      key={id}
                       type="button"
-                      className="w-full text-right px-4 py-3 hover:bg-primary-light text-text-main text-sm font-medium transition-colors border-b border-border/50 last:border-0"
-                      onMouseDown={() => {
-                        setValue("weddingCity", city);
-                        setCityQuery(city);
-                        setShowSuggestions(false);
-                      }}
+                      onClick={() => toggleArea(id)}
+                      className={cn(
+                        "relative flex flex-col items-center justify-center gap-1 py-3 px-2 rounded-2xl border-2 text-sm font-semibold transition-all duration-150",
+                        selected
+                          ? "border-primary bg-primary text-white shadow-md"
+                          : "border-border bg-white text-text-main hover:border-primary/50 hover:bg-primary-light/30"
+                      )}
                     >
-                      <MapPin className="h-3.5 w-3.5 text-text-muted inline ml-2" />
-                      {city}
+                      {selected && (
+                        <span className="absolute top-1.5 left-1.5 w-4 h-4 bg-white/30 rounded-full flex items-center justify-center">
+                          <Check className="h-2.5 w-2.5 text-white" />
+                        </span>
+                      )}
+                      <span className="text-lg">{emoji}</span>
+                      <span>{label}</span>
                     </button>
-                  ))}
-                </div>
-              )}
-
-              {errors.weddingCity && (
-                <p className="text-sm text-red-500 font-medium">
-                  {errors.weddingCity.message}
-                </p>
+                  );
+                })}
+              </div>
+              {areasError && (
+                <p className="text-sm text-red-500 font-medium">{areasError}</p>
               )}
             </div>
 

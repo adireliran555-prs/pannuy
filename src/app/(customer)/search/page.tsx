@@ -21,26 +21,32 @@ function SearchContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
+  const areasParam = searchParams.get("areas") || "";
+  const initialAreas = areasParam ? areasParam.split(",").filter(Boolean) : [];
+
   const [filters, setFilters] = useState<Filters>({
     city: searchParams.get("city") || "",
     priceMax: 0,
     ratingMin: 0,
     sortBy: "relevance",
   });
+  const [selectedAreas, setSelectedAreas] = useState<string[]>(initialAreas);
   const [showFilterDrawer, setShowFilterDrawer] = useState(false);
   const [cityInput, setCityInput] = useState(filters.city);
   const [showCitySuggestions, setShowCitySuggestions] = useState(false);
   const [page, setPage] = useState(1);
 
+  const effectiveArea = selectedAreas.length > 0 ? selectedAreas[0] : filters.city || undefined;
+
   const { suppliers, total, totalPages, isLoading } = useSuppliers({
-    area: filters.city || undefined,
+    area: effectiveArea,
     priceMax: filters.priceMax || undefined,
     ratingMin: filters.ratingMin || undefined,
     page,
   });
 
   const activeFilterCount = [
-    filters.city,
+    selectedAreas.length > 0 || filters.city,
     filters.priceMax > 0,
     filters.ratingMin > 0,
   ].filter(Boolean).length;
@@ -61,9 +67,15 @@ function SearchContent() {
     priceDesc: "מחיר יורד",
   };
 
-  const locationLabel = filters.city
+  const locationLabel = selectedAreas.length > 0
+    ? `ב${selectedAreas.join(", ")}`
+    : filters.city
     ? `ב${filters.city}`
     : "בכל הארץ";
+
+  const locationDisplay = selectedAreas.length > 0
+    ? selectedAreas.join(", ")
+    : filters.city || "";
 
   return (
     <div className="min-h-screen bg-surface">
@@ -117,25 +129,29 @@ function SearchContent() {
 
           {/* Desktop filters */}
           <div className="hidden sm:flex items-center gap-3 flex-1">
-            {/* City */}
+            {/* Location */}
             <div className="relative">
               <button
                 onClick={() => setShowCitySuggestions((v) => !v)}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2.5 rounded-full border-2 text-sm font-semibold transition-colors whitespace-nowrap",
-                  filters.city
+                  "flex items-center gap-2 px-4 py-2.5 rounded-full border-2 text-sm font-semibold transition-colors whitespace-nowrap max-w-[200px]",
+                  locationDisplay
                     ? "border-primary bg-primary text-white"
                     : "border-border text-text-main hover:border-primary"
                 )}
               >
-                {filters.city || "כל האזורים"}
-                {filters.city ? (
+                <span className="truncate">{locationDisplay || "כל האזורים"}</span>
+                {locationDisplay ? (
                   <X
-                    className="h-3.5 w-3.5"
-                    onClick={(e) => { e.stopPropagation(); clearFilter("city"); }}
+                    className="h-3.5 w-3.5 flex-shrink-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedAreas([]);
+                      clearFilter("city");
+                    }}
                   />
                 ) : (
-                  <ChevronDown className="h-3.5 w-3.5" />
+                  <ChevronDown className="h-3.5 w-3.5 flex-shrink-0" />
                 )}
               </button>
               {showCitySuggestions && (
@@ -145,7 +161,7 @@ function SearchContent() {
                       autoFocus
                       value={cityInput}
                       onChange={(e) => setCityInput(e.target.value)}
-                      placeholder="הקלידי עיר..."
+                      placeholder="הקלידו עיר..."
                       className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:outline-none focus:border-primary"
                     />
                   </div>
@@ -255,8 +271,18 @@ function SearchContent() {
             </div>
           </div>
 
-          {/* Active filter chips */}
-          {filters.city && (
+          {/* Active filter chips (mobile) */}
+          {selectedAreas.map((area) => (
+            <button
+              key={area}
+              onClick={() => setSelectedAreas((prev) => prev.filter((a) => a !== area))}
+              className="sm:hidden flex items-center gap-1 px-3 py-1.5 bg-primary text-white rounded-full text-xs font-semibold whitespace-nowrap"
+            >
+              {area}
+              <X className="h-3 w-3" />
+            </button>
+          ))}
+          {!selectedAreas.length && filters.city && (
             <button
               onClick={() => clearFilter("city")}
               className="sm:hidden flex items-center gap-1 px-3 py-1.5 bg-primary text-white rounded-full text-xs font-semibold whitespace-nowrap"
