@@ -283,7 +283,7 @@ export default function SupplierJoinPage() {
                       { id: "photographer", label: "צלמת חתונה", emoji: "📸", active: true },
                       { id: "video", label: "צלמת וידאו", emoji: "🎬", active: false },
                       { id: "makeup", label: "מאפרת", emoji: "💄", active: false },
-                      { id: "dress", label: "בית כלה", emoji: "👗", active: false },
+                      { id: "dress", label: "מקום התארגנות", emoji: "🏛️", active: false },
                     ].map(({ id, label, emoji, active }) => (
                       <button
                         key={id}

@@ -8,6 +8,15 @@ import { formatPrice } from "@/lib/utils";
 import Stars from "@/components/ui/Stars";
 import { useState } from "react";
 
+const CATEGORY_LABELS: Record<string, string> = {
+  PHOTOGRAPHER: "צלמות חתונה",
+  VIDEOGRAPHER: "צלמי וידאו",
+  BRIDAL_SUITE: "מקומות התארגנות",
+  DJ: "DJ ומוסיקה",
+  FLORIST: "עיצוב פרחוני",
+  CATERING: "קייטרינג",
+};
+
 interface SupplierCardProps {
   id: string;
   slug: string;
@@ -121,7 +130,7 @@ export default function SupplierCard({
             {name}
           </h3>
           <span className="text-xs font-medium bg-primary-light text-primary-dark px-2 py-0.5 rounded-full whitespace-nowrap">
-            {category}
+            {CATEGORY_LABELS[category] ?? category}
           </span>
         </div>
 

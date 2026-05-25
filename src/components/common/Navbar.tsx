@@ -46,17 +46,6 @@ export default function Navbar() {
               >
                 גלו ספקים
               </Link>
-              <Link
-                href="/for-suppliers"
-                className={cn(
-                  "text-sm font-semibold transition-colors",
-                  pathname === "/for-suppliers"
-                    ? "text-primary"
-                    : "text-text-muted hover:text-text-main"
-                )}
-              >
-                לספקים
-              </Link>
             </nav>
           </div>
 

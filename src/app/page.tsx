@@ -186,8 +186,8 @@ export default async function HomePage() {
                 bg: "bg-gradient-to-br from-rose-100 to-rose-200",
               },
               {
-                title: "בתי כלה",
-                emoji: "👗",
+                title: "מקומות התארגנות",
+                emoji: "🏛️",
                 desc: "בקרוב",
                 href: "#",
                 active: false,

@@ -85,9 +85,9 @@ function SearchContent() {
           {[
             { id: "PHOTOGRAPHER", label: "צלמות חתונה", emoji: "📸", active: true },
             { id: "VIDEOGRAPHER", label: "צלמי וידאו", emoji: "🎬", active: false },
-            { id: "BRIDAL_SUITE", label: "בתי כלה", emoji: "👗", active: false },
-            { id: "DJ", label: "DJ", emoji: "🎧", active: false },
-            { id: "FLORIST", label: "פרחים", emoji: "💐", active: false },
+            { id: "BRIDAL_SUITE", label: "מקומות התארגנות", emoji: "🏛️", active: false },
+            { id: "DJ", label: "DJ ומוסיקה", emoji: "🎧", active: false },
+            { id: "FLORIST", label: "עיצוב פרחוני", emoji: "💐", active: false },
             { id: "CATERING", label: "קייטרינג", emoji: "🍽️", active: false },
           ].map(({ id, label, emoji, active }) => (
             <button
