@@ -1,11 +1,38 @@
 import Link from "next/link";
-import Image from "next/image";
 import { Camera, CheckCircle, Star, Search, Calendar, ArrowLeft } from "lucide-react";
 import Navbar from "@/components/common/Navbar";
 import SupplierCard from "@/components/common/SupplierCard";
-import { MOCK_SUPPLIERS } from "@/lib/mock-data";
+import prisma from "@/lib/prisma";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const rawSuppliers = await prisma.supplier.findMany({
+    where: { isActive: true, isVerified: true },
+    take: 6,
+    orderBy: [{ ratingAvg: "desc" }, { ratingCount: "desc" }],
+    select: {
+      id: true, slug: true, name: true, city: true, category: true,
+      basePriceFrom: true, basePriceTo: true, ratingAvg: true, ratingCount: true,
+      photos: { where: { type: { in: ["PROFILE", "COVER"] } }, orderBy: { sortOrder: "asc" } },
+    },
+  });
+
+  const featuredSuppliers = rawSuppliers.map((s) => ({
+    id: s.id,
+    slug: s.slug,
+    name: s.name,
+    city: s.city ?? "",
+    category: s.category,
+    rating: s.ratingAvg ?? 0,
+    ratingCount: s.ratingCount ?? 0,
+    priceFrom: s.basePriceFrom ?? 0,
+    priceTo: s.basePriceTo ?? undefined,
+    profilePhoto:
+      s.photos.find((p) => p.type === "PROFILE")?.cloudinaryUrl ??
+      s.photos.find((p) => p.type === "PORTFOLIO")?.cloudinaryUrl ??
+      `https://picsum.photos/seed/${s.slug}/400/300`,
+    coverPhoto: s.photos.find((p) => p.type === "COVER")?.cloudinaryUrl,
+  }));
+
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
@@ -36,7 +63,7 @@ export default function HomePage() {
 
           {/* Main tagline */}
           <h1 className="text-2xl sm:text-4xl font-bold text-text-main leading-tight mb-4">
-            מצאי את הצלמת המושלמת
+            מצאי את הספקים המושלמים
             <br />
             <span className="text-primary">לחתונה שלך</span>
           </h1>
@@ -60,7 +87,7 @@ export default function HomePage() {
               className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm text-text-main font-semibold text-base px-6 py-4 rounded-full border-2 border-border hover:border-primary/40 transition-all duration-200"
             >
               <Search className="h-4 w-4" />
-              גלי צלמות
+              גלי ספקים
             </Link>
           </div>
 
@@ -101,14 +128,14 @@ export default function HomePage() {
                 step: "1",
                 icon: Calendar,
                 title: "בחרי תאריך ואזור",
-                desc: "ספרי לנו מתי ואיפה החתונה שלך, ואנחנו נמצא את הצלמות שפנויות עבורך",
+                desc: "ספרי לנו מתי ואיפה החתונה שלך, ואנחנו נמצא את הספקים שפנויים עבורך",
                 color: "bg-rose-100 text-rose-600",
               },
               {
                 step: "2",
                 icon: Search,
-                title: "גלי צלמות פנויות",
-                desc: "עיין בפרופילים, עבדות הצלמות, חבילות ומחירים — הכל במקום אחד",
+                title: "גלי ספקים פנויים",
+                desc: "עיין בפרופילים, תיקי עבודות, חבילות ומחירים — הכל במקום אחד",
                 color: "bg-amber-100 text-amber-600",
               },
               {
@@ -220,7 +247,7 @@ export default function HomePage() {
                 מומלצות
               </span>
               <h2 className="text-3xl font-black text-text-main mt-1">
-                הצלמות שלנו
+                הספקים שלנו
               </h2>
             </div>
             <Link
@@ -233,7 +260,7 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {MOCK_SUPPLIERS.slice(0, 6).map((supplier) => (
+            {featuredSuppliers.map((supplier) => (
               <SupplierCard
                 key={supplier.id}
                 {...supplier}
@@ -250,7 +277,7 @@ export default function HomePage() {
         <div className="max-w-4xl mx-auto">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 text-center text-white">
             {[
-              { value: "500+", label: "צלמות פעילות", icon: Camera },
+              { value: "500+", label: "ספקים פעילים", icon: Camera },
               { value: "1,200+", label: "חתונות מצולמות", icon: CheckCircle },
               { value: "4.9 ⭐", label: "דירוג ממוצע", icon: Star },
             ].map(({ value, label, icon: Icon }) => (
@@ -273,7 +300,7 @@ export default function HomePage() {
             מוכנה להתחיל?
           </h2>
           <p className="text-lg text-text-muted mb-8">
-            הצטרפי לאלפי כלות שמצאו את הצלמת המושלמת שלהן דרך פנוי
+            הצטרפי לאלפי כלות שמצאו את הספקים המושלמים שלהן דרך פנוי
           </p>
           <Link
             href="/start"
@@ -297,7 +324,7 @@ export default function HomePage() {
             <div className="sm:col-span-2">
               <div className="text-3xl font-black text-primary mb-2">פנוי</div>
               <p className="text-white/60 text-sm leading-relaxed max-w-xs">
-                הפלטפורמה המובילה לחיפוש ספקי חתונה בישראל. מחברות בין כלות לצלמות המושלמות עבורן.
+                הפלטפורמה המובילה לחיפוש ספקי חתונה בישראל. מחברות בין כלות לספקים המושלמים עבורן.
               </p>
             </div>
             <div>
@@ -305,14 +332,14 @@ export default function HomePage() {
                 לכלות
               </h4>
               <ul className="space-y-2 text-sm text-white/60">
-                <li><Link href="/search" className="hover:text-white transition-colors">חפשי צלמות</Link></li>
+                <li><Link href="/search" className="hover:text-white transition-colors">חפשי ספקים</Link></li>
                 <li><Link href="/dashboard/meetings" className="hover:text-white transition-colors">הפגישות שלי</Link></li>
                 <li><Link href="/dashboard/saved" className="hover:text-white transition-colors">שמורות</Link></li>
               </ul>
             </div>
             <div>
               <h4 className="font-bold mb-3 text-sm text-white/80 uppercase tracking-widest">
-                לצלמות
+                לספקים
               </h4>
               <ul className="space-y-2 text-sm text-white/60">
                 <li><Link href="/for-suppliers" className="hover:text-white transition-colors">הצטרפי לפנוי</Link></li>

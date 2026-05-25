@@ -173,7 +173,7 @@ export default function SupplierJoinPage() {
             פנוי
           </Link>
           <p className="text-text-muted text-sm mt-1">
-            הצטרפי לקהילת הצלמות
+            הצטרפי לקהילת הספקים
           </p>
         </div>
 
@@ -198,7 +198,7 @@ export default function SupplierJoinPage() {
               <form onSubmit={handleSubmit(onStep1Submit)} className="space-y-4">
                 <Input
                   label="שם מלא"
-                  placeholder="שם הצלמת"
+                  placeholder="שם הספקת"
                   error={errors.name?.message}
                   {...register("name")}
                 />

@@ -1,20 +1,35 @@
 import useSWR from "swr";
-import { MOCK_SUPPLIERS } from "@/lib/mock-data";
+
+async function fetcher(url: string) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Failed to fetch");
+  const json = await res.json();
+  return json.data ?? [];
+}
 
 export function useSaved() {
-  const { data, error, isLoading, mutate } = useSWR(
-    "saved-suppliers",
-    async () => {
-      await new Promise((r) => setTimeout(r, 300));
-      return MOCK_SUPPLIERS.filter((s) => s.isSaved);
-    },
-    { revalidateOnFocus: false }
-  );
+  const { data, error, isLoading, mutate } = useSWR("/api/saved", fetcher, {
+    revalidateOnFocus: false,
+  });
+
+  async function toggle(supplierId: string, isSaved: boolean) {
+    if (isSaved) {
+      await fetch(`/api/saved/${supplierId}`, { method: "DELETE" });
+    } else {
+      await fetch("/api/saved", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ supplierId }),
+      });
+    }
+    mutate();
+  }
 
   return {
-    saved: data || [],
+    saved: data ?? [],
     isLoading,
     error,
     mutate,
+    toggle,
   };
 }

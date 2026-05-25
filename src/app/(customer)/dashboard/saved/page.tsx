@@ -27,11 +27,11 @@ export default function SavedPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-black text-text-main">
-              הצלמות השמורות שלי ❤
+              הספקים השמורים שלי ❤
             </h1>
             {!isLoading && saved.length > 0 && (
               <p className="text-text-muted text-sm mt-1">
-                {saved.length} צלמות שמורות
+                {saved.length} ספקים שמורים
               </p>
             )}
           </div>
@@ -54,14 +54,15 @@ export default function SavedPage() {
         ) : saved.length === 0 ? (
           <EmptyState
             emoji="🤍"
-            title="עדיין לא שמרת צלמות"
-            description="לחצי על הלב בכרטיס הצלמת כדי לשמור אותה לטובת עתיד"
-            ctaLabel="גלי צלמות"
+            title="עדיין לא שמרת ספקים"
+            description="לחצי על הלב בכרטיס הספק כדי לשמור אותה לטובת עתיד"
+            ctaLabel="גלי ספקים"
             onCta={() => router.push("/search")}
           />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {saved.map((supplier) => (
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+            {saved.map((supplier: any) => (
               <SupplierCard
                 key={supplier.id}
                 id={supplier.id}

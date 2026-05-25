@@ -95,7 +95,7 @@ export default function StartPage() {
             פנוי
           </Link>
           <p className="text-text-muted mt-1 text-sm">
-            מצאי את הצלמת המושלמת לחתונה שלך
+            מצאי את הספקים המושלמים לחתונה שלך
           </p>
         </div>
 

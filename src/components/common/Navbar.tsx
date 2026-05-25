@@ -44,7 +44,7 @@ export default function Navbar() {
                     : "text-text-muted hover:text-text-main"
                 )}
               >
-                גלי צלמות
+                גלי ספקים
               </Link>
               <Link
                 href="/for-suppliers"
@@ -55,7 +55,7 @@ export default function Navbar() {
                     : "text-text-muted hover:text-text-main"
                 )}
               >
-                לצלמות
+                לספקים
               </Link>
             </nav>
           </div>

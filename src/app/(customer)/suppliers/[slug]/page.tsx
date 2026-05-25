@@ -51,7 +51,7 @@ export default function SupplierProfilePage({ params }: PageProps) {
       <div className="min-h-screen bg-surface flex items-center justify-center">
         <EmptyState
           emoji="🔍"
-          title="הצלמת לא נמצאה"
+          title="הספק/ת לא נמצאה"
           description="ייתכן שהפרופיל הוסר או שהקישור שגוי"
           ctaLabel="חזרה לחיפוש"
           onCta={() => router.push("/search")}
@@ -182,7 +182,7 @@ export default function SupplierProfilePage({ params }: PageProps) {
                     אזורי שירות
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {supplier.areas.map((area) => (
+                    {(supplier.areas as string[]).map((area) => (
                       <span
                         key={area}
                         className="text-xs font-medium bg-surface text-text-muted border border-border px-3 py-1 rounded-full"
@@ -201,7 +201,8 @@ export default function SupplierProfilePage({ params }: PageProps) {
                 חבילות ומחירים
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                {supplier.packages.map((pkg) => (
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                {supplier.packages.map((pkg: any) => (
                   <PackageCard
                     key={pkg.id}
                     name={pkg.name}
@@ -234,11 +235,12 @@ export default function SupplierProfilePage({ params }: PageProps) {
                 <EmptyState
                   emoji="💬"
                   title="אין ביקורות עדיין"
-                  description="הצלמת חדשה בפלטפורמה"
+                  description="הספק/ת חדש/ה בפלטפורמה"
                 />
               ) : (
                 <div className="space-y-4">
-                  {supplier.reviews.map((review) => (
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                  {supplier.reviews.map((review: any) => (
                     <ReviewCard
                       key={review.id}
                       reviewerName={review.reviewerName}
@@ -325,8 +327,8 @@ export default function SupplierProfilePage({ params }: PageProps) {
               >
                 <CheckCircle className="h-4 w-4" />
                 {supplier.isAvailable
-                  ? "פנויה לתאריך שלך ✓"
-                  : "לא פנויה לתאריך שלך"}
+                  ? "פנוי/ה לתאריך שלך ✓"
+                  : "לא פנוי/ה לתאריך שלך"}
               </div>
 
               {/* CTA */}

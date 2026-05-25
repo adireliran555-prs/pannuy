@@ -1,21 +1,29 @@
 import useSWR from "swr";
-import { MEETING_MOCK } from "@/lib/mock-data";
 
-export function useMeetings() {
-  const { data, error, isLoading, mutate } = useSWR(
-    "meetings",
-    async () => {
-      await new Promise((r) => setTimeout(r, 300));
-      return MEETING_MOCK;
-    },
-    { revalidateOnFocus: false }
-  );
+async function fetcher(url: string) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Failed to fetch");
+  const json = await res.json();
+  return json.data ?? [];
+}
+
+export function useMeetings(status?: string) {
+  const url = status ? `/api/meetings?status=${status}` : "/api/meetings";
+  const { data, error, isLoading, mutate } = useSWR(url, fetcher, {
+    revalidateOnFocus: false,
+  });
+
+  const meetings = data ?? [];
 
   return {
-    meetings: data || [],
-    upcoming: data?.filter((m) => m.status !== "completed") || [],
-    past: data?.filter((m) => m.status === "completed") || [],
-    cancelled: data?.filter((m) => m.status === "cancelled") || [],
+    meetings,
+    upcoming: meetings.filter((m: { status: string }) =>
+      ["PENDING", "CONFIRMED"].includes(m.status)
+    ),
+    past: meetings.filter((m: { status: string }) => m.status === "COMPLETED"),
+    cancelled: meetings.filter((m: { status: string }) =>
+      ["CANCELLED", "REJECTED"].includes(m.status)
+    ),
     isLoading,
     error,
     mutate,

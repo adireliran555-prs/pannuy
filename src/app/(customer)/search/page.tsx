@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { SlidersHorizontal, X, ChevronDown, Star } from "lucide-react";
-import { useSuppliers } from "@/hooks/useSuppliers";
+import { useSuppliers, NormalizedSupplier } from "@/hooks/useSuppliers";
 import SupplierCard from "@/components/common/SupplierCard";
 import { SupplierCardSkeleton } from "@/components/ui/Skeleton";
 import EmptyState from "@/components/ui/EmptyState";
@@ -33,7 +33,7 @@ function SearchContent() {
   const [page, setPage] = useState(1);
 
   const { suppliers, total, totalPages, isLoading } = useSuppliers({
-    city: filters.city || undefined,
+    area: filters.city || undefined,
     priceMax: filters.priceMax || undefined,
     ratingMin: filters.ratingMin || undefined,
     page,
@@ -67,8 +67,39 @@ function SearchContent() {
 
   return (
     <div className="min-h-screen bg-surface">
-      {/* ── Sticky filter bar ── */}
+      {/* ── Category pills ── */}
       <div className="sticky top-0 z-30 bg-white border-b border-border shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-3 pb-0 flex items-center gap-3 overflow-x-auto">
+          {[
+            { id: "PHOTOGRAPHER", label: "צלמות חתונה", emoji: "📸", active: true },
+            { id: "VIDEOGRAPHER", label: "צלמי וידאו", emoji: "🎬", active: false },
+            { id: "BRIDAL_SUITE", label: "בתי כלה", emoji: "👗", active: false },
+            { id: "DJ", label: "DJ", emoji: "🎧", active: false },
+            { id: "FLORIST", label: "פרחים", emoji: "💐", active: false },
+            { id: "CATERING", label: "קייטרינג", emoji: "🍽️", active: false },
+          ].map(({ id, label, emoji, active }) => (
+            <button
+              key={id}
+              disabled={!active}
+              className={cn(
+                "flex items-center gap-1.5 px-4 py-2 rounded-full border-2 text-sm font-semibold whitespace-nowrap mb-3 transition-colors",
+                active
+                  ? "border-primary bg-primary text-white"
+                  : "border-border text-text-muted cursor-not-allowed opacity-60"
+              )}
+            >
+              <span>{emoji}</span>
+              {label}
+              {!active && (
+                <span className="text-[10px] font-bold bg-gray-700 text-white px-1.5 py-0.5 rounded-full">
+                  בקרוב
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
+      {/* ── Filter chips ── */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-3 overflow-x-auto">
           {/* Mobile: filter button */}
           <button
@@ -247,7 +278,7 @@ function SearchContent() {
             <p className="text-text-muted text-sm font-medium">
               נמצאו{" "}
               <span className="text-text-main font-bold">{total}</span>
-              {" "}צלמות {locationLabel}
+              {" "}ספקים {locationLabel}
             </p>
           )}
         </div>
@@ -262,7 +293,7 @@ function SearchContent() {
         ) : suppliers.length === 0 ? (
           <EmptyState
             emoji="🔍"
-            title="לא נמצאו צלמות"
+            title="לא נמצאו ספקים"
             description="נסי לשנות את הפילטרים או לחפש באזור אחר"
             ctaLabel="נקי פילטרים"
             onCta={() => setFilters({ city: "", priceMax: 0, ratingMin: 0, sortBy: "relevance" })}
@@ -270,7 +301,7 @@ function SearchContent() {
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {suppliers.map((supplier) => (
+              {suppliers.map((supplier: NormalizedSupplier) => (
                 <SupplierCard
                   key={supplier.id}
                   id={supplier.id}

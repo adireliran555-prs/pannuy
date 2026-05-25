@@ -67,8 +67,8 @@ export default function ForSuppliersPage() {
       <section className="bg-white py-14 px-6 border-b border-border">
         <div className="max-w-4xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-8 text-center">
           {[
-            { value: "150+", label: "צלמות פעילות", sub: "ועוד מצטרפות מדי שבוע" },
-            { value: "₪8,500", label: "הכנסה חודשית ממוצעת", sub: "לצלמת פעילה בפלטפורמה" },
+            { value: "150+", label: "ספקים פעילים", sub: "ועוד מצטרפים מדי שבוע" },
+            { value: "₪8,500", label: "הכנסה חודשית ממוצעת", sub: "לספק/ת פעיל/ה בפלטפורמה" },
             { value: "4.9 ⭐", label: "דירוג ממוצע", sub: "מדד שביעות הרצון שלנו" },
           ].map(({ value, label, sub }) => (
             <div key={label}>
@@ -185,7 +185,7 @@ export default function ForSuppliersPage() {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-10">
             <h2 className="text-3xl font-black text-text-main">
-              מה הצלמות אומרות
+              מה הספקים אומרים
             </h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -260,7 +260,7 @@ export default function ForSuppliersPage() {
             מוכנה להתחיל?
           </h2>
           <p className="text-lg text-text-muted mb-8">
-            הצטרפי לקהילת הצלמות שלנו וקבלי גישה לאלפי כלות חדשות בכל חודש
+            הצטרפי לקהילת הספקים שלנו וקבלי גישה לאלפי כלות חדשות בכל חודש
           </p>
           <Link
             href="/supplier/join"

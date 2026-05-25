@@ -1,79 +1,99 @@
 import useSWR from "swr";
-import { MOCK_SUPPLIERS, type MockSupplier } from "@/lib/mock-data";
+
+export interface NormalizedSupplier {
+  id: string;
+  slug: string;
+  name: string;
+  city: string;
+  profilePhoto: string;
+  coverPhoto?: string;
+  rating: number;
+  ratingCount: number;
+  priceFrom: number;
+  priceTo?: number;
+  category: string;
+  isAvailable?: boolean;
+  isSaved?: boolean;
+}
 
 interface SuppliersFilters {
-  city?: string;
+  area?: string;
   date?: string;
   category?: string;
   priceMin?: number;
   priceMax?: number;
   ratingMin?: number;
   page?: number;
+  limit?: number;
 }
 
-interface SuppliersResponse {
-  suppliers: MockSupplier[];
-  total: number;
-  page: number;
-  totalPages: number;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function normalizeSupplier(s: any): NormalizedSupplier {
+  const profilePhoto =
+    s.photos?.find((p: { type: string }) => p.type === "PROFILE")
+      ?.cloudinaryUrl ??
+    s.photos?.find((p: { type: string }) => p.type === "PORTFOLIO")
+      ?.cloudinaryUrl ??
+    `https://picsum.photos/seed/${s.slug}/400/300`;
+  const coverPhoto =
+    s.photos?.find((p: { type: string }) => p.type === "COVER")
+      ?.cloudinaryUrl ?? profilePhoto;
+  return {
+    id: s.id,
+    slug: s.slug,
+    name: s.name,
+    city: s.city ?? "",
+    profilePhoto,
+    coverPhoto,
+    rating: s.ratingAvg ?? s.rating ?? 0,
+    ratingCount: s.ratingCount ?? 0,
+    priceFrom: s.basePriceFrom ?? s.priceFrom ?? 0,
+    priceTo: s.basePriceTo ?? s.priceTo,
+    category: s.category ?? "PHOTOGRAPHER",
+    isAvailable: s.isAvailable,
+    isSaved: s.isSaved ?? false,
+  };
 }
 
-// Fetcher that uses mock data in dev
-async function fetchSuppliers(
-  _key: string,
-  filters: SuppliersFilters
-): Promise<SuppliersResponse> {
-  // In production this would be: fetch(`/api/suppliers?${params}`)
-  await new Promise((r) => setTimeout(r, 400)); // simulate network
+function buildUrl(filters: SuppliersFilters): string {
+  const params = new URLSearchParams();
+  if (filters.area) params.set("area", filters.area);
+  if (filters.date) params.set("date", filters.date);
+  if (filters.category) params.set("category", filters.category);
+  if (filters.priceMin) params.set("priceMin", String(filters.priceMin));
+  if (filters.priceMax) params.set("priceMax", String(filters.priceMax));
+  if (filters.ratingMin) params.set("ratingMin", String(filters.ratingMin));
+  if (filters.page) params.set("page", String(filters.page));
+  if (filters.limit) params.set("limit", String(filters.limit));
+  return `/api/suppliers?${params.toString()}`;
+}
 
-  let results = [...MOCK_SUPPLIERS];
-
-  if (filters.city) {
-    results = results.filter(
-      (s) =>
-        s.city.includes(filters.city!) ||
-        s.areas.some((a) => a.includes(filters.city!))
-    );
-  }
-
-  if (filters.ratingMin) {
-    results = results.filter((s) => s.rating >= filters.ratingMin!);
-  }
-
-  if (filters.priceMin) {
-    results = results.filter((s) => s.priceFrom >= filters.priceMin!);
-  }
-
-  if (filters.priceMax) {
-    results = results.filter((s) => s.priceFrom <= filters.priceMax!);
-  }
-
-  const page = filters.page || 1;
-  const perPage = 12;
-  const total = results.length;
-  const totalPages = Math.ceil(total / perPage);
-  const paginated = results.slice((page - 1) * perPage, page * perPage);
-
-  return { suppliers: paginated, total, page, totalPages };
+async function fetcher(url: string) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Failed to fetch suppliers");
+  const json = await res.json();
+  const raw = json.data;
+  const pagination = raw.pagination ?? {};
+  return {
+    suppliers: (raw.suppliers ?? []).map(normalizeSupplier),
+    total: pagination.total ?? raw.total ?? 0,
+    page: pagination.page ?? raw.page ?? 1,
+    totalPages: pagination.totalPages ?? raw.totalPages ?? 1,
+  };
 }
 
 export function useSuppliers(filters: SuppliersFilters = {}) {
-  const key = ["suppliers", JSON.stringify(filters)];
-
-  const { data, error, isLoading, mutate } = useSWR<SuppliersResponse>(
-    key,
-    ([, filtersStr]) => fetchSuppliers("", JSON.parse(filtersStr as string)),
-    {
-      revalidateOnFocus: false,
-      keepPreviousData: true,
-    }
-  );
+  const url = buildUrl(filters);
+  const { data, error, isLoading, mutate } = useSWR(url, fetcher, {
+    revalidateOnFocus: false,
+    keepPreviousData: true,
+  });
 
   return {
-    suppliers: data?.suppliers || [],
-    total: data?.total || 0,
-    page: data?.page || 1,
-    totalPages: data?.totalPages || 1,
+    suppliers: data?.suppliers ?? [],
+    total: data?.total ?? 0,
+    page: data?.page ?? 1,
+    totalPages: data?.totalPages ?? 1,
     isLoading,
     error,
     mutate,

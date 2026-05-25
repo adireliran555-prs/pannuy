@@ -80,7 +80,7 @@ export default function WeddingPage() {
               ספרי לנו על החתונה שלך 💍
             </h1>
             <p className="text-text-muted text-sm mt-1">
-              נוכל למצוא עבורך את הצלמות הפנויות
+              נוכל למצוא עבורך ספקים פנויים
             </p>
           </div>
 
@@ -166,7 +166,7 @@ export default function WeddingPage() {
               size="lg"
               className="mt-4"
             >
-              מצאי צלמות 🔍
+              מצאי ספקים 🔍
             </Button>
           </form>
         </div>

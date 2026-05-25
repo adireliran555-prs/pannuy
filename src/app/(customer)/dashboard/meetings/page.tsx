@@ -82,7 +82,7 @@ export default function MeetingsPage() {
             הפגישות שלי
           </h1>
           <p className="text-text-muted text-sm mt-1">
-            נהלי את כל הפגישות עם הצלמות
+            נהלי את כל הפגישות עם הספקים
           </p>
         </div>
 
@@ -144,10 +144,10 @@ export default function MeetingsPage() {
             }
             description={
               activeTab === "upcoming"
-                ? "קבעי פגישה עם צלמת שאהבת"
+                ? "קבעי פגישה עם ספק שאהבת"
                 : undefined
             }
-            ctaLabel={activeTab === "upcoming" ? "חפשי צלמות" : undefined}
+            ctaLabel={activeTab === "upcoming" ? "חפשי ספקים" : undefined}
             onCta={
               activeTab === "upcoming"
                 ? () => (window.location.href = "/search")
@@ -156,7 +156,8 @@ export default function MeetingsPage() {
           />
         ) : (
           <div className="space-y-4">
-            {meetings.map((meeting) => {
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+            {meetings.map((meeting: any) => {
               const TypeIcon = MEETING_TYPE_ICONS[meeting.type] || Video;
               const statusCfg =
                 STATUS_CONFIG[meeting.status as keyof typeof STATUS_CONFIG] ||
@@ -260,10 +261,10 @@ export default function MeetingsPage() {
               מוכנה להתחיל לחפש? 📸
             </p>
             <p className="text-text-muted text-sm mb-4">
-              גלי צלמות פנויות בתאריך ובאזור שלך
+              גלי ספקים פנויים בתאריך ובאזור שלך
             </p>
             <Link href="/search">
-              <Button>גלי צלמות</Button>
+              <Button>גלי ספקים</Button>
             </Link>
           </div>
         )}
