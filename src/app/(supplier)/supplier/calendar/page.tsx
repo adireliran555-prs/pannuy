@@ -1,8 +1,6 @@
 "use client";
 
-export const dynamic = "force-dynamic";
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { ChevronRight, ChevronLeft, RefreshCw, Calendar, CheckCircle } from "lucide-react";
 import SupplierDashboardLayout from "@/components/common/SupplierDashboardLayout";
@@ -18,7 +16,7 @@ function generateMockCalendar(year: number, month: number): Record<number, DaySt
   for (let d = 1; d <= daysCount; d++) {
     const dow = new Date(year, month, d).getDay();
     if (dow === 6) {
-      days[d] = "blocked"; // Saturdays blocked
+      days[d] = "blocked";
     } else if (d === 15) {
       days[d] = "confirmed";
     } else if (d === 20) {
@@ -30,13 +28,7 @@ function generateMockCalendar(year: number, month: number): Record<number, DaySt
   return days;
 }
 
-export default function SupplierCalendarPage() {
-  const today = new Date();
-  const [year, setYear] = useState(today.getFullYear());
-  const [month, setMonth] = useState(today.getMonth());
-  const [calendarData, setCalendarData] = useState<Record<number, DayStatus>>(
-    generateMockCalendar(today.getFullYear(), today.getMonth())
-  );
+function GoogleCalendarBanner() {
   const searchParams = useSearchParams();
   const [calendarConnected, setCalendarConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -59,6 +51,47 @@ export default function SupplierCalendarPage() {
       setIsConnecting(false);
     }
   };
+
+  if (calendarConnected) {
+    return (
+      <div className="bg-green-50 border border-green-200 rounded-2xl px-5 py-4 flex items-center gap-3">
+        <CheckCircle className="h-5 w-5 text-green-600" />
+        <span className="font-semibold text-green-700 text-sm">
+          מחובר לגוגל קלנדר ✓ — עדכון אחרון לפני 5 דקות
+        </span>
+        <button className="ms-auto flex items-center gap-1.5 text-green-600 hover:text-green-800 text-sm font-semibold">
+          <RefreshCw className="h-3.5 w-3.5" />
+          סנכרן עכשיו
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-border p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+      <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center flex-shrink-0">
+        <Calendar className="h-6 w-6 text-blue-600" />
+      </div>
+      <div className="flex-1">
+        <h3 className="font-bold text-text-main">חברי Google Calendar</h3>
+        <p className="text-text-muted text-sm mt-0.5">
+          סנכרון אוטומטי של הזמינות שלכם — כשיש לכם אירוע, פנוי תסמן אותו אוטומטית
+        </p>
+      </div>
+      <Button onClick={handleGoogleConnect} isLoading={isConnecting}>
+        חברי עכשיו
+      </Button>
+    </div>
+  );
+}
+
+export default function SupplierCalendarPage() {
+  const today = new Date();
+  const [year, setYear] = useState(today.getFullYear());
+  const [month, setMonth] = useState(today.getMonth());
+  const [calendarData, setCalendarData] = useState<Record<number, DayStatus>>(
+    generateMockCalendar(today.getFullYear(), today.getMonth())
+  );
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
   const prevMonth = () => {
@@ -130,33 +163,9 @@ export default function SupplierCalendarPage() {
         </div>
 
         {/* Google Calendar connection */}
-        {!calendarConnected ? (
-          <div className="bg-white rounded-2xl border border-border p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center flex-shrink-0">
-              <Calendar className="h-6 w-6 text-blue-600" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-bold text-text-main">חברי Google Calendar</h3>
-              <p className="text-text-muted text-sm mt-0.5">
-                סנכרון אוטומטי של הזמינות שלכם — כשיש לכם אירוע, פנוי תסמן אותו אוטומטית
-              </p>
-            </div>
-            <Button onClick={handleGoogleConnect} isLoading={isConnecting}>
-              חברי עכשיו
-            </Button>
-          </div>
-        ) : (
-          <div className="bg-green-50 border border-green-200 rounded-2xl px-5 py-4 flex items-center gap-3">
-            <CheckCircle className="h-5 w-5 text-green-600" />
-            <span className="font-semibold text-green-700 text-sm">
-              מחובר לגוגל קלנדר ✓ — עדכון אחרון לפני 5 דקות
-            </span>
-            <button className="ms-auto flex items-center gap-1.5 text-green-600 hover:text-green-800 text-sm font-semibold">
-              <RefreshCw className="h-3.5 w-3.5" />
-              סנכרן עכשיו
-            </button>
-          </div>
-        )}
+        <Suspense fallback={null}>
+          <GoogleCalendarBanner />
+        </Suspense>
 
         {/* Calendar */}
         <div className="bg-white rounded-2xl border border-border overflow-hidden">
