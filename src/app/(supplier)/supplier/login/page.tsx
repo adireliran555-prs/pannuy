@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Phone } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import OtpInput from "@/components/ui/OtpInput";
@@ -104,18 +103,15 @@ export default function SupplierLoginPage() {
               </div>
 
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-                <div className="relative">
-                  <Input
-                    label="מספר טלפון"
-                    placeholder="05X-XXXXXXX"
-                    type="tel"
-                    ltr
-                    helperText="ישלח קוד אימות ב-SMS"
-                    error={errors.phone?.message ?? otpError}
-                    {...register("phone")}
-                  />
-                  <Phone className="absolute left-3 top-9 h-4 w-4 text-text-muted pointer-events-none" />
-                </div>
+                <Input
+                  label="מספר טלפון"
+                  placeholder="05X-XXXXXXX"
+                  type="tel"
+                  ltr
+                  helperText="ישלח קוד אימות ב-SMS"
+                  error={errors.phone?.message ?? otpError}
+                  {...register("phone")}
+                />
 
                 <Button type="submit" fullWidth size="lg" isLoading={isLoading}>
                   שלחו קוד אימות
