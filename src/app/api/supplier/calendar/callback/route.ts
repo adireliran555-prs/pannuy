@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
 
     if (!code || !state) {
       return NextResponse.redirect(
-        new URL("/supplier/dashboard/calendar?error=missing_params", request.url)
+        new URL("/supplier/calendar?error=missing_params", request.url)
       );
     }
 
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
     if (!supplier) {
       return NextResponse.redirect(
-        new URL("/supplier/dashboard/calendar?error=invalid_state", request.url)
+        new URL("/supplier/calendar?error=invalid_state", request.url)
       );
     }
 
@@ -38,12 +38,12 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.redirect(
-      new URL("/supplier/dashboard/calendar?connected=true", request.url)
+      new URL("/supplier/calendar?connected=true", request.url)
     );
   } catch (err) {
     console.error("[GET /api/supplier/calendar/callback]", err);
     return NextResponse.redirect(
-      new URL("/supplier/dashboard/calendar?error=oauth_failed", request.url)
+      new URL("/supplier/calendar?error=oauth_failed", request.url)
     );
   }
 }

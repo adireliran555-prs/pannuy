@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { ChevronRight, ChevronLeft, RefreshCw, Calendar, CheckCircle } from "lucide-react";
 import SupplierDashboardLayout from "@/components/common/SupplierDashboardLayout";
 import Button from "@/components/ui/Button";
@@ -34,8 +35,15 @@ export default function SupplierCalendarPage() {
   const [calendarData, setCalendarData] = useState<Record<number, DayStatus>>(
     generateMockCalendar(today.getFullYear(), today.getMonth())
   );
-  const [calendarConnected] = useState(false);
+  const searchParams = useSearchParams();
+  const [calendarConnected, setCalendarConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get("connected") === "true") {
+      setCalendarConnected(true);
+    }
+  }, [searchParams]);
 
   const handleGoogleConnect = async () => {
     setIsConnecting(true);
