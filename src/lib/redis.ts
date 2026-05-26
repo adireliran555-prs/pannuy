@@ -36,16 +36,13 @@ export async function delCache(key: string): Promise<void> {
 
 export async function delCachePattern(pattern: string): Promise<void> {
   try {
-    let cursor = 0;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let cursor: any = 0;
     do {
-      const result: [number, string[]] = await redis.scan(cursor, {
-        match: pattern,
-        count: 100,
-      });
+      const result = await redis.scan(cursor, { match: pattern, count: 100 });
       cursor = result[0];
-      if (result[1].length > 0) {
-        await redis.del(...result[1]);
-      }
+      const keys = result[1] as string[];
+      if (keys.length > 0) await redis.del(...keys);
     } while (cursor !== 0);
   } catch (err) {
     console.error(`[Redis] delCachePattern error for pattern "${pattern}":`, err);
