@@ -1,36 +1,13 @@
-import Redis from "ioredis";
+import { Redis } from "@upstash/redis";
 
-const globalForRedis = globalThis as unknown as {
-  redis: Redis | undefined;
-};
-
-function createRedisClient(): Redis {
-  const url = process.env.REDIS_URL ?? "redis://localhost:6379";
-  const client = new Redis(url, {
-    maxRetriesPerRequest: 3,
-    lazyConnect: true,
-  });
-
-  client.on("error", (err) => {
-    console.error("[Redis] Connection error:", err);
-  });
-
-  return client;
-}
-
-export const redis = globalForRedis.redis ?? createRedisClient();
-
-if (process.env.NODE_ENV !== "production") {
-  globalForRedis.redis = redis;
-}
-
-// ─── Cache helpers ────────────────────────────────────────────────────────────
+export const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL ?? "",
+  token: process.env.UPSTASH_REDIS_REST_TOKEN ?? "",
+});
 
 export async function getCache<T>(key: string): Promise<T | null> {
   try {
-    const raw = await redis.get(key);
-    if (!raw) return null;
-    return JSON.parse(raw) as T;
+    return await redis.get<T>(key);
   } catch (err) {
     console.error(`[Redis] getCache error for key "${key}":`, err);
     return null;
@@ -43,7 +20,7 @@ export async function setCache(
   ttlSeconds: number
 ): Promise<void> {
   try {
-    await redis.set(key, JSON.stringify(value), "EX", ttlSeconds);
+    await redis.set(key, value, { ex: ttlSeconds });
   } catch (err) {
     console.error(`[Redis] setCache error for key "${key}":`, err);
   }
@@ -59,20 +36,17 @@ export async function delCache(key: string): Promise<void> {
 
 export async function delCachePattern(pattern: string): Promise<void> {
   try {
-    let cursor = "0";
+    let cursor = 0;
     do {
-      const [nextCursor, keys] = await redis.scan(
-        cursor,
-        "MATCH",
-        pattern,
-        "COUNT",
-        100
-      );
+      const [nextCursor, keys] = await redis.scan(cursor, {
+        match: pattern,
+        count: 100,
+      });
       cursor = nextCursor;
       if (keys.length > 0) {
-        await redis.del(...keys);
+        await redis.del(...(keys as string[]));
       }
-    } while (cursor !== "0");
+    } while (cursor !== 0);
   } catch (err) {
     console.error(`[Redis] delCachePattern error for pattern "${pattern}":`, err);
   }
