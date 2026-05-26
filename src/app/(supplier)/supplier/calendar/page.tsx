@@ -35,6 +35,20 @@ export default function SupplierCalendarPage() {
     generateMockCalendar(today.getFullYear(), today.getMonth())
   );
   const [calendarConnected] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+
+  const handleGoogleConnect = async () => {
+    setIsConnecting(true);
+    try {
+      const res = await fetch("/api/supplier/calendar/connect");
+      const json = await res.json();
+      if (json.success && json.data?.authUrl) {
+        window.location.href = json.data.authUrl;
+      }
+    } finally {
+      setIsConnecting(false);
+    }
+  };
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
   const prevMonth = () => {
@@ -117,9 +131,7 @@ export default function SupplierCalendarPage() {
                 סנכרון אוטומטי של הזמינות שלכם — כשיש לכם אירוע, פנוי תסמן אותו אוטומטית
               </p>
             </div>
-            <Button
-              onClick={() => window.open("/api/supplier/calendar/connect", "_blank")}
-            >
+            <Button onClick={handleGoogleConnect} isLoading={isConnecting}>
               חברי עכשיו
             </Button>
           </div>
