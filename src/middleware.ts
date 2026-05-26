@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyToken } from "@/lib/auth";
 
 const CUSTOMER_PROTECTED_PREFIXES = ["/dashboard"];
-
 const SUPPLIER_PROTECTED_PREFIXES = [
   "/supplier/dashboard",
   "/supplier/bookings",
@@ -11,22 +9,25 @@ const SUPPLIER_PROTECTED_PREFIXES = [
   "/supplier/packages",
 ];
 
-function isCustomerProtected(pathname: string): boolean {
-  return CUSTOMER_PROTECTED_PREFIXES.some((p) => pathname.startsWith(p));
-}
-
-function isSupplierProtected(pathname: string): boolean {
-  return SUPPLIER_PROTECTED_PREFIXES.some((p) => pathname.startsWith(p));
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    return JSON.parse(atob(payload));
+  } catch {
+    return null;
+  }
 }
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (isCustomerProtected(pathname)) {
+  if (CUSTOMER_PROTECTED_PREFIXES.some((p) => pathname.startsWith(p))) {
     const token = request.cookies.get("pannuy_session")?.value;
     if (!token) return NextResponse.redirect(new URL("/start", request.url));
-    const decoded = verifyToken(token);
-    if (!decoded || (decoded as { type: string }).type !== "customer") {
+    const payload = decodeJwtPayload(token);
+    if (!payload || payload.type !== "customer") {
       const res = NextResponse.redirect(new URL("/start", request.url));
       res.cookies.delete("pannuy_session");
       return res;
@@ -34,11 +35,11 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (isSupplierProtected(pathname)) {
+  if (SUPPLIER_PROTECTED_PREFIXES.some((p) => pathname.startsWith(p))) {
     const token = request.cookies.get("pannuy_supplier_session")?.value;
     if (!token) return NextResponse.redirect(new URL("/supplier/login", request.url));
-    const decoded = verifyToken(token);
-    if (!decoded || (decoded as { type: string }).type !== "supplier") {
+    const payload = decodeJwtPayload(token);
+    if (!payload || payload.type !== "supplier") {
       const res = NextResponse.redirect(new URL("/supplier/login", request.url));
       res.cookies.delete("pannuy_supplier_session");
       return res;
