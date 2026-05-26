@@ -7,12 +7,19 @@ const globalForPrisma = globalThis as unknown as {
 
 function createPrismaClient(): PrismaClient {
   const raw = process.env.DATABASE_URL ?? "";
-  const isDirectPg = raw.startsWith("postgresql://") || raw.startsWith("postgres://");
-  const connectionString = isDirectPg
-    ? raw
-    : "postgresql://pannuy:pannuy_local@localhost:5432/pannuy_dev";
+  const connectionString =
+    raw.startsWith("postgresql://") || raw.startsWith("postgres://")
+      ? raw
+      : "postgresql://pannuy:pannuy_local@localhost:5432/pannuy_dev";
 
-  const adapter = new PrismaPg({ connectionString });
+  const isSupabase = connectionString.includes("supabase.com");
+  const adapter = new PrismaPg({
+    // Strip sslmode from URL so the ssl config below takes full control
+    connectionString: isSupabase
+      ? connectionString.replace(/[?&]sslmode=[^&]*/g, "").replace(/[?&]$/, "")
+      : connectionString,
+    ssl: isSupabase ? { rejectUnauthorized: false } : undefined,
+  });
 
   return new PrismaClient({
     adapter,
