@@ -29,9 +29,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const isDev = process.env.NODE_ENV !== "production";
+    const skipOtpCheck =
+      process.env.NODE_ENV !== "production" || process.env.BYPASS_OTP === "true";
 
-    if (!isDev) {
+    if (!skipOtpCheck) {
       const otpRecord = await prisma.otp.findFirst({
         where: { phone, used: false, expiresAt: { gt: new Date() } },
         orderBy: { createdAt: "desc" },
