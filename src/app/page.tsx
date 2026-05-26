@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import Image from "next/image";
 import { Camera, CheckCircle, Star, Search, Calendar, ArrowLeft } from "lucide-react";
