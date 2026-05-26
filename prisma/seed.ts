@@ -4,7 +4,14 @@ config({ path: ".env.local" });
 import { PrismaClient, Category, PhotoType, AvailabilitySource } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
+const dbUrl = process.env.DATABASE_URL!;
+const isSupabase = dbUrl.includes("supabase.com");
+const adapter = new PrismaPg({
+  connectionString: isSupabase
+    ? dbUrl.replace(/[?&]sslmode=[^&]*/g, "").replace(/[?&]$/, "")
+    : dbUrl,
+  ssl: isSupabase ? { rejectUnauthorized: false } : undefined,
+});
 const prisma = new PrismaClient({ adapter } as ConstructorParameters<typeof PrismaClient>[0]);
 
 const SUPPLIERS = [

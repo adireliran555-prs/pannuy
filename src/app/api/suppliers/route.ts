@@ -1,22 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "crypto";
 import { getCache, setCache } from "@/lib/redis";
-import { Category, PrismaClient } from "@prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
-
-// Bypass the global singleton — create a fresh client that handles
-// prisma+postgres:// URLs (Prisma Accelerate) gracefully by falling
-// back to the direct local dev connection.
-function getPrisma(): PrismaClient {
-  const raw = process.env.DATABASE_URL ?? "";
-  const connectionString =
-    raw.startsWith("postgresql://") || raw.startsWith("postgres://")
-      ? raw
-      : "postgresql://pannuy:pannuy_local@localhost:5432/pannuy_dev";
-  const adapter = new PrismaPg({ connectionString });
-  return new PrismaClient({ adapter });
-}
-const prisma = getPrisma();
+import { Category } from "@prisma/client";
+import prisma from "@/lib/prisma";
 
 const CACHE_TTL = 60; // 1 minute
 const DEFAULT_LIMIT = 12;
