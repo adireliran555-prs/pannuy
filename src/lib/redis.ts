@@ -36,9 +36,9 @@ export async function delCache(key: string): Promise<void> {
 
 export async function delCachePattern(pattern: string): Promise<void> {
   try {
-    let cursor = 0;
+    let cursor: string | number = 0;
     do {
-      const [nextCursor, keys] = await redis.scan(cursor, {
+      const [nextCursor, keys] = await redis.scan(cursor as number, {
         match: pattern,
         count: 100,
       });
