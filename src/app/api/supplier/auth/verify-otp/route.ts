@@ -32,52 +32,59 @@ export async function POST(request: NextRequest) {
     const skipOtpCheck =
       process.env.NODE_ENV !== "production" || process.env.BYPASS_OTP === "true";
 
-    if (!skipOtpCheck) {
+    const upsertSupplier = () =>
+      prisma.$transaction(async (tx) => {
+        const existing = await tx.supplier.findUnique({ where: { phone } });
+
+        if (existing) {
+          return tx.supplier.update({
+            where: { phone },
+            data: {
+              ...(name ? { name } : {}),
+              ...(email ? { email } : {}),
+            },
+          });
+        }
+
+        const supplierName = name ?? "ספק חדש";
+        let slug = generateSlug(supplierName, phone);
+
+        const slugExists = await tx.supplier.findUnique({ where: { slug } });
+        if (slugExists) {
+          slug = `${slug}-${Date.now().toString(36)}`;
+        }
+
+        return tx.supplier.create({
+          data: {
+            phone,
+            name: supplierName,
+            slug,
+            ...(email ? { email } : {}),
+          },
+        });
+      });
+
+    let supplier;
+    if (skipOtpCheck) {
+      supplier = await upsertSupplier();
+    } else {
       const otpRecord = await prisma.otp.findFirst({
         where: { phone, used: false, expiresAt: { gt: new Date() } },
         orderBy: { createdAt: "desc" },
       });
+
       if (!otpRecord || !(await verifyOtp(otp, otpRecord.hash))) {
         return NextResponse.json(
           { success: false, error: "קוד שגוי או פג תוקף" },
           { status: 401 }
         );
       }
-      await prisma.otp.update({ where: { id: otpRecord.id }, data: { used: true } });
+
+      [, supplier] = await Promise.all([
+        prisma.otp.update({ where: { id: otpRecord.id }, data: { used: true } }),
+        upsertSupplier(),
+      ]);
     }
-
-    const supplier = await prisma.$transaction(async (tx) => {
-
-      const existing = await tx.supplier.findUnique({ where: { phone } });
-
-      if (existing) {
-        return tx.supplier.update({
-          where: { phone },
-          data: {
-            ...(name ? { name } : {}),
-            ...(email ? { email } : {}),
-          },
-        });
-      }
-
-      const supplierName = name ?? "ספק חדש";
-      let slug = generateSlug(supplierName, phone);
-
-      // Ensure slug uniqueness
-      const slugExists = await tx.supplier.findUnique({ where: { slug } });
-      if (slugExists) {
-        slug = `${slug}-${Date.now().toString(36)}`;
-      }
-
-      return tx.supplier.create({
-        data: {
-          phone,
-          name: supplierName,
-          slug,
-          ...(email ? { email } : {}),
-        },
-      });
-    });
 
     const payload: SupplierSession = {
       id: supplier.id,
@@ -89,11 +96,6 @@ export async function POST(request: NextRequest) {
 
     const token = signSupplierToken(payload);
 
-    await prisma.supplier.update({
-      where: { id: supplier.id },
-      data: { sessionToken: token },
-    });
-
     const response = NextResponse.json({ success: true, supplier: payload });
     response.cookies.set("pannuy_supplier_session", token, {
       httpOnly: true,
@@ -103,7 +105,6 @@ export async function POST(request: NextRequest) {
       path: "/",
     });
     response.cookies.delete("pannuy_session");
-
     return response;
   } catch (err) {
     console.error("[POST /api/supplier/auth/verify-otp]", err);

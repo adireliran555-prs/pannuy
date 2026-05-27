@@ -3,18 +3,12 @@ import prisma from "@/lib/prisma";
 import { verifyOtp, signCustomerToken } from "@/lib/auth";
 import { CustomerSession } from "@/types";
 
-const SESSION_COOKIE_MAX_AGE = 7 * 24 * 60 * 60; // 7 days in seconds
+const SESSION_COOKIE_MAX_AGE = 7 * 24 * 60 * 60;
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const {
-      phone,
-      otp,
-      name,
-      weddingDate,
-      weddingArea,
-    } = body as {
+    const { phone, otp, name, weddingDate, weddingArea } = body as {
       phone?: string;
       otp?: string;
       name?: string;
@@ -32,7 +26,26 @@ export async function POST(request: NextRequest) {
     const skipOtpCheck =
       process.env.NODE_ENV !== "production" || process.env.BYPASS_OTP === "true";
 
-    if (!skipOtpCheck) {
+    const upsertUser = () =>
+      prisma.user.upsert({
+        where: { phone },
+        create: {
+          phone,
+          name: name ?? "משתמש חדש",
+          weddingDate: weddingDate ? new Date(weddingDate) : undefined,
+          weddingArea: weddingArea ?? undefined,
+        },
+        update: {
+          ...(name ? { name } : {}),
+          ...(weddingDate ? { weddingDate: new Date(weddingDate) } : {}),
+          ...(weddingArea ? { weddingArea } : {}),
+        },
+      });
+
+    let user;
+    if (skipOtpCheck) {
+      user = await upsertUser();
+    } else {
       const otpRecord = await prisma.otp.findFirst({
         where: { phone, used: false, expiresAt: { gt: new Date() } },
         orderBy: { createdAt: "desc" },
@@ -45,23 +58,11 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      await prisma.otp.update({ where: { id: otpRecord.id }, data: { used: true } });
+      [, user] = await Promise.all([
+        prisma.otp.update({ where: { id: otpRecord.id }, data: { used: true } }),
+        upsertUser(),
+      ]);
     }
-
-    const user = await prisma.user.upsert({
-      where: { phone },
-      create: {
-        phone,
-        name: name ?? "משתמש חדש",
-        weddingDate: weddingDate ? new Date(weddingDate) : undefined,
-        weddingArea: weddingArea ?? undefined,
-      },
-      update: {
-        ...(name ? { name } : {}),
-        ...(weddingDate ? { weddingDate: new Date(weddingDate) } : {}),
-        ...(weddingArea ? { weddingArea } : {}),
-      },
-    });
 
     const payload: CustomerSession = {
       id: user.id,
@@ -73,12 +74,6 @@ export async function POST(request: NextRequest) {
 
     const token = signCustomerToken(payload);
 
-    // Persist session token to DB
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { sessionToken: token },
-    });
-
     const response = NextResponse.json({ success: true, user: payload });
     response.cookies.set("pannuy_session", token, {
       httpOnly: true,
@@ -88,7 +83,6 @@ export async function POST(request: NextRequest) {
       path: "/",
     });
     response.cookies.delete("pannuy_supplier_session");
-
     return response;
   } catch (err) {
     console.error("[POST /api/auth/verify-otp]", err);
