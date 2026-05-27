@@ -22,29 +22,34 @@ const MEETING_TYPE_ICONS: Record<string, React.ElementType> = {
 };
 
 const MEETING_TYPE_LABELS: Record<string, string> = {
-  video: "שיחת וידאו",
-  phone: "שיחת טלפון",
-  "in-person": "פגישה פנים אל פנים",
+  VIDEO: "שיחת וידאו",
+  PHONE: "שיחת טלפון",
+  IN_PERSON: "פגישה פנים אל פנים",
 };
 
 const STATUS_CONFIG = {
-  pending: {
+  PENDING: {
     label: "ממתין לאישור",
     variant: "warning" as const,
     icon: Clock,
   },
-  confirmed: {
+  CONFIRMED: {
     label: "מאושר",
     variant: "success" as const,
     icon: CheckCircle,
   },
-  completed: {
+  COMPLETED: {
     label: "הושלם",
     variant: "info" as const,
     icon: CheckCircle,
   },
-  cancelled: {
+  CANCELLED: {
     label: "בוטל",
+    variant: "default" as const,
+    icon: XCircle,
+  },
+  REJECTED: {
+    label: "נדחה",
     variant: "default" as const,
     icon: XCircle,
   },
@@ -69,7 +74,7 @@ export default function MeetingsPage() {
   const meetings = getMeetings();
 
   const handleCancel = async (id: string) => {
-    // In production: DELETE /api/meetings/${id}
+    await fetch(`/api/meetings/${id}/cancel`, { method: "PATCH" });
     mutate();
   };
 
@@ -158,11 +163,12 @@ export default function MeetingsPage() {
           <div className="space-y-4">
             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             {meetings.map((meeting: any) => {
-              const TypeIcon = MEETING_TYPE_ICONS[meeting.type] || Video;
+              const TypeIcon = MEETING_TYPE_ICONS[meeting.meetingType] || Video;
               const statusCfg =
                 STATUS_CONFIG[meeting.status as keyof typeof STATUS_CONFIG] ||
-                STATUS_CONFIG.pending;
+                STATUS_CONFIG.PENDING;
               const StatusIcon = statusCfg.icon;
+              const supplierPhoto = meeting.supplier?.photos?.[0]?.cloudinaryUrl;
 
               return (
                 <div
@@ -170,23 +176,27 @@ export default function MeetingsPage() {
                   className="bg-white rounded-2xl border border-border p-5 transition-all hover:shadow-md"
                 >
                   <div className="flex items-start gap-4">
-                    {/* Supplier photo */}
                     <Link
                       href={`/suppliers/${meeting.supplier.slug}`}
                       className="flex-shrink-0"
                     >
                       <div className="relative w-14 h-14 rounded-full overflow-hidden bg-primary-light">
-                        <Image
-                          src={meeting.supplier.profilePhoto}
-                          alt={meeting.supplier.name}
-                          fill
-                          className="object-cover"
-                          unoptimized
-                        />
+                        {supplierPhoto ? (
+                          <Image
+                            src={supplierPhoto}
+                            alt={meeting.supplier.name}
+                            fill
+                            className="object-cover"
+                            unoptimized
+                          />
+                        ) : (
+                          <span className="w-full h-full flex items-center justify-center text-primary font-black text-xl">
+                            {meeting.supplier.name?.charAt(0) ?? "?"}
+                          </span>
+                        )}
                       </div>
                     </Link>
 
-                    {/* Content */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2 flex-wrap">
                         <Link
@@ -204,28 +214,26 @@ export default function MeetingsPage() {
                       <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-text-muted">
                         <span className="flex items-center gap-1">
                           <Calendar className="h-3.5 w-3.5" />
-                          {formatHebrewDate(meeting.date)}
+                          {formatHebrewDate(meeting.requestedDate)}
                         </span>
                         <span className="flex items-center gap-1 ltr">
                           <Clock className="h-3.5 w-3.5" />
-                          {meeting.time}
+                          {meeting.startTime}
                         </span>
                         <span className="flex items-center gap-1">
                           <TypeIcon className="h-3.5 w-3.5" />
-                          {MEETING_TYPE_LABELS[meeting.type]}
+                          {MEETING_TYPE_LABELS[meeting.meetingType] ?? meeting.meetingType}
                         </span>
                       </div>
 
-                      {meeting.notes && (
+                      {meeting.customerNotes && (
                         <p className="mt-2 text-sm text-text-muted bg-surface rounded-lg px-3 py-2 border border-border/50">
-                          {meeting.notes}
+                          {meeting.customerNotes}
                         </p>
                       )}
 
-                      {/* Actions */}
                       <div className="flex gap-2 mt-3">
-                        {(meeting.status === "pending" ||
-                          meeting.status === "confirmed") && (
+                        {(meeting.status === "PENDING" || meeting.status === "CONFIRMED") && (
                           <Button
                             variant="ghost"
                             size="sm"
@@ -235,7 +243,7 @@ export default function MeetingsPage() {
                             בטלי פגישה
                           </Button>
                         )}
-                        {meeting.status === "completed" && (
+                        {meeting.status === "COMPLETED" && (
                           <Button variant="secondary" size="sm">
                             כתבי ביקורת ✍️
                           </Button>

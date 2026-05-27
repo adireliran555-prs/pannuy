@@ -1,46 +1,80 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
-import { Plus, X, Check, CheckCircle, Upload } from "lucide-react";
+import { Plus, X, Check, CheckCircle } from "lucide-react";
 import SupplierDashboardLayout from "@/components/common/SupplierDashboardLayout";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import { MOCK_SUPPLIERS } from "@/lib/mock-data";
-import { ISRAELI_CITIES, formatPrice, cn } from "@/lib/utils";
-
-const SUPPLIER = MOCK_SUPPLIERS[0];
+import { Skeleton } from "@/components/ui/Skeleton";
+import { ISRAELI_CITIES, cn } from "@/lib/utils";
 
 const SERVICE_AREAS = [
   "גוש דן", "תל אביב", "ירושלים", "חיפה",
   "הצפון", "הדרום", "השרון", "שפלה", "אילת", "מרכז",
 ];
 
+interface PackageState {
+  id?: string;
+  name: string;
+  price: number;
+  hours: number;
+  includes: string[];
+  isPopular: boolean;
+  includeInput: string;
+}
+
 export default function SupplierProfilePage() {
   const [activeTab, setActiveTab] = useState<"info" | "photos" | "packages">("info");
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(true);
 
   // Info tab state
-  const [name, setName] = useState(SUPPLIER.name);
-  const [city, setCity] = useState(SUPPLIER.city);
-  const [bio, setBio] = useState(SUPPLIER.bio);
-  const [selectedAreas, setSelectedAreas] = useState<string[]>(SUPPLIER.areas);
-  const [priceFrom, setPriceFrom] = useState(SUPPLIER.priceFrom.toString());
-  const [priceTo, setPriceTo] = useState(SUPPLIER.priceTo.toString());
+  const [name, setName] = useState("");
+  const [city, setCity] = useState("");
+  const [bio, setBio] = useState("");
+  const [selectedAreas, setSelectedAreas] = useState<string[]>([]);
+  const [priceFrom, setPriceFrom] = useState("");
+  const [priceTo, setPriceTo] = useState("");
 
-  // Photos tab state
-  const [photos, setPhotos] = useState<string[]>(SUPPLIER.portfolio);
-  const [profilePhotoIdx, setProfilePhotoIdx] = useState(0);
-  const [photoUrlInput, setPhotoUrlInput] = useState("");
+  // Photos tab state (display only — upload requires Cloudinary)
+  const [photos, setPhotos] = useState<string[]>([]);
 
   // Packages tab state
-  const [packages, setPackages] = useState(
-    SUPPLIER.packages.map((p) => ({
-      ...p,
-      includeInput: "",
-    }))
-  );
+  const [packages, setPackages] = useState<PackageState[]>([]);
+
+  useEffect(() => {
+    fetch("/api/supplier/profile")
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success && json.data) {
+          const s = json.data;
+          setName(s.name ?? "");
+          setCity(s.city ?? "");
+          setBio(s.bioHe ?? "");
+          setSelectedAreas(s.serviceAreas ?? []);
+          setPriceFrom(s.basePriceFrom?.toString() ?? "");
+          setPriceTo(s.basePriceTo?.toString() ?? "");
+          setPhotos((s.photos ?? []).map((p: { cloudinaryUrl: string }) => p.cloudinaryUrl));
+          setPackages(
+            (s.packages ?? []).map((p: {
+              id: string; nameHe: string; price: number; hours: number;
+              includes: string[]; isPopular: boolean;
+            }) => ({
+              id: p.id,
+              name: p.nameHe,
+              price: p.price,
+              hours: p.hours ?? 0,
+              includes: p.includes ?? [],
+              isPopular: p.isPopular,
+              includeInput: "",
+            }))
+          );
+        }
+      })
+      .finally(() => setIsFetching(false));
+  }, []);
 
   const toggleArea = (area: string) => {
     setSelectedAreas((prev) =>
@@ -48,26 +82,69 @@ export default function SupplierProfilePage() {
     );
   };
 
-  const handleSaveInfo = async () => {
-    setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setIsLoading(false);
+  const showSuccess = () => {
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 3000);
   };
 
-  const addPhoto = () => {
-    const url = photoUrlInput.trim();
-    if (url && photos.length < 20) {
-      setPhotos((prev) => [...prev, url]);
-      setPhotoUrlInput("");
+  const handleSaveInfo = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/supplier/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name || undefined,
+          bioHe: bio || undefined,
+          city: city || undefined,
+          serviceAreas: selectedAreas.length > 0 ? selectedAreas : undefined,
+          basePriceFrom: priceFrom ? Number(priceFrom) : undefined,
+          basePriceTo: priceTo ? Number(priceTo) : undefined,
+        }),
+      });
+      if (res.ok) showSuccess();
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const removePhoto = (idx: number) => {
-    setPhotos((prev) => prev.filter((_, i) => i !== idx));
-    if (profilePhotoIdx >= idx) {
-      setProfilePhotoIdx(Math.max(0, profilePhotoIdx - 1));
+  const handleSavePackages = async () => {
+    setIsLoading(true);
+    try {
+      for (const pkg of packages) {
+        if (!pkg.name || !pkg.price) continue;
+        const body = {
+          nameHe: pkg.name,
+          price: Number(pkg.price),
+          hours: Number(pkg.hours) || undefined,
+          includes: pkg.includes,
+          isPopular: pkg.isPopular,
+        };
+        if (pkg.id) {
+          await fetch(`/api/supplier/packages/${pkg.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+        } else {
+          const res = await fetch("/api/supplier/packages", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          if (res.ok) {
+            const json = await res.json();
+            if (json.data?.id) {
+              setPackages((prev) =>
+                prev.map((p) => (p === pkg ? { ...p, id: json.data.id } : p))
+              );
+            }
+          }
+        }
+      }
+      showSuccess();
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -77,20 +154,25 @@ export default function SupplierProfilePage() {
     { id: "packages", label: "חבילות" },
   ];
 
+  if (isFetching) {
+    return (
+      <SupplierDashboardLayout>
+        <div className="space-y-4">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-64 w-full rounded-2xl" />
+        </div>
+      </SupplierDashboardLayout>
+    );
+  }
+
   return (
     <SupplierDashboardLayout>
       <div className="space-y-6">
-        {/* Header */}
         <div>
-          <h1 className="text-2xl font-black text-text-main">
-            הפרופיל שלי
-          </h1>
-          <p className="text-text-muted text-sm mt-1">
-            עדכנו את הפרטים שמוצגים לזוגות
-          </p>
+          <h1 className="text-2xl font-black text-text-main">הפרופיל שלי</h1>
+          <p className="text-text-muted text-sm mt-1">עדכנו את הפרטים שמוצגים לזוגות</p>
         </div>
 
-        {/* Success */}
         {saveSuccess && (
           <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-green-700 text-sm font-semibold">
             <CheckCircle className="h-5 w-5" />
@@ -98,7 +180,6 @@ export default function SupplierProfilePage() {
           </div>
         )}
 
-        {/* Tabs */}
         <div className="flex gap-1 bg-gray-100 rounded-2xl p-1">
           {tabs.map(({ id, label }) => (
             <button
@@ -119,13 +200,8 @@ export default function SupplierProfilePage() {
         {/* ── Info tab ── */}
         {activeTab === "info" && (
           <div className="bg-white rounded-2xl border border-border p-6 space-y-5">
-            <Input
-              label="שם מלא"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
+            <Input label="שם מלא" value={name} onChange={(e) => setName(e.target.value)} />
 
-            {/* City */}
             <div className="space-y-1.5">
               <label className="text-sm font-semibold text-text-main">עיר</label>
               <select
@@ -133,17 +209,15 @@ export default function SupplierProfilePage() {
                 onChange={(e) => setCity(e.target.value)}
                 className="w-full rounded-xl border border-border px-4 py-3 text-base text-text-main focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
               >
+                <option value="">בחרו עיר...</option>
                 {ISRAELI_CITIES.map((c) => (
                   <option key={c} value={c}>{c}</option>
                 ))}
               </select>
             </div>
 
-            {/* Service areas */}
             <div>
-              <label className="text-sm font-semibold text-text-main block mb-2">
-                אזורי שירות
-              </label>
+              <label className="text-sm font-semibold text-text-main block mb-2">אזורי שירות</label>
               <div className="flex flex-wrap gap-2">
                 {SERVICE_AREAS.map((area) => (
                   <button
@@ -164,12 +238,9 @@ export default function SupplierProfilePage() {
               </div>
             </div>
 
-            {/* Bio */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-sm font-semibold text-text-main">
-                  תיאור עצמי
-                </label>
+                <label className="text-sm font-semibold text-text-main">תיאור עצמי</label>
                 <span className={cn("text-xs", bio.length > 450 ? "text-red-500" : "text-text-muted")}>
                   {bio.length}/500
                 </span>
@@ -182,12 +253,9 @@ export default function SupplierProfilePage() {
               />
             </div>
 
-            {/* Price range */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-semibold text-text-main block mb-1.5">
-                  מחיר מינימלי (₪)
-                </label>
+                <label className="text-sm font-semibold text-text-main block mb-1.5">מחיר מינימלי (₪)</label>
                 <input
                   type="number"
                   value={priceFrom}
@@ -197,9 +265,7 @@ export default function SupplierProfilePage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-semibold text-text-main block mb-1.5">
-                  מחיר מקסימלי (₪)
-                </label>
+                <label className="text-sm font-semibold text-text-main block mb-1.5">מחיר מקסימלי (₪)</label>
                 <input
                   type="number"
                   value={priceTo}
@@ -210,12 +276,7 @@ export default function SupplierProfilePage() {
               </div>
             </div>
 
-            <Button
-              fullWidth
-              size="lg"
-              isLoading={isLoading}
-              onClick={handleSaveInfo}
-            >
+            <Button fullWidth size="lg" isLoading={isLoading} onClick={handleSaveInfo}>
               שמרי שינויים
             </Button>
           </div>
@@ -224,73 +285,23 @@ export default function SupplierProfilePage() {
         {/* ── Photos tab ── */}
         {activeTab === "photos" && (
           <div className="space-y-5">
-            <div className="bg-white rounded-2xl border border-border p-6">
-              <p className="text-sm font-semibold text-text-main mb-3">
-                הוסיפו תמונה (קישור URL)
-              </p>
-              <div className="flex gap-2">
-                <input
-                  type="url"
-                  value={photoUrlInput}
-                  onChange={(e) => setPhotoUrlInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addPhoto())}
-                  placeholder="https://..."
-                  dir="ltr"
-                  className="flex-1 rounded-xl border border-border px-4 py-3 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                />
-                <Button onClick={addPhoto} disabled={!photoUrlInput.trim() || photos.length >= 20} size="sm">
-                  <Plus className="h-4 w-4" />
-                  הוסיפו
-                </Button>
-              </div>
-              <p className="text-xs text-text-muted mt-2">
-                {photos.length}/20 תמונות · לחצו על תמונה לבחירתה כתמונת פרופיל
-              </p>
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
+              העלאת תמונות תהיה זמינה בקרוב. כרגע ניתן לראות את התמונות הקיימות בפרופיל.
             </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {photos.map((url, idx) => (
-                <div
-                  key={idx}
-                  className={cn(
-                    "relative aspect-square rounded-2xl overflow-hidden cursor-pointer group",
-                    idx === profilePhotoIdx && "ring-4 ring-primary"
-                  )}
-                  onClick={() => setProfilePhotoIdx(idx)}
-                >
-                  <Image
-                    src={url}
-                    alt={`תמונה ${idx + 1}`}
-                    fill
-                    className="object-cover"
-                    unoptimized
-                  />
-                  {/* Overlay on hover */}
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-                    {idx === profilePhotoIdx && (
-                      <span className="bg-primary text-white text-xs font-bold px-2 py-1 rounded-full">
-                        תמונת פרופיל
-                      </span>
-                    )}
+            {photos.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {photos.map((url, idx) => (
+                  <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden">
+                    <Image src={url} alt={`תמונה ${idx + 1}`} fill className="object-cover" unoptimized />
                   </div>
-                  {/* Delete button */}
-                  <button
-                    onClick={(e) => { e.stopPropagation(); removePhoto(idx); }}
-                    className="absolute top-2 left-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              ))}
-
-              {/* Add more placeholder */}
-              {photos.length < 20 && (
-                <div className="aspect-square rounded-2xl border-2 border-dashed border-border flex flex-col items-center justify-center text-text-muted hover:border-primary hover:text-primary transition-colors cursor-pointer">
-                  <Upload className="h-6 w-6 mb-1" />
-                  <span className="text-xs font-medium">הוסיפו</span>
-                </div>
-              )}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="border-2 border-dashed border-border rounded-2xl p-10 text-center text-text-muted">
+                <p className="text-4xl mb-2">📷</p>
+                <p className="font-medium">עדיין אין תמונות</p>
+              </div>
+            )}
           </div>
         )}
 
@@ -299,7 +310,7 @@ export default function SupplierProfilePage() {
           <div className="space-y-5">
             {packages.map((pkg, pkgIdx) => (
               <div
-                key={pkg.id}
+                key={pkgIdx}
                 className={cn(
                   "bg-white rounded-2xl border-2 p-6 space-y-4",
                   pkg.isPopular ? "border-primary" : "border-border"
@@ -337,9 +348,7 @@ export default function SupplierProfilePage() {
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-semibold text-text-main block mb-1.5">
-                      מחיר (₪)
-                    </label>
+                    <label className="text-sm font-semibold text-text-main block mb-1.5">מחיר (₪)</label>
                     <input
                       type="number"
                       value={pkg.price}
@@ -353,9 +362,7 @@ export default function SupplierProfilePage() {
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-semibold text-text-main block mb-1.5">
-                      שעות
-                    </label>
+                    <label className="text-sm font-semibold text-text-main block mb-1.5">שעות</label>
                     <input
                       type="number"
                       value={pkg.hours}
@@ -370,25 +377,17 @@ export default function SupplierProfilePage() {
                   </div>
                 </div>
 
-                {/* Includes */}
                 <div>
-                  <label className="text-sm font-semibold text-text-main block mb-2">
-                    כולל
-                  </label>
+                  <label className="text-sm font-semibold text-text-main block mb-2">כולל</label>
                   <div className="flex flex-wrap gap-2 mb-2">
                     {pkg.includes.map((item, i) => (
-                      <span
-                        key={i}
-                        className="flex items-center gap-1.5 bg-primary-light text-primary-dark text-sm px-3 py-1 rounded-full"
-                      >
+                      <span key={i} className="flex items-center gap-1.5 bg-primary-light text-primary-dark text-sm px-3 py-1 rounded-full">
                         {item}
-                        <button
-                          onClick={() => {
-                            const updated = [...packages];
-                            updated[pkgIdx].includes = updated[pkgIdx].includes.filter((_, ii) => ii !== i);
-                            setPackages(updated);
-                          }}
-                        >
+                        <button onClick={() => {
+                          const updated = [...packages];
+                          updated[pkgIdx].includes = updated[pkgIdx].includes.filter((_, ii) => ii !== i);
+                          setPackages(updated);
+                        }}>
                           <X className="h-3 w-3" />
                         </button>
                       </span>
@@ -438,18 +437,23 @@ export default function SupplierProfilePage() {
               </div>
             ))}
 
-            <Button
-              fullWidth
-              size="lg"
-              isLoading={isLoading}
-              onClick={async () => {
-                setIsLoading(true);
-                await new Promise((r) => setTimeout(r, 800));
-                setIsLoading(false);
-                setSaveSuccess(true);
-                setTimeout(() => setSaveSuccess(false), 3000);
-              }}
-            >
+            {packages.length < 3 && (
+              <button
+                type="button"
+                onClick={() =>
+                  setPackages((prev) => [
+                    ...prev,
+                    { name: "", price: 0, hours: 0, includes: [], isPopular: false, includeInput: "" },
+                  ])
+                }
+                className="w-full flex items-center justify-center gap-2 py-4 border-2 border-dashed border-border rounded-2xl text-text-muted hover:border-primary hover:text-primary transition-colors font-medium text-sm"
+              >
+                <Plus className="h-4 w-4" />
+                הוסיפו חבילה
+              </button>
+            )}
+
+            <Button fullWidth size="lg" isLoading={isLoading} onClick={handleSavePackages}>
               שמרי שינויים
             </Button>
           </div>

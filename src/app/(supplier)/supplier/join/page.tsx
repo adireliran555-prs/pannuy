@@ -86,9 +86,21 @@ export default function SupplierJoinPage() {
 
   const onStep1Submit = async (data: Step1Data) => {
     setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setIsLoading(false);
-    setStage("otp");
+    try {
+      const res = await fetch("/api/supplier/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: data.phone }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setOtpError(json.error ?? "שגיאה בשליחת קוד");
+        return;
+      }
+      setStage("otp");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleOtpChange = async (value: string) => {
@@ -96,11 +108,25 @@ export default function SupplierJoinPage() {
     setOtpError("");
     if (value.length === 6) {
       setIsLoading(true);
-      await new Promise((r) => setTimeout(r, 600));
-      setIsLoading(false);
-      setStep(2);
-      setStage("form");
-      setOtp("");
+      try {
+        const { name, phone, email } = getValues();
+        const res = await fetch("/api/supplier/auth/verify-otp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phone, otp: value, name, email }),
+        });
+        const json = await res.json();
+        if (!res.ok) {
+          setOtpError(json.error ?? "קוד שגוי. נסו שנית.");
+          setOtp("");
+          return;
+        }
+        setStep(2);
+        setStage("form");
+        setOtp("");
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -159,9 +185,37 @@ export default function SupplierJoinPage() {
 
   const handleFinalSubmit = async () => {
     setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 1200));
-    setIsLoading(false);
-    router.push("/supplier/dashboard");
+    try {
+      await fetch("/api/supplier/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          city: selectedCity || undefined,
+          serviceAreas: selectedAreas.length > 0 ? selectedAreas : undefined,
+          bioHe: bio || undefined,
+        }),
+      });
+
+      for (const pkg of packages) {
+        if (pkg.name && pkg.price) {
+          await fetch("/api/supplier/packages", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              nameHe: pkg.name,
+              price: Number(pkg.price),
+              hours: Number(pkg.hours) || undefined,
+              includes: pkg.includes,
+              isPopular: pkg.isPopular,
+            }),
+          });
+        }
+      }
+
+      router.push("/supplier/dashboard");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
