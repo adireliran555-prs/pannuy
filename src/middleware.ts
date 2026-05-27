@@ -36,10 +36,23 @@ export function middleware(request: NextRequest) {
   }
 
   if (SUPPLIER_PROTECTED_PREFIXES.some((p) => pathname.startsWith(p))) {
-    const token = request.cookies.get("pannuy_supplier_session")?.value;
-    if (!token) return NextResponse.redirect(new URL("/supplier/login", request.url));
-    const payload = decodeJwtPayload(token);
-    if (!payload || payload.type !== "supplier") {
+    const supplierToken = request.cookies.get("pannuy_supplier_session")?.value;
+    const customerToken = request.cookies.get("pannuy_session")?.value;
+
+    // If the user has a customer session but no valid supplier session,
+    // they landed here by accident (e.g. stale cookie). Redirect to customer area.
+    const supplierPayload = supplierToken ? decodeJwtPayload(supplierToken) : null;
+    if ((!supplierToken || !supplierPayload || supplierPayload.type !== "supplier") && customerToken) {
+      const customerPayload = decodeJwtPayload(customerToken);
+      if (customerPayload && customerPayload.type === "customer") {
+        const res = NextResponse.redirect(new URL("/dashboard/meetings", request.url));
+        res.cookies.delete("pannuy_supplier_session");
+        return res;
+      }
+    }
+
+    if (!supplierToken) return NextResponse.redirect(new URL("/supplier/login", request.url));
+    if (!supplierPayload || supplierPayload.type !== "supplier") {
       const res = NextResponse.redirect(new URL("/supplier/login", request.url));
       res.cookies.delete("pannuy_supplier_session");
       return res;
