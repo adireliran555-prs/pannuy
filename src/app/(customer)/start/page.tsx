@@ -47,12 +47,18 @@ export default function StartPage() {
   const onSubmit = async (data: FormData) => {
     setIsLoading(true);
     try {
-      // In production: POST /api/auth/send-otp
-      await new Promise((r) => setTimeout(r, 800));
+      const res = await fetch("/api/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: data.phone }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setOtpError(json.error ?? "שגיאה בשליחת קוד");
+        return;
+      }
       setFormData(data);
       setStage("otp");
-    } catch {
-      // handle error
     } finally {
       setIsLoading(false);
     }
@@ -65,13 +71,23 @@ export default function StartPage() {
     if (value.length === 6) {
       setIsLoading(true);
       try {
-        // In production: POST /api/auth/verify-otp
-        await new Promise((r) => setTimeout(r, 600));
-        // For demo: any 6-digit code works
-        router.push("/start/wedding");
-      } catch {
-        setOtpError("קוד שגוי. נסו שנית.");
-        setOtp("");
+        const res = await fetch("/api/auth/verify-otp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phone: formData?.phone, otp: value, name: formData?.name }),
+        });
+        const json = await res.json();
+        if (!res.ok) {
+          setOtpError(json.error ?? "קוד שגוי. נסו שנית.");
+          setOtp("");
+          return;
+        }
+        const user = json.user;
+        if (user?.weddingDate) {
+          router.push("/dashboard/meetings");
+        } else {
+          router.push("/start/wedding");
+        }
       } finally {
         setIsLoading(false);
       }
@@ -82,8 +98,15 @@ export default function StartPage() {
     setOtp("");
     setOtpError("");
     setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 500));
-    setIsLoading(false);
+    try {
+      await fetch("/api/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: formData?.phone }),
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

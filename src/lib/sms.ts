@@ -1,25 +1,41 @@
-// SMS provider abstraction.
-// In local dev, we mock with console.log.
-// Replace the `sendViaSmsProvider` function body with a real API call in production.
+function toE164(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.startsWith("0")) return "+972" + digits.slice(1);
+  if (digits.startsWith("972")) return "+" + digits;
+  return "+" + digits;
+}
 
 export async function sendOtp(phone: string, otp: string): Promise<boolean> {
-  if (process.env.NODE_ENV !== "production" || !process.env.SMS_API_KEY) {
-    console.log(`[SMS] Sending OTP ${otp} to ${phone}`);
+  const isDev = process.env.NODE_ENV !== "production";
+  const hasTwilio =
+    process.env.TWILIO_ACCOUNT_SID &&
+    process.env.TWILIO_AUTH_TOKEN &&
+    process.env.TWILIO_FROM_NUMBER;
+
+  if (isDev || !hasTwilio) {
+    console.log(`[SMS] OTP for ${phone}: ${otp}`);
     return true;
   }
 
-  return sendViaSmsProvider(phone, otp);
-}
+  try {
+    const sid = process.env.TWILIO_ACCOUNT_SID!;
+    const auth = process.env.TWILIO_AUTH_TOKEN!;
+    const from = process.env.TWILIO_FROM_NUMBER!;
+    const to = toE164(phone);
+    const message = `קוד האימות שלך ב-פנוי: ${otp}`;
 
-async function sendViaSmsProvider(phone: string, otp: string): Promise<boolean> {
-  // TODO: wire in your SMS provider (e.g. Twilio, 019, Vonage).
-  // Example shape:
-  // const res = await fetch("https://api.smsprovider.com/send", {
-  //   method: "POST",
-  //   headers: { Authorization: `Bearer ${process.env.SMS_API_KEY}`, "Content-Type": "application/json" },
-  //   body: JSON.stringify({ to: phone, message: `קוד האימות שלך ב-פנוי: ${otp}` }),
-  // });
-  // return res.ok;
-  console.log(`[SMS] Sending OTP ${otp} to ${phone}`);
-  return true;
+    const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
+      method: "POST",
+      headers: {
+        Authorization: "Basic " + Buffer.from(`${sid}:${auth}`).toString("base64"),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({ To: to, From: from, Body: message }).toString(),
+    });
+
+    return res.ok;
+  } catch (err) {
+    console.error("[SMS] Twilio error:", err);
+    return false;
+  }
 }
