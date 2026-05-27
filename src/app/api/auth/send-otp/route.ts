@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       data: { phone, hash, expiresAt },
     });
 
-    await sendOtp(phone, otp);
+    sendOtp(phone, otp).catch((err) => console.error("[SMS] failed:", err));
 
     return NextResponse.json({ success: true });
   } catch (err) {

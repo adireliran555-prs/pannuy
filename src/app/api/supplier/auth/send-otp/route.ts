@@ -44,7 +44,8 @@ export async function POST(request: NextRequest) {
     const expiresAt = new Date(Date.now() + OTP_EXPIRES_MINUTES * 60 * 1000);
 
     await prisma.otp.create({ data: { phone, hash, expiresAt } });
-    await sendOtp(phone, otp);
+
+    sendOtp(phone, otp).catch((err) => console.error("[SMS] failed:", err));
 
     return NextResponse.json({ success: true });
   } catch (err) {

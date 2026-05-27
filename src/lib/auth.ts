@@ -5,7 +5,7 @@ import { CustomerSession, SupplierSession } from "@/types";
 const JWT_SECRET = process.env.JWT_SECRET ?? "pannuy-jwt-secret-local-dev";
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN ?? "7d";
 
-const BCRYPT_ROUNDS = 6;
+const BCRYPT_ROUNDS = 4;
 
 // ─── JWT ──────────────────────────────────────────────────────────────────────
 
