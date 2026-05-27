@@ -49,11 +49,10 @@ export async function POST(request: NextRequest) {
     const hash = await hashOtp(otp);
     const expiresAt = new Date(Date.now() + OTP_EXPIRES_MINUTES * 60 * 1000);
 
-    await prisma.otp.create({
-      data: { phone, hash, expiresAt },
-    });
-
-    sendOtp(phone, otp).catch((err) => console.error("[SMS] failed:", err));
+    await Promise.all([
+      prisma.otp.create({ data: { phone, hash, expiresAt } }),
+      sendOtp(phone, otp),
+    ]);
 
     return NextResponse.json({ success: true });
   } catch (err) {
