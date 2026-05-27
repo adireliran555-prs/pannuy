@@ -7,35 +7,30 @@ function toE164(phone: string): string {
 
 export async function sendOtp(phone: string, otp: string): Promise<boolean> {
   const isDev = process.env.NODE_ENV !== "production";
-  const hasTwilio =
-    process.env.TWILIO_ACCOUNT_SID &&
-    process.env.TWILIO_AUTH_TOKEN &&
-    process.env.TWILIO_FROM_NUMBER;
+  const hasTelnyx = process.env.TELNYX_API_KEY && process.env.TELNYX_FROM_NUMBER;
 
-  if (isDev || !hasTwilio) {
+  if (isDev || !hasTelnyx) {
     console.log(`[SMS] OTP for ${phone}: ${otp}`);
     return true;
   }
 
   try {
-    const sid = process.env.TWILIO_ACCOUNT_SID!;
-    const auth = process.env.TWILIO_AUTH_TOKEN!;
-    const from = process.env.TWILIO_FROM_NUMBER!;
-    const to = toE164(phone);
-    const message = `קוד האימות שלך ב-פנוי: ${otp}`;
-
-    const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
+    const res = await fetch("https://api.telnyx.com/v2/messages", {
       method: "POST",
       headers: {
-        Authorization: "Basic " + Buffer.from(`${sid}:${auth}`).toString("base64"),
-        "Content-Type": "application/x-www-form-urlencoded",
+        Authorization: `Bearer ${process.env.TELNYX_API_KEY}`,
+        "Content-Type": "application/json",
       },
-      body: new URLSearchParams({ To: to, From: from, Body: message }).toString(),
+      body: JSON.stringify({
+        from: process.env.TELNYX_FROM_NUMBER,
+        to: toE164(phone),
+        text: `קוד האימות שלך ב-פנוי: ${otp}`,
+      }),
     });
 
     return res.ok;
   } catch (err) {
-    console.error("[SMS] Twilio error:", err);
+    console.error("[SMS] Telnyx error:", err);
     return false;
   }
 }
