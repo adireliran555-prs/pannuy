@@ -87,6 +87,7 @@ export async function POST(request: NextRequest) {
       maxAge: SESSION_COOKIE_MAX_AGE,
       path: "/",
     });
+    response.cookies.delete("pannuy_supplier_session");
 
     return response;
   } catch (err) {

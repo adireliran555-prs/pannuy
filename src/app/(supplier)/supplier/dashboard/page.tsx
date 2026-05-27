@@ -1,14 +1,13 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Calendar, Clock, Star, Eye, CheckCircle, X, ArrowLeft, TrendingUp } from "lucide-react";
 import SupplierDashboardLayout from "@/components/common/SupplierDashboardLayout";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
-import { MOCK_SUPPLIERS, MEETING_MOCK } from "@/lib/mock-data";
+import { MEETING_MOCK } from "@/lib/mock-data";
 import { formatHebrewDate } from "@/lib/utils";
-
-const SUPPLIER = MOCK_SUPPLIERS[0];
 
 const MEETING_TYPE_LABELS: Record<string, string> = {
   video: "וידאו",
@@ -17,6 +16,18 @@ const MEETING_TYPE_LABELS: Record<string, string> = {
 };
 
 export default function SupplierDashboardPage() {
+  const [supplierName, setSupplierName] = useState("");
+
+  useEffect(() => {
+    fetch("/api/supplier/auth/me")
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success && json.supplier?.name) {
+          setSupplierName(json.supplier.name.split(" ")[0]);
+        }
+      });
+  }, []);
+
   const pendingMeetings = MEETING_MOCK.filter((m) => m.status === "pending");
   const confirmedMeetings = MEETING_MOCK.filter((m) => m.status === "confirmed");
 
@@ -39,7 +50,7 @@ export default function SupplierDashboardPage() {
     },
     {
       label: "דירוג ממוצע",
-      value: SUPPLIER.rating.toFixed(1),
+      value: "—",
       icon: Star,
       bg: "bg-green-50",
       iconColor: "text-green-600",
@@ -58,9 +69,9 @@ export default function SupplierDashboardPage() {
   // Profile completion
   const completionItems = [
     { label: "Google Calendar מחובר", done: false },
-    { label: "5+ תמונות הועלו", done: SUPPLIER.portfolio.length >= 5 },
-    { label: "חבילות הוגדרו", done: SUPPLIER.packages.length > 0 },
-    { label: "ביו מלא", done: SUPPLIER.bio.length > 50 },
+    { label: "5+ תמונות הועלו", done: false },
+    { label: "חבילות הוגדרו", done: false },
+    { label: "ביו מלא", done: false },
   ];
   const completedCount = completionItems.filter((i) => i.done).length;
   const completionPct = Math.round((completedCount / completionItems.length) * 100);
@@ -71,7 +82,7 @@ export default function SupplierDashboardPage() {
         {/* Welcome */}
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-text-main">
-            שלום, {SUPPLIER.name.split(" ")[0]} 👋
+            שלום{supplierName ? `, ${supplierName}` : ""} 👋
           </h1>
           <p className="text-text-muted mt-1">
             הנה מה שמחכה לכם היום
