@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -35,6 +35,17 @@ export default function StartPage() {
   const [otpError, setOtpError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState<FormData | null>(null);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success) {
+          router.replace("/dashboard/meetings");
+        }
+      })
+      .catch(() => {});
+  }, [router]);
 
   const {
     register,

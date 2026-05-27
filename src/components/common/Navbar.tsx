@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
 import { Search, Heart, Calendar, User, Camera } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Button from "@/components/ui/Button";
@@ -15,6 +16,14 @@ const MOBILE_NAV = [
 
 export default function Navbar() {
   const pathname = usePathname();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((json) => setIsLoggedIn(json.success === true))
+      .catch(() => {});
+  }, []);
 
   const isOnboarding =
     pathname.startsWith("/start") || pathname.startsWith("/supplier/join");
@@ -51,34 +60,29 @@ export default function Navbar() {
 
           {/* Auth buttons — left side in RTL */}
           <div className="flex items-center gap-3">
-            <Link
-              href="/dashboard/meetings"
-              className={cn(
-                "text-sm font-semibold transition-colors",
-                pathname.startsWith("/dashboard")
-                  ? "text-primary"
-                  : "text-text-muted hover:text-text-main"
-              )}
-            >
-              הפגישות שלי
-            </Link>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => {
-                window.location.href = "/start";
-              }}
-            >
-              כניסה
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => {
-                window.location.href = "/start";
-              }}
-            >
-              הרשמה חינם
-            </Button>
+            {isLoggedIn ? (
+              <Link href="/dashboard/meetings">
+                <Button size="sm" variant="secondary">
+                  הפגישות שלי
+                </Button>
+              </Link>
+            ) : (
+              <>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => { window.location.href = "/start"; }}
+                >
+                  כניסה
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => { window.location.href = "/start"; }}
+                >
+                  הרשמה חינם
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </header>

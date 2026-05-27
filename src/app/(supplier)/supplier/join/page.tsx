@@ -64,6 +64,7 @@ export default function SupplierJoinPage() {
   const [selectedCity, setSelectedCity] = useState("");
   const [selectedAreas, setSelectedAreas] = useState<string[]>([]);
   const [bio, setBio] = useState("");
+  const [step2Attempted, setStep2Attempted] = useState(false);
 
   // Step 3 state
   const [photoUrl, setPhotoUrl] = useState("");
@@ -419,16 +420,39 @@ export default function SupplierJoinPage() {
                     onChange={(e) => e.target.value.length <= 500 && setBio(e.target.value)}
                     placeholder="ספרו לזוגות מי אתם, מה הסגנון שלכם, וכמה ניסיון יש לכם..."
                     rows={5}
-                    className="w-full rounded-xl border border-border px-4 py-3 text-base text-text-main placeholder:text-text-muted focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 resize-none"
+                    className={cn(
+                      "w-full rounded-xl border px-4 py-3 text-base text-text-main placeholder:text-text-muted focus:outline-none focus:ring-2 resize-none",
+                      step2Attempted && bio.length < 20
+                        ? "border-red-400 focus:border-red-400 focus:ring-red-200"
+                        : "border-border focus:border-primary focus:ring-primary/20"
+                    )}
                   />
+                  {step2Attempted && bio.length < 20 && (
+                    <p className="text-red-500 text-xs mt-1 font-medium">
+                      {bio.length === 0
+                        ? "חובה להוסיף תיאור עצמי"
+                        : `התיאור קצר מדי — צריך לפחות 20 תווים (חסרים ${20 - bio.length})`}
+                    </p>
+                  )}
                 </div>
               </div>
+
+              {step2Attempted && !selectedCity && (
+                <p className="text-red-500 text-xs -mt-3 font-medium">חובה לבחור עיר</p>
+              )}
+              {step2Attempted && selectedAreas.length === 0 && (
+                <p className="text-red-500 text-xs -mt-3 font-medium">חובה לבחור לפחות אזור שירות אחד</p>
+              )}
 
               <Button
                 fullWidth
                 size="lg"
-                disabled={!selectedCity || selectedAreas.length === 0 || bio.length < 20}
-                onClick={() => setStep(3)}
+                onClick={() => {
+                  setStep2Attempted(true);
+                  if (selectedCity && selectedAreas.length > 0 && bio.length >= 20) {
+                    setStep(3);
+                  }
+                }}
               >
                 המשיכו
               </Button>

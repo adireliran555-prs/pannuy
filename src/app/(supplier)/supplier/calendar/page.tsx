@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { ChevronRight, ChevronLeft, RefreshCw, Calendar, CheckCircle } from "lucide-react";
 import SupplierDashboardLayout from "@/components/common/SupplierDashboardLayout";
@@ -10,22 +10,9 @@ import { cn } from "@/lib/utils";
 
 type DayStatus = "available" | "blocked" | "confirmed" | "pending";
 
-function generateMockCalendar(year: number, month: number): Record<number, DayStatus> {
-  const days: Record<number, DayStatus> = {};
-  const daysCount = getDaysInMonth(year, month);
-  for (let d = 1; d <= daysCount; d++) {
-    const dow = new Date(year, month, d).getDay();
-    if (dow === 6) {
-      days[d] = "blocked";
-    } else if (d === 15) {
-      days[d] = "confirmed";
-    } else if (d === 20) {
-      days[d] = "pending";
-    } else if (d === 8 || d === 12) {
-      days[d] = "blocked";
-    }
-  }
-  return days;
+interface BlockedDay {
+  id: string;
+  date: string;
 }
 
 function GoogleCalendarBanner() {
@@ -89,17 +76,60 @@ export default function SupplierCalendarPage() {
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
-  const [calendarData, setCalendarData] = useState<Record<number, DayStatus>>(
-    generateMockCalendar(today.getFullYear(), today.getMonth())
-  );
+  const [calendarData, setCalendarData] = useState<Record<number, DayStatus>>({});
+  const [blockedDays, setBlockedDays] = useState<BlockedDay[]>([]);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [isTogglingBlock, setIsTogglingBlock] = useState(false);
+
+  const loadData = useCallback(async (y: number, m: number) => {
+    const [meetingsRes, blockedRes] = await Promise.all([
+      fetch("/api/supplier/meetings"),
+      fetch(`/api/supplier/availability/block?year=${y}&month=${m + 1}`),
+    ]);
+
+    const meetingsJson = await meetingsRes.json();
+    const blockedJson = await blockedRes.json();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const meetings: any[] = meetingsJson.data ?? [];
+    const blocked: BlockedDay[] = blockedJson.data ?? [];
+
+    setBlockedDays(blocked);
+
+    const data: Record<number, DayStatus> = {};
+
+    // Map blocked days
+    for (const b of blocked) {
+      const d = new Date(b.date);
+      if (d.getFullYear() === y && d.getMonth() === m) {
+        data[d.getDate()] = "blocked";
+      }
+    }
+
+    // Map meetings (confirmed/pending override blocked)
+    for (const meeting of meetings) {
+      const d = new Date(meeting.requestedDate);
+      if (d.getFullYear() === y && d.getMonth() === m) {
+        if (meeting.status === "CONFIRMED") {
+          data[d.getDate()] = "confirmed";
+        } else if (meeting.status === "PENDING") {
+          data[d.getDate()] = data[d.getDate()] === "confirmed" ? "confirmed" : "pending";
+        }
+      }
+    }
+
+    setCalendarData(data);
+  }, []);
+
+  useEffect(() => {
+    loadData(year, month);
+  }, [year, month, loadData]);
 
   const prevMonth = () => {
     const newMonth = month === 0 ? 11 : month - 1;
     const newYear = month === 0 ? year - 1 : year;
     setMonth(newMonth);
     setYear(newYear);
-    setCalendarData(generateMockCalendar(newYear, newMonth));
     setSelectedDay(null);
   };
 
@@ -108,7 +138,6 @@ export default function SupplierCalendarPage() {
     const newYear = month === 11 ? year + 1 : year;
     setMonth(newMonth);
     setYear(newYear);
-    setCalendarData(generateMockCalendar(newYear, newMonth));
     setSelectedDay(null);
   };
 
@@ -116,18 +145,44 @@ export default function SupplierCalendarPage() {
     setSelectedDay((prev) => (prev === day ? null : day));
   };
 
-  const toggleBlock = (day: number) => {
+  const toggleBlock = async (day: number) => {
     const current = calendarData[day];
-    if (current === "blocked") {
-      setCalendarData((prev) => {
-        const next = { ...prev };
-        delete next[day];
-        return next;
-      });
-    } else if (!current) {
-      setCalendarData((prev) => ({ ...prev, [day]: "blocked" }));
+    setIsTogglingBlock(true);
+
+    try {
+      if (current === "blocked") {
+        const blockedDay = blockedDays.find((b) => {
+          const d = new Date(b.date);
+          return d.getFullYear() === year && d.getMonth() === month && d.getDate() === day;
+        });
+        if (blockedDay) {
+          await fetch(`/api/supplier/availability/${blockedDay.id}`, { method: "DELETE" });
+        }
+        setCalendarData((prev) => {
+          const next = { ...prev };
+          delete next[day];
+          return next;
+        });
+        setBlockedDays((prev) => prev.filter((b) => b.id !== blockedDay?.id));
+      } else if (!current) {
+        const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+        const res = await fetch("/api/supplier/availability/block", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ date: dateStr, startTime: "00:00", endTime: "23:59" }),
+        });
+        if (res.ok) {
+          const json = await res.json();
+          setCalendarData((prev) => ({ ...prev, [day]: "blocked" }));
+          if (json.data?.id) {
+            setBlockedDays((prev) => [...prev, { id: json.data.id, date: dateStr }]);
+          }
+        }
+      }
+    } finally {
+      setIsTogglingBlock(false);
+      setSelectedDay(null);
     }
-    setSelectedDay(null);
   };
 
   const daysInMonth = getDaysInMonth(year, month);
@@ -242,6 +297,7 @@ export default function SupplierCalendarPage() {
                 <Button
                   size="sm"
                   variant="secondary"
+                  isLoading={isTogglingBlock}
                   onClick={() => toggleBlock(selectedDay)}
                 >
                   בטלי חסימה
@@ -250,6 +306,7 @@ export default function SupplierCalendarPage() {
                 <Button
                   size="sm"
                   variant="danger"
+                  isLoading={isTogglingBlock}
                   onClick={() => toggleBlock(selectedDay)}
                 >
                   חסמי יום
