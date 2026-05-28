@@ -31,6 +31,25 @@ export function formatShortDate(date: Date | string): string {
   }).format(d);
 }
 
+export function formatRelativeHebrew(date: Date | string): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  const diffMs = d.getTime() - Date.now();
+  const rtf = new Intl.RelativeTimeFormat("he-IL", { numeric: "auto" });
+  const abs = Math.abs(diffMs);
+  const minute = 60_000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+  const week = 7 * day;
+  const month = 30 * day;
+  const year = 365 * day;
+  if (abs < hour) return rtf.format(Math.round(diffMs / minute), "minute");
+  if (abs < day) return rtf.format(Math.round(diffMs / hour), "hour");
+  if (abs < week) return rtf.format(Math.round(diffMs / day), "day");
+  if (abs < month) return rtf.format(Math.round(diffMs / week), "week");
+  if (abs < year) return rtf.format(Math.round(diffMs / month), "month");
+  return rtf.format(Math.round(diffMs / year), "year");
+}
+
 export function formatPhone(phone: string): string {
   // Format Israeli phone: 0501234567 -> 050-1234567
   if (phone.length === 10) {

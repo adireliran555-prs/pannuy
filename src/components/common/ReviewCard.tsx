@@ -1,5 +1,5 @@
 import Stars from "@/components/ui/Stars";
-import { cn } from "@/lib/utils";
+import { cn, formatRelativeHebrew } from "@/lib/utils";
 
 interface ReviewCardProps {
   reviewerName: string;
@@ -65,7 +65,7 @@ export default function ReviewCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2">
             <span className="font-semibold text-text-main">{reviewerName}</span>
-            <span className="text-xs text-text-muted flex-shrink-0">{date}</span>
+            <span className="text-xs text-text-muted flex-shrink-0">{formatRelativeHebrew(date)}</span>
           </div>
           <Stars rating={rating} size="sm" className="mt-0.5" />
         </div>

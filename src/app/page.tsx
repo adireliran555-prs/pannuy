@@ -5,19 +5,31 @@ import Image from "next/image";
 import { Camera, CheckCircle, Star, Search, Calendar, ArrowLeft } from "lucide-react";
 import Navbar from "@/components/common/Navbar";
 import SupplierCard from "@/components/common/SupplierCard";
+import HeroSearch from "@/components/common/HeroSearch";
 import prisma from "@/lib/prisma";
 
 export default async function HomePage() {
-  const rawSuppliers = await prisma.supplier.findMany({
-    where: { isActive: true, isVerified: true },
-    take: 6,
-    orderBy: [{ ratingAvg: "desc" }, { ratingCount: "desc" }],
-    select: {
-      id: true, slug: true, name: true, city: true, category: true,
-      basePriceFrom: true, basePriceTo: true, ratingAvg: true, ratingCount: true,
-      photos: { where: { type: { in: ["PROFILE", "COVER"] } }, orderBy: { sortOrder: "asc" } },
-    },
-  });
+  const [rawSuppliers, supplierCount, ratingAgg] = await Promise.all([
+    prisma.supplier.findMany({
+      where: { isActive: true, isVerified: true },
+      take: 6,
+      orderBy: [{ ratingAvg: "desc" }, { ratingCount: "desc" }],
+      select: {
+        id: true, slug: true, name: true, city: true, category: true,
+        basePriceFrom: true, basePriceTo: true, ratingAvg: true, ratingCount: true,
+        photos: { where: { type: { in: ["PROFILE", "COVER"] } }, orderBy: { sortOrder: "asc" } },
+      },
+    }),
+    prisma.supplier.count({ where: { isActive: true, isVerified: true } }),
+    prisma.supplier.aggregate({
+      where: { isActive: true, isVerified: true, ratingCount: { gt: 0 } },
+      _avg: { ratingAvg: true },
+      _sum: { ratingCount: true },
+    }),
+  ]);
+
+  const avgRating = ratingAgg._avg.ratingAvg ?? 0;
+  const totalReviews = ratingAgg._sum.ratingCount ?? 0;
 
   const featuredSuppliers = rawSuppliers.map((s) => ({
     id: s.id,
@@ -76,23 +88,8 @@ export default async function HomePage() {
             בדיקת זמינות בזמן אמת&nbsp;·&nbsp;קביעת פגישה ישירות&nbsp;·&nbsp;ביקורות אמיתיות
           </p>
 
-          {/* CTA */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              href="/start"
-              className="inline-flex items-center gap-2 bg-primary text-white font-bold text-lg px-8 py-4 rounded-full shadow-lg hover:shadow-xl hover:bg-primary-dark transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
-            >
-              התחילו עכשיו
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
-            <Link
-              href="/search"
-              className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm text-text-main font-semibold text-base px-6 py-4 rounded-full border-2 border-border hover:border-primary/40 transition-all duration-200"
-            >
-              <Search className="h-4 w-4" />
-              גלו ספקים
-            </Link>
-          </div>
+          {/* Quick search */}
+          <HeroSearch />
 
           <p className="mt-6 text-sm text-text-muted">
             כבר רשומים?{" "}
@@ -183,7 +180,6 @@ export default async function HomePage() {
               {
                 title: "צילום חתונה",
                 emoji: "📸",
-                desc: "מקצועי ומנוסה",
                 href: "/search?category=PHOTOGRAPHER",
                 active: true,
                 bg: "bg-gradient-to-br from-rose-100 to-rose-200",
@@ -191,36 +187,30 @@ export default async function HomePage() {
               {
                 title: "מקומות התארגנות",
                 emoji: "🏛️",
-                desc: "בקרוב",
-                href: "#",
+                href: `https://wa.me/972555173402?text=${encodeURIComponent("היי, תעדכנו אותי כשמקומות התארגנות יהיו זמינים בפנוי 🙏")}`,
                 active: false,
                 bg: "bg-gradient-to-br from-purple-100 to-purple-200",
               },
               {
                 title: "מאפרות",
                 emoji: "💄",
-                desc: "בקרוב",
-                href: "#",
+                href: `https://wa.me/972555173402?text=${encodeURIComponent("היי, תעדכנו אותי כשמאפרות יהיו זמינות בפנוי 🙏")}`,
                 active: false,
                 bg: "bg-gradient-to-br from-pink-100 to-pink-200",
               },
               {
                 title: "קייטרינג",
                 emoji: "🍽️",
-                desc: "בקרוב",
-                href: "#",
+                href: `https://wa.me/972555173402?text=${encodeURIComponent("היי, תעדכנו אותי כשקייטרינג יהיה זמין בפנוי 🙏")}`,
                 active: false,
                 bg: "bg-gradient-to-br from-amber-100 to-amber-200",
               },
-            ].map(({ title, emoji, desc, href, active, bg }) => (
+            ].map(({ title, emoji, href, active, bg }) => (
               <Link
                 key={title}
                 href={href}
-                className={`flex-shrink-0 w-48 sm:w-auto snap-start rounded-2xl ${bg} p-6 flex flex-col gap-2 transition-all duration-200 ${
-                  active
-                    ? "hover:-translate-y-1 hover:shadow-lg cursor-pointer"
-                    : "opacity-70 cursor-default"
-                }`}
+                target={active ? undefined : "_blank"}
+                className={`flex-shrink-0 w-48 sm:w-auto snap-start rounded-2xl ${bg} p-6 flex flex-col gap-2 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg cursor-pointer`}
               >
                 <span className="text-4xl">{emoji}</span>
                 <h3 className="font-bold text-text-main">{title}</h3>
@@ -229,63 +219,11 @@ export default async function HomePage() {
                     גלו עכשיו →
                   </span>
                 ) : (
-                  <span className="inline-flex items-center text-xs font-bold bg-gray-800 text-white px-2.5 py-0.5 rounded-full w-fit">
-                    בקרוב
+                  <span className="inline-flex items-center gap-1 text-xs font-bold bg-gray-800 text-white px-2.5 py-0.5 rounded-full w-fit">
+                    עדכנו אותי →
                   </span>
                 )}
               </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════
-          HOW IT WORKS
-      ══════════════════════════════════════ */}
-      <section className="py-20 px-6 bg-white">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12">
-            <span className="text-sm font-bold text-primary uppercase tracking-widest">תהליך פשוט</span>
-            <h2 className="text-3xl sm:text-4xl font-black text-text-main mt-2">
-              מחיפוש לחתונה המושלמת — בשלושה שלבים
-            </h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
-            {/* Connector line (desktop) */}
-            <div className="hidden md:block absolute top-10 left-1/6 right-1/6 h-0.5 bg-gradient-to-r from-primary/20 via-primary to-primary/20" />
-            {[
-              {
-                step: "1",
-                emoji: "💍",
-                title: "הכניסו את תאריך החתונה",
-                desc: "הכניסו את תאריך החתונה והאזור שלכם. פנוי יסנן אוטומטית ספקים שפנויים בתאריך שלכם.",
-                color: "bg-rose-50 border-rose-200",
-              },
-              {
-                step: "2",
-                emoji: "🔍",
-                title: "גלו ובחרו ספקים",
-                desc: "עיינו בפרופילים, תיקי עבודות, ביקורות אמיתיות ומחירים — הכל במקום אחד.",
-                color: "bg-amber-50 border-amber-200",
-              },
-              {
-                step: "3",
-                emoji: "📅",
-                title: "קבעו פגישה חינמית",
-                desc: "שלחו בקשת פגישה ישירות. ללא עמלה, ללא תיווך. הספק מגיב תוך שעות.",
-                color: "bg-green-50 border-green-200",
-              },
-            ].map(({ step, emoji, title, desc, color }) => (
-              <div key={step} className={`relative flex flex-col items-center text-center p-8 rounded-3xl border-2 ${color}`}>
-                <div className="w-16 h-16 rounded-full bg-white border-4 border-white shadow-lg flex items-center justify-center text-3xl mb-4 relative z-10">
-                  {emoji}
-                </div>
-                <div className="absolute -top-3 right-6 w-7 h-7 rounded-full bg-primary text-white text-xs font-black flex items-center justify-center shadow">
-                  {step}
-                </div>
-                <h3 className="font-black text-text-main text-lg mb-2">{title}</h3>
-                <p className="text-text-muted text-sm leading-relaxed">{desc}</p>
-              </div>
             ))}
           </div>
         </div>
@@ -385,9 +323,9 @@ export default async function HomePage() {
         <div className="max-w-4xl mx-auto">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 text-center text-white">
             {[
-              { value: "500+", label: "ספקים פעילים", icon: Camera },
-              { value: "1,200+", label: "חתונות מצולמות", icon: CheckCircle },
-              { value: "4.9 ⭐", label: "דירוג ממוצע", icon: Star },
+              { value: `${supplierCount}`, label: "ספקים מאומתים", icon: Camera },
+              { value: `${totalReviews}`, label: "ביקורות מזוגות", icon: CheckCircle },
+              { value: avgRating > 0 ? `${avgRating.toFixed(1)} ⭐` : "—", label: "דירוג ממוצע", icon: Star },
             ].map(({ value, label, icon: Icon }) => (
               <div key={label} className="flex flex-col items-center gap-2">
                 <Icon className="h-8 w-8 text-white/70" />
@@ -457,7 +395,7 @@ export default async function HomePage() {
           </div>
 
           <div className="border-t border-white/10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-white/40">
-            <span>© 2025 פנוי. כל הזכויות שמורות.</span>
+            <span>© {new Date().getFullYear()} פנוי. כל הזכויות שמורות.</span>
             <div className="flex gap-4">
               <Link href="#" className="hover:text-white/70 transition-colors">פרטיות</Link>
               <Link href="#" className="hover:text-white/70 transition-colors">תנאי שימוש</Link>

@@ -149,7 +149,7 @@ export default function SupplierProfilePage({ params }: PageProps) {
           priority
           unoptimized
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
 
         {/* Back button */}
         <button
@@ -189,7 +189,7 @@ export default function SupplierProfilePage({ params }: PageProps) {
             <Image src={supplier.profilePhoto} alt={supplier.name} fill className="object-cover" unoptimized />
           </div>
           <div className="pb-2 flex-1">
-            <h1 className="text-2xl sm:text-3xl font-black text-white drop-shadow-lg">{supplier.name}</h1>
+            <h1 className="text-2xl sm:text-3xl font-black text-white [text-shadow:0_2px_8px_rgba(0,0,0,0.6)]">{supplier.name}</h1>
           </div>
         </div>
 
