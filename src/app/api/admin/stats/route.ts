@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       signupsRaw,
       meetingsRaw,
       viewsRaw,
-    ] = await Promise.all([
+    ] = await prisma.$transaction([
       prisma.user.count(),
       prisma.supplier.count(),
       prisma.supplier.count({ where: { isVerified: true } }),
@@ -50,6 +50,7 @@ export async function GET(request: NextRequest) {
       prisma.meeting.groupBy({
         by: ["status"],
         _count: { _all: true },
+        orderBy: { status: "asc" },
       }),
       prisma.review.count(),
       prisma.profileView.count(),
@@ -61,6 +62,7 @@ export async function GET(request: NextRequest) {
       prisma.supplier.groupBy({
         by: ["category"],
         _count: { _all: true },
+        orderBy: { category: "asc" },
       }),
       prisma.user.findMany({
         where: { weddingArea: { not: null } },
@@ -76,7 +78,7 @@ export async function GET(request: NextRequest) {
       prisma.meeting.groupBy({
         by: ["supplierId"],
         where: { createdAt: { gte: periodStart } },
-        _count: { _all: true },
+        _count: { supplierId: true },
         orderBy: { _count: { supplierId: "desc" } },
         take: 5,
       }),
@@ -107,12 +109,13 @@ export async function GET(request: NextRequest) {
       : [];
     const topByMeetingsResolved = topByMeetings.map((t) => {
       const s = topMeetingDetails.find((d) => d.id === t.supplierId);
+      const count = (t as unknown as { _count: { supplierId: number } })._count.supplierId;
       return {
         id: t.supplierId,
         name: s?.name ?? "—",
         slug: s?.slug ?? "",
         category: s?.category ?? "PHOTOGRAPHER",
-        count: t._count._all,
+        count,
       };
     });
 
@@ -177,11 +180,11 @@ export async function GET(request: NextRequest) {
         },
         meetingsByStatus: meetingsByStatus.map((m) => ({
           status: m.status,
-          count: m._count._all,
+          count: (m as unknown as { _count: { _all: number } })._count._all,
         })),
         suppliersByCategory: suppliersByCategory.map((s) => ({
           category: s.category,
-          count: s._count._all,
+          count: (s as unknown as { _count: { _all: number } })._count._all,
         })),
         customersByArea: Object.entries(customerAreas).map(([area, count]) => ({ area, count })),
         topByRating,

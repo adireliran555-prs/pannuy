@@ -14,7 +14,10 @@ type Event = {
 export default async function AdminActivityPage() {
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-  const [customers, suppliers, meetings, reviews, saves, views] = await Promise.all([
+  // $transaction runs all queries serially on a single pooler connection.
+  // Promise.all here would fan out to 6 connections per request and trip the
+  // Supabase pooler limit (15) under any concurrency.
+  const [customers, suppliers, meetings, reviews, saves, views] = await prisma.$transaction([
     prisma.user.findMany({
       where: { createdAt: { gte: since } },
       orderBy: { createdAt: "desc" },
