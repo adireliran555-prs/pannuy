@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Plus, X, Check, CheckCircle } from "lucide-react";
+import { Plus, X, Check, CheckCircle, LogOut } from "lucide-react";
 import SupplierDashboardLayout from "@/components/common/SupplierDashboardLayout";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -25,10 +26,16 @@ interface PackageState {
 }
 
 export default function SupplierProfilePage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"info" | "photos" | "packages">("info");
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
+
+  const handleLogout = async () => {
+    await fetch("/api/supplier/auth/logout", { method: "POST" });
+    router.push("/supplier/login");
+  };
 
   // Info tab state
   const [name, setName] = useState("");
@@ -458,6 +465,16 @@ export default function SupplierProfilePage() {
             </Button>
           </div>
         )}
+
+        {/* Logout — visible on all tabs */}
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="w-full flex items-center justify-center gap-2 py-3 text-red-500 hover:text-red-600 font-semibold text-sm border-t border-border pt-6 mt-4"
+        >
+          <LogOut className="h-4 w-4" />
+          התנתקות מהחשבון
+        </button>
       </div>
     </SupplierDashboardLayout>
   );

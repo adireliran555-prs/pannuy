@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { LayoutDashboard, Calendar, BookOpen, BarChart3, User } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { LayoutDashboard, Calendar, BookOpen, BarChart3, User, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -21,6 +21,12 @@ export default function SupplierDashboardLayout({
   children,
 }: SupplierDashboardLayoutProps) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await fetch("/api/supplier/auth/logout", { method: "POST" });
+    router.push("/supplier/login");
+  };
 
   return (
     <div className="min-h-screen bg-surface">
@@ -55,6 +61,14 @@ export default function SupplierDashboardLayout({
                     </Link>
                   );
                 })}
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-text-muted hover:bg-red-50 hover:text-red-600 mt-2 border-t border-border pt-4"
+                >
+                  <LogOut className="h-4 w-4" />
+                  התנתקות
+                </button>
               </nav>
             </div>
           </aside>
