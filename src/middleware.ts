@@ -8,6 +8,8 @@ const SUPPLIER_PROTECTED_PREFIXES = [
   "/supplier/calendar",
   "/supplier/packages",
 ];
+// /admin protected, but /admin/login is not.
+const ADMIN_PROTECTED_PREFIX = "/admin";
 
 function decodeJwtPayload(token: string): Record<string, unknown> | null {
   try {
@@ -30,6 +32,19 @@ export function middleware(request: NextRequest) {
     if (!payload || payload.type !== "customer") {
       const res = NextResponse.redirect(new URL("/start", request.url));
       res.cookies.delete("pannuy_session");
+      return res;
+    }
+    return NextResponse.next();
+  }
+
+  // Admin gating — block /admin/* (except /admin/login) without a valid admin cookie
+  if (pathname.startsWith(ADMIN_PROTECTED_PREFIX) && !pathname.startsWith("/admin/login")) {
+    const token = request.cookies.get("pannuy_admin_session")?.value;
+    if (!token) return NextResponse.redirect(new URL("/admin/login", request.url));
+    const payload = decodeJwtPayload(token);
+    if (!payload || payload.type !== "admin") {
+      const res = NextResponse.redirect(new URL("/admin/login", request.url));
+      res.cookies.delete("pannuy_admin_session");
       return res;
     }
     return NextResponse.next();

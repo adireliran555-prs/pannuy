@@ -23,6 +23,7 @@ model User {
   saved         SavedSupplier[]
   reviews       Review[]
   notifications Notification[]
+  profileViews  ProfileView[]
 }
 
 model Otp {
@@ -68,6 +69,7 @@ model Supplier {
   reviews       Review[]
   savedBy       SavedSupplier[]
   notifications Notification[]
+  profileViews  ProfileView[]
 
   @@index([category])
   @@index([isActive, isVerified])
@@ -219,4 +221,18 @@ model Notification {
 
   user     User?     @relation(fields: [userId], references: [id])
   supplier Supplier? @relation(fields: [supplierId], references: [id])
+}
+
+model ProfileView {
+  id         String   @id @default(uuid())
+  supplierId String
+  customerId String?
+  source     String?
+  createdAt  DateTime @default(now())
+
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  customer User?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  @@index([supplierId, createdAt])
+  @@index([createdAt])
 }

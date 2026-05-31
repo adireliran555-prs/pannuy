@@ -18,6 +18,10 @@ export interface SupplierSession {
   slug: string;
 }
 
+export interface AdminSession {
+  phone: string;
+}
+
 // ─── Generic API envelope ─────────────────────────────────────────────────────
 
 export interface ApiResponse<T = unknown> {

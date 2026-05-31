@@ -55,12 +55,24 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
   const [shareSuccess, setShareSuccess] = useState(false);
   const [showStickyBar, setShowStickyBar] = useState(false);
 
-  // Track recently viewed
+  // Track recently viewed + record a profile view (best-effort, deduped per session per supplier)
   useEffect(() => {
     const prev: string[] = JSON.parse(localStorage.getItem(RECENTLY_VIEWED_KEY) ?? "[]");
     const next = [supplier.slug, ...prev.filter((s) => s !== supplier.slug)].slice(0, MAX_RECENTLY_VIEWED);
     localStorage.setItem(RECENTLY_VIEWED_KEY, JSON.stringify(next));
-  }, [supplier.slug]);
+
+    const SESSION_KEY = "pannuy_viewed_suppliers_session";
+    const viewed: string[] = JSON.parse(sessionStorage.getItem(SESSION_KEY) ?? "[]");
+    if (!viewed.includes(supplier.id)) {
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify([...viewed, supplier.id]));
+      fetch("/api/profile-views", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ supplierId: supplier.id, source: "profile" }),
+        keepalive: true,
+      }).catch(() => {});
+    }
+  }, [supplier.id, supplier.slug]);
 
   // Show sticky bar after scrolling past hero
   useEffect(() => {
