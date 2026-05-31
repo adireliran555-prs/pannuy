@@ -34,7 +34,7 @@ function normalizeSupplier(s: any): NormalizedSupplier {
       ?.cloudinaryUrl ??
     s.photos?.find((p: { type: string }) => p.type === "PORTFOLIO")
       ?.cloudinaryUrl ??
-    `https://picsum.photos/seed/${s.slug}/400/300`;
+    "/placeholder-supplier.svg";
   const coverPhoto =
     s.photos?.find((p: { type: string }) => p.type === "COVER")
       ?.cloudinaryUrl ?? profilePhoto;

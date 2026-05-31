@@ -299,7 +299,7 @@ export default function SupplierProfilePage() {
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {photos.map((url, idx) => (
                   <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden">
-                    <Image src={url} alt={`תמונה ${idx + 1}`} fill className="object-cover" unoptimized />
+                    <Image src={url} alt={`תמונה ${idx + 1}`} fill className="object-cover" />
                   </div>
                 ))}
               </div>

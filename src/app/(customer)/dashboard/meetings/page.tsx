@@ -187,7 +187,7 @@ export default function MeetingsPage() {
                             alt={meeting.supplier.name}
                             fill
                             className="object-cover"
-                            unoptimized
+
                           />
                         ) : (
                           <span className="w-full h-full flex items-center justify-center text-primary font-black text-xl">

@@ -118,7 +118,7 @@ export default function BookPage({ params }: PageProps) {
               alt={supplier.name}
               fill
               className="object-cover"
-              unoptimized
+
             />
           </div>
           <div>
@@ -250,7 +250,7 @@ export default function BookPage({ params }: PageProps) {
                       alt={supplier.name}
                       fill
                       className="object-cover"
-                      unoptimized
+
                     />
                   </div>
                   <div>

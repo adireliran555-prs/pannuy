@@ -34,6 +34,10 @@ export default function RootLayout({
       className={`${heebo.variable} h-full`}
       suppressHydrationWarning
     >
+      <head>
+        <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="" />
+        <link rel="dns-prefetch" href="https://res.cloudinary.com" />
+      </head>
       <body className="min-h-full flex flex-col bg-surface font-[var(--font-heebo)] antialiased">
         {children}
       </body>

@@ -49,7 +49,7 @@ export default function PhotoGallery({
               width={400}
               height={300}
               className="w-full object-cover rounded-xl transition-transform duration-300 group-hover:scale-105"
-              unoptimized
+
             />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200 rounded-xl" />
           </div>
@@ -98,7 +98,7 @@ export default function PhotoGallery({
               width={1200}
               height={800}
               className="max-h-[85vh] w-auto object-contain rounded-lg"
-              unoptimized
+
             />
           </div>
 

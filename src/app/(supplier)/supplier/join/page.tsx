@@ -509,7 +509,7 @@ export default function SupplierJoinPage() {
                         src={url}
                         alt={`תמונה ${idx + 1}`}
                         className="w-full h-full object-cover"
-                        onError={(e) => ((e.target as HTMLImageElement).src = `https://picsum.photos/seed/${idx}/200/200`)}
+                        onError={(e) => ((e.target as HTMLImageElement).src = "/placeholder-supplier.svg")}
                       />
                       <button
                         onClick={() => removePhoto(idx)}
