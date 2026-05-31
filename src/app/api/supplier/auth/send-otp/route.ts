@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { getCache, setCache } from "@/lib/redis";
 import { generateOtp, hashOtp } from "@/lib/auth";
 import { sendOtp } from "@/lib/sms";
 
@@ -8,7 +7,7 @@ const OTP_EXPIRES_MINUTES = parseInt(
   process.env.OTP_EXPIRES_MINUTES ?? "5",
   10
 );
-const RATE_LIMIT_WINDOW_SECONDS = 10 * 60;
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const RATE_LIMIT_MAX = 3;
 
 function isValidIsraeliPhone(phone: string): boolean {
@@ -27,17 +26,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const rateLimitKey = `otp_rate_supplier:${phone}`;
-    const currentCount = await getCache<number>(rateLimitKey);
-    if (currentCount !== null && currentCount >= RATE_LIMIT_MAX) {
+    const since = new Date(Date.now() - RATE_LIMIT_WINDOW_MS);
+    const recent = await prisma.otp.count({
+      where: { phone, createdAt: { gte: since } },
+    });
+    if (recent >= RATE_LIMIT_MAX) {
       return NextResponse.json(
         { success: false, error: "יותר מדי ניסיונות. נסה שוב מאוחר יותר" },
         { status: 429 }
       );
     }
-
-    const newCount = (currentCount ?? 0) + 1;
-    await setCache(rateLimitKey, newCount, RATE_LIMIT_WINDOW_SECONDS);
 
     const otp = generateOtp();
     const hash = await hashOtp(otp);

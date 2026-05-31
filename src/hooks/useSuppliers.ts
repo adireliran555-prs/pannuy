@@ -83,11 +83,23 @@ async function fetcher(url: string) {
   };
 }
 
-export function useSuppliers(filters: SuppliersFilters = {}) {
+interface SuppliersResult {
+  suppliers: NormalizedSupplier[];
+  total: number;
+  page: number;
+  totalPages: number;
+  areaFallback: boolean;
+}
+
+export function useSuppliers(
+  filters: SuppliersFilters = {},
+  fallbackData?: SuppliersResult
+) {
   const url = buildUrl(filters);
   const { data, error, isLoading, mutate } = useSWR(url, fetcher, {
     revalidateOnFocus: false,
     keepPreviousData: true,
+    fallbackData,
   });
 
   return {

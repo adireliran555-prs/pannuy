@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { getCache, setCache } from "@/lib/redis";
 import { generateOtp, hashOtp } from "@/lib/auth";
 import { sendOtp } from "@/lib/sms";
 
@@ -8,7 +7,7 @@ const OTP_EXPIRES_MINUTES = parseInt(
   process.env.OTP_EXPIRES_MINUTES ?? "5",
   10
 );
-const RATE_LIMIT_WINDOW_SECONDS = 10 * 60; // 10 minutes
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
 const RATE_LIMIT_MAX = 3;
 
 function isValidIsraeliPhone(phone: string): boolean {
@@ -27,24 +26,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Rate limiting: max 3 OTPs per phone per 10 min
-    const rateLimitKey = `otp_rate:${phone}`;
-    const currentCount = await getCache<number>(rateLimitKey);
-    if (currentCount !== null && currentCount >= RATE_LIMIT_MAX) {
+    // Rate limit: count OTPs already issued to this phone within the window.
+    // The Otp table is the source of truth (Redis cache is best-effort and
+    // currently no-op when Upstash env vars aren't set).
+    const since = new Date(Date.now() - RATE_LIMIT_WINDOW_MS);
+    const recent = await prisma.otp.count({
+      where: { phone, createdAt: { gte: since } },
+    });
+    if (recent >= RATE_LIMIT_MAX) {
       return NextResponse.json(
-        {
-          success: false,
-          error: "יותר מדי ניסיונות. נסה שוב מאוחר יותר",
-        },
+        { success: false, error: "יותר מדי ניסיונות. נסה שוב מאוחר יותר" },
         { status: 429 }
       );
     }
 
-    // Increment rate limit counter (preserve remaining TTL by setting full window on first hit)
-    const newCount = (currentCount ?? 0) + 1;
-    await setCache(rateLimitKey, newCount, RATE_LIMIT_WINDOW_SECONDS);
-
-    // Generate and store OTP
     const otp = generateOtp();
     const hash = await hashOtp(otp);
     const expiresAt = new Date(Date.now() + OTP_EXPIRES_MINUTES * 60 * 1000);
