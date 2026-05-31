@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Heebo } from "next/font/google";
 import "./globals.css";
+import ImpersonationBanner from "@/components/common/ImpersonationBanner";
 
 const heebo = Heebo({
   subsets: ["hebrew", "latin"],
@@ -39,6 +40,7 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://res.cloudinary.com" />
       </head>
       <body className="min-h-full flex flex-col bg-surface font-[var(--font-heebo)] antialiased">
+        <ImpersonationBanner />
         {children}
       </body>
     </html>

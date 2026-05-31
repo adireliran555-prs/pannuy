@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Search, Check, X, ExternalLink } from "lucide-react";
+import { Search, Check, X, ExternalLink, LogIn } from "lucide-react";
 import { cn, formatRelativeHebrew } from "@/lib/utils";
 
 interface Row {
@@ -49,6 +49,14 @@ export default function SuppliersTable({ initialRows }: { initialRows: Row[] }) 
       setRows((rs) => rs.map((r) => (r.id === id ? { ...r, [field]: value } : r)));
       router.refresh();
     }
+  };
+
+  const impersonate = async (id: string) => {
+    setBusyId(id);
+    const res = await fetch(`/api/admin/impersonate/supplier/${id}`, { method: "POST" });
+    const j = await res.json().catch(() => ({}));
+    if (res.ok && j.redirect) window.location.href = j.redirect;
+    else setBusyId(null);
   };
 
   return (
@@ -131,14 +139,24 @@ export default function SuppliersTable({ initialRows }: { initialRows: Row[] }) 
                       {formatRelativeHebrew(r.createdAt)}
                     </td>
                     <td className="px-4 py-3">
-                      <Link
-                        href={`/suppliers/${r.slug}`}
-                        target="_blank"
-                        className="inline-flex items-center gap-1 text-xs text-primary font-semibold hover:text-primary-dark"
-                      >
-                        <ExternalLink className="h-3 w-3" />
-                        פרופיל
-                      </Link>
+                      <div className="flex items-center gap-2 whitespace-nowrap">
+                        <Link
+                          href={`/suppliers/${r.slug}`}
+                          target="_blank"
+                          className="inline-flex items-center gap-1 text-xs text-primary font-semibold hover:text-primary-dark"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          פרופיל
+                        </Link>
+                        <button
+                          onClick={() => impersonate(r.id)}
+                          disabled={busyId === r.id}
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-text-muted hover:text-primary disabled:opacity-50"
+                        >
+                          <LogIn className="h-3 w-3" />
+                          צפו כספק
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

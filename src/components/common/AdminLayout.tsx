@@ -12,6 +12,9 @@ import {
   Star,
   LogOut,
   Shield,
+  Globe,
+  Store,
+  ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -65,6 +68,35 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               {label}
             </Link>
           ))}
+
+          <div className="pt-4 mt-4 border-t border-border">
+            <p className="px-3 mb-1 text-[10px] font-bold tracking-widest text-text-muted uppercase">פלטפורמות</p>
+            <Link
+              href="/"
+              target="_blank"
+              className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-text-muted hover:bg-surface hover:text-text-main transition-colors"
+            >
+              <span className="flex items-center gap-3">
+                <Globe className="h-4 w-4" />
+                אתר ראשי (לקוחות)
+              </span>
+              <ExternalLink className="h-3 w-3 opacity-50" />
+            </Link>
+            <Link
+              href="/supplier/login"
+              target="_blank"
+              className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-text-muted hover:bg-surface hover:text-text-main transition-colors"
+            >
+              <span className="flex items-center gap-3">
+                <Store className="h-4 w-4" />
+                פאנל ספקים
+              </span>
+              <ExternalLink className="h-3 w-3 opacity-50" />
+            </Link>
+            <p className="px-3 pt-2 text-[11px] text-text-muted/70 leading-relaxed">
+              לכניסה כלקוח/ספק ספציפי, לחצו על &quot;צפו כ...&quot; בטבלאות.
+            </p>
+          </div>
         </nav>
         <button
           onClick={logout}

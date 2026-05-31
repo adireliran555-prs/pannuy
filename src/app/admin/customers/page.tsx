@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
 import AdminLayout from "@/components/common/AdminLayout";
+import ImpersonateButton from "@/components/common/ImpersonateButton";
 import { formatRelativeHebrew } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -42,12 +43,13 @@ export default async function AdminCustomersPage() {
                   <th className="px-4 py-3 text-start">שמורות</th>
                   <th className="px-4 py-3 text-start">ביקורות</th>
                   <th className="px-4 py-3 text-start">נרשמ.ה</th>
+                  <th className="px-4 py-3"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {customers.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="text-center py-10 text-text-muted">אין לקוחות עדיין</td>
+                    <td colSpan={9} className="text-center py-10 text-text-muted">אין לקוחות עדיין</td>
                   </tr>
                 ) : (
                   customers.map((c) => (
@@ -65,6 +67,9 @@ export default async function AdminCustomersPage() {
                       <td className="px-4 py-3 text-text-muted">{c._count.reviews}</td>
                       <td className="px-4 py-3 text-xs text-text-muted whitespace-nowrap">
                         {formatRelativeHebrew(c.createdAt)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <ImpersonateButton kind="customer" id={c.id} label="צפו כלקוח" />
                       </td>
                     </tr>
                   ))
