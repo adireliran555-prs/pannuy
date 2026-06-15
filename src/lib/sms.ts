@@ -7,7 +7,7 @@ function toE164(phone: string): string {
 
 export async function sendOtp(phone: string, otp: string): Promise<boolean> {
   const isDev = process.env.NODE_ENV !== "production";
-  const hasTelnyx = process.env.TELNYX_API_KEY && process.env.TELNYX_MESSAGING_PROFILE_ID;
+  const hasTelnyx = process.env.TELNYX_API_KEY && process.env.TELNYX_MESSAGING_PROFILE_ID && process.env.TELNYX_FROM_NUMBER;
 
   if (isDev || !hasTelnyx) {
     console.log(`[SMS] OTP for ${phone}: ${otp}`);
@@ -23,7 +23,7 @@ export async function sendOtp(phone: string, otp: string): Promise<boolean> {
       },
       body: JSON.stringify({
         messaging_profile_id: process.env.TELNYX_MESSAGING_PROFILE_ID,
-        from: "Pannuy",
+        from: process.env.TELNYX_FROM_NUMBER!,
         to: toE164(phone),
         text: `קוד האימות שלך ב-פנוי: ${otp}`,
       }),

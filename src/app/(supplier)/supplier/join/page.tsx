@@ -61,6 +61,7 @@ export default function SupplierJoinPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   // Step 2 state
+  const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedCity, setSelectedCity] = useState("");
   const [selectedAreas, setSelectedAreas] = useState<string[]>([]);
   const [bio, setBio] = useState("");
@@ -191,6 +192,7 @@ export default function SupplierJoinPage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          category: selectedCategory || undefined,
           city: selectedCity || undefined,
           serviceAreas: selectedAreas.length > 0 ? selectedAreas : undefined,
           bioHe: bio || undefined,
@@ -335,29 +337,30 @@ export default function SupplierJoinPage() {
                   </label>
                   <div className="grid grid-cols-2 gap-3">
                     {[
-                      { id: "photographer", label: "צלמת חתונה", emoji: "📸", active: true },
-                      { id: "video", label: "צלמת וידאו", emoji: "🎬", active: false },
-                      { id: "makeup", label: "מאפרת", emoji: "💄", active: false },
-                      { id: "dress", label: "מקום התארגנות", emoji: "🏛️", active: false },
-                    ].map(({ id, label, emoji, active }) => (
+                      { id: "PHOTOGRAPHER", label: "צלם/ת סטילס 📸" },
+                      { id: "VIDEOGRAPHER", label: "צלם/ת וידיאו 🎬" },
+                      { id: "BRIDAL_SUITE", label: "חדר כלה 💍" },
+                      { id: "DJ", label: "תקליטן/ית 🎵" },
+                      { id: "CATERING", label: "קייטרינג/שף 🍽️" },
+                      { id: "FLORIST", label: "עיצוב פרחוני 💐" },
+                      { id: "VENUE", label: "אולם/גן אירועים 🏛️" },
+                      { id: "HAIR_STYLIST", label: "מסרקת 💇" },
+                      { id: "MAKEUP_ARTIST", label: "מאפרת 💄" },
+                      { id: "PHOTO_BOOTH", label: "צלם/ת מגנטים 🖼️" },
+                      { id: "EVENT_PRODUCER", label: "מפיק/ה / הושבה 🎪" },
+                    ].map(({ id, label }) => (
                       <button
                         key={id}
                         type="button"
-                        disabled={!active}
+                        onClick={() => setSelectedCategory(id)}
                         className={cn(
                           "flex items-center gap-2 p-3 rounded-xl border-2 text-right text-sm font-semibold transition-all",
-                          active && id === "photographer"
+                          selectedCategory === id
                             ? "border-primary bg-primary text-white"
-                            : "border-border text-text-muted opacity-50 cursor-not-allowed"
+                            : "border-border text-text-main hover:border-primary/40"
                         )}
                       >
-                        <span>{emoji}</span>
                         {label}
-                        {!active && (
-                          <span className="ms-auto text-[10px] font-bold bg-gray-800 text-white px-1.5 py-0.5 rounded-full">
-                            בקרוב
-                          </span>
-                        )}
                       </button>
                     ))}
                   </div>
@@ -444,12 +447,15 @@ export default function SupplierJoinPage() {
                 <p className="text-red-500 text-xs -mt-3 font-medium">חובה לבחור לפחות אזור שירות אחד</p>
               )}
 
+              {step2Attempted && !selectedCategory && (
+                <p className="text-red-500 text-xs -mt-3 font-medium">חובה לבחור תחום עיסוק</p>
+              )}
               <Button
                 fullWidth
                 size="lg"
                 onClick={() => {
                   setStep2Attempted(true);
-                  if (selectedCity && selectedAreas.length > 0 && bio.length >= 20) {
+                  if (selectedCategory && selectedCity && selectedAreas.length > 0 && bio.length >= 20) {
                     setStep(3);
                   }
                 }}

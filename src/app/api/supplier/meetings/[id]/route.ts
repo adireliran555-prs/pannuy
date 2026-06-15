@@ -100,6 +100,19 @@ export async function PATCH(
         },
       });
 
+      // Create affiliate earning when a referred meeting is confirmed
+      if (action === "confirm" && meeting.referredBySupplierId) {
+        await tx.affiliateEarning.create({
+          data: {
+            referringSupplierId: meeting.referredBySupplierId,
+            receivingSupplierId: session.id,
+            meetingId: meeting.id,
+            amountIls: 300,
+            status: "CONFIRMED",
+          },
+        });
+      }
+
       return updatedMeeting;
     });
 

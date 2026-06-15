@@ -69,6 +69,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Resolve affiliate referral from cookie
+    const refCode = request.cookies.get("pannuy_ref")?.value ?? null;
+    let referredBySupplierId: string | null = null;
+    if (refCode) {
+      const referrer = await prisma.supplier.findUnique({
+        where: { affiliateCode: refCode },
+        select: { id: true },
+      });
+      // Only attribute if the referrer is a different supplier than the one being booked
+      if (referrer && referrer.id !== supplierId) {
+        referredBySupplierId = referrer.id;
+      }
+    }
+
     // Create meeting + notification atomically
     const meeting = await prisma.$transaction(async (tx) => {
       const newMeeting = await tx.meeting.create({
@@ -81,6 +95,7 @@ export async function POST(request: NextRequest) {
           status: MeetingStatus.PENDING,
           meetingType: validMeetingType,
           customerNotes: notes ?? null,
+          ...(referredBySupplierId ? { referredBySupplierId } : {}),
         },
         include: {
           supplier: {

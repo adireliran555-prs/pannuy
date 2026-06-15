@@ -7,6 +7,7 @@ const SUPPLIER_PROTECTED_PREFIXES = [
   "/supplier/profile",
   "/supplier/calendar",
   "/supplier/packages",
+  "/supplier/finances",
 ];
 // /admin protected, but /admin/login is not.
 const ADMIN_PROTECTED_PREFIX = "/admin";
@@ -23,7 +24,21 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
 }
 
 export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  const { pathname, searchParams } = request.nextUrl;
+
+  // Affiliate referral tracking: ?ref=CODE sets a 30-day cookie
+  const refCode = searchParams.get("ref");
+  if (refCode && /^[A-Z0-9]{6,12}$/.test(refCode)) {
+    const response = NextResponse.next();
+    response.cookies.set("pannuy_ref", refCode, {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 30 * 24 * 60 * 60,
+      path: "/",
+    });
+    return response;
+  }
 
   if (CUSTOMER_PROTECTED_PREFIXES.some((p) => pathname.startsWith(p))) {
     const token = request.cookies.get("pannuy_session")?.value;

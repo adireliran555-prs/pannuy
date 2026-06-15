@@ -10,14 +10,12 @@ import {
   Share2,
   Heart,
   CheckCircle,
-  Star,
   ChevronLeft,
   Phone,
   Award,
 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
-import Stars from "@/components/ui/Stars";
 import PhotoGallery from "@/components/common/PhotoGallery";
 import PackageCard from "@/components/common/PackageCard";
 import ReviewCard from "@/components/common/ReviewCard";
@@ -30,10 +28,15 @@ import type { NormalizedSupplier } from "@/lib/supplier";
 const CATEGORY_LABELS: Record<string, string> = {
   PHOTOGRAPHER: "צילום חתונה",
   VIDEOGRAPHER: "צילום וידאו",
-  BRIDAL_SUITE: "מקומות התארגנות",
-  DJ: "DJ ומוסיקה",
+  BRIDAL_SUITE: "חדרי כלה",
+  DJ: "תקליטנים",
   FLORIST: "עיצוב פרחוני",
   CATERING: "קייטרינג",
+  VENUE: "אולם/גן אירועים",
+  HAIR_STYLIST: "מסרקת",
+  MAKEUP_ARTIST: "מאפרת",
+  PHOTO_BOOTH: "צלם מגנטים",
+  EVENT_PRODUCER: "מפיק/הושבה",
 };
 
 const MARKET_PRICE_RANGES: Record<string, { min: number; max: number; avg: number }> = {
@@ -98,7 +101,6 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
     window.open(`https://wa.me/?text=${msg}`, "_blank");
   };
 
-  const avgRating = supplier.rating;
   const bioShort = supplier.bio.length > 200 && !bioExpanded;
   const categoryLabel = CATEGORY_LABELS[supplier.category] ?? supplier.category;
 
@@ -119,7 +121,7 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
               <Image src={supplier.profilePhoto} alt={supplier.name} width={32} height={32} className="object-cover" />
             </div>
             <span className="font-bold text-text-main text-sm truncate">{supplier.name}</span>
-            <Stars rating={avgRating} count={supplier.ratingCount} size="sm" />
+            <span className="text-xs font-semibold text-primary">מהטופ של ישראל</span>
           </div>
           <Button size="sm" onClick={() => router.push(`/book/${supplier.id}`)}>קבעו פגישה</Button>
         </div>
@@ -192,7 +194,7 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
             <MapPin className="h-3.5 w-3.5" />
             {supplier.city}
           </div>
-          <Stars rating={avgRating} count={supplier.ratingCount} />
+          <span className="text-sm font-semibold text-primary">מהטופ של ישראל</span>
           <div className="flex items-center gap-1 text-text-muted text-sm">
             <Clock className="h-3.5 w-3.5" />
             מגיבים {supplier.responseTime}
@@ -282,11 +284,6 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
             <section>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-black text-text-main">ביקורות</h2>
-                <div className="flex items-center gap-2">
-                  <Star className="h-5 w-5 fill-amber-400 text-amber-400" />
-                  <span className="font-bold text-text-main">{avgRating}</span>
-                  <span className="text-text-muted text-sm">({supplier.ratingCount} ביקורות)</span>
-                </div>
               </div>
 
               {supplier.reviews.length === 0 ? (
@@ -329,7 +326,7 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
                 </div>
                 <div>
                   <h3 className="font-bold text-text-main">{supplier.name}</h3>
-                  <Stars rating={avgRating} count={supplier.ratingCount} size="sm" />
+                  <span className="text-xs font-semibold text-primary">מהטופ של ישראל</span>
                 </div>
               </div>
 

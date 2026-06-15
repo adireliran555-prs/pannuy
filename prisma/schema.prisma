@@ -38,38 +38,44 @@ model Otp {
 }
 
 model Supplier {
-  id                  String    @id @default(uuid())
-  slug                String    @unique
-  name                String
-  phone               String    @unique
-  email               String?
-  category            Category  @default(PHOTOGRAPHER)
-  bioHe               String?   @db.Text
-  city                String?
-  serviceAreas        String[]
-  basePriceFrom       Int?
-  basePriceTo         Int?
-  ratingAvg           Float     @default(0)
-  ratingCount         Int       @default(0)
-  isVerified          Boolean   @default(false)
-  isActive            Boolean   @default(false)
-  googleCalendarId    String?
-  googleRefreshToken  String?
-  googleAccessToken   String?
-  googleTokenExpiry   DateTime?
-  responseRate        Float?
-  sessionToken        String?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  id                   String             @id @default(uuid())
+  slug                 String             @unique
+  name                 String
+  phone                String             @unique
+  email                String?
+  category             Category           @default(PHOTOGRAPHER)
+  bioHe                String?            @db.Text
+  city                 String?
+  serviceAreas         String[]
+  basePriceFrom        Int?
+  basePriceTo          Int?
+  ratingAvg            Float              @default(0)
+  ratingCount          Int                @default(0)
+  isVerified           Boolean            @default(false)
+  isActive             Boolean            @default(false)
+  googleCalendarId     String?
+  googleRefreshToken   String?
+  googleAccessToken    String?
+  googleTokenExpiry    DateTime?
+  responseRate         Float?
+  sessionToken         String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  affiliateCode        String?            @unique
+  warningCount         Int                @default(0)
+  subscriptionStatus   SubscriptionStatus @default(INACTIVE)
+  subscriptionStartAt  DateTime?
 
-  photos        SupplierPhoto[]
-  packages      SupplierPackage[]
-  availability  AvailabilitySlot[]
-  meetings      Meeting[]          @relation("SupplierMeetings")
-  reviews       Review[]
-  savedBy       SavedSupplier[]
-  notifications Notification[]
-  profileViews  ProfileView[]
+  photos             SupplierPhoto[]
+  packages           SupplierPackage[]
+  availability       AvailabilitySlot[]
+  meetings           Meeting[]          @relation("SupplierMeetings")
+  reviews            Review[]
+  savedBy            SavedSupplier[]
+  notifications      Notification[]
+  profileViews       ProfileView[]
+  earningsAsReferrer AffiliateEarning[] @relation("EarningsAsReferrer")
+  earningsAsReceiver AffiliateEarning[] @relation("EarningsAsReceiver")
 
   @@index([category])
   @@index([isActive, isVerified])
@@ -82,6 +88,17 @@ enum Category {
   FLORIST
   DJ
   CATERING
+  VENUE           // אולם/גני אירועים
+  HAIR_STYLIST    // מסרקות
+  MAKEUP_ARTIST   // מאפרות
+  PHOTO_BOOTH     // צלמי מגנטים
+  EVENT_PRODUCER  // הושבה/מפיקים
+}
+
+enum SubscriptionStatus {
+  INACTIVE
+  ACTIVE
+  SUSPENDED
 }
 
 model SupplierPhoto {
@@ -141,23 +158,25 @@ enum AvailabilitySource {
 }
 
 model Meeting {
-  id            String        @id @default(uuid())
-  customerId    String
-  supplierId    String
-  requestedDate DateTime      @db.Date
-  startTime     String
-  endTime       String
-  status        MeetingStatus @default(PENDING)
-  meetingType   MeetingType   @default(VIDEO)
-  customerNotes String?       @db.Text
-  supplierNotes String?       @db.Text
-  googleEventId String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id                   String        @id @default(uuid())
+  customerId           String
+  supplierId           String
+  requestedDate        DateTime      @db.Date
+  startTime            String
+  endTime              String
+  status               MeetingStatus @default(PENDING)
+  meetingType          MeetingType   @default(VIDEO)
+  customerNotes        String?       @db.Text
+  supplierNotes        String?       @db.Text
+  googleEventId        String?
+  referredBySupplierId String?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
 
-  customer User     @relation("CustomerMeetings", fields: [customerId], references: [id])
-  supplier Supplier @relation("SupplierMeetings", fields: [supplierId], references: [id])
-  review   Review?
+  customer         User              @relation("CustomerMeetings", fields: [customerId], references: [id])
+  supplier         Supplier          @relation("SupplierMeetings", fields: [supplierId], references: [id])
+  review           Review?
+  affiliateEarning AffiliateEarning?
 
   @@index([customerId])
   @@index([supplierId])
@@ -194,6 +213,31 @@ model Review {
   meeting  Meeting  @relation(fields: [meetingId], references: [id])
 
   @@index([supplierId])
+}
+
+model AffiliateEarning {
+  id                  String          @id @default(uuid())
+  referringSupplierId String
+  receivingSupplierId String
+  meetingId           String          @unique
+  amountIls           Int
+  status              AffiliateStatus @default(PENDING)
+  createdAt           DateTime        @default(now())
+  paidAt              DateTime?
+
+  referringSupplier Supplier @relation("EarningsAsReferrer", fields: [referringSupplierId], references: [id])
+  receivingSupplier Supplier @relation("EarningsAsReceiver", fields: [receivingSupplierId], references: [id])
+  meeting           Meeting  @relation(fields: [meetingId], references: [id])
+
+  @@index([referringSupplierId])
+  @@index([receivingSupplierId])
+}
+
+enum AffiliateStatus {
+  PENDING
+  CONFIRMED
+  PAID
+  CANCELLED
 }
 
 model SavedSupplier {

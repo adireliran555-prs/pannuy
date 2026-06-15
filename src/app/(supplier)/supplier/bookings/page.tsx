@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import useSWR from "swr";
 import { Video, Phone, Users, Calendar, Clock, CheckCircle, X } from "lucide-react";
 import SupplierDashboardLayout from "@/components/common/SupplierDashboardLayout";
@@ -25,6 +25,35 @@ const MEETING_TYPE_LABELS: Record<string, string> = {
   IN_PERSON: "פגישה פנים אל פנים",
 };
 
+function useCountdowns(meetings: { id: string; createdAt: string; status: string }[]) {
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const pending = meetings.filter((m) => m.status === "PENDING");
+    if (pending.length === 0) return;
+    const interval = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(interval);
+  }, [meetings]);
+
+  return now;
+}
+
+function getCountdownLabel(createdAt: string, now: number): { label: string; color: "amber" | "red" } {
+  const expiresAt = new Date(createdAt).getTime() + 24 * 60 * 60 * 1000;
+  const msLeft = expiresAt - now;
+
+  if (msLeft <= 0) {
+    return { label: "פג", color: "red" };
+  }
+
+  const totalMinutes = Math.floor(msLeft / 60_000);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  const label = `פג בעוד ${hours}ש ${minutes}ד`;
+  const color = hours < 2 ? "red" : "amber";
+  return { label, color };
+}
+
 async function fetcher(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error("Failed");
@@ -41,6 +70,8 @@ export default function SupplierBookingsPage() {
     fetcher,
     { revalidateOnFocus: false }
   );
+
+  const now = useCountdowns(meetings);
 
   const pendingMeetings = meetings.filter((m: { status: string }) => m.status === "PENDING");
   const confirmedMeetings = meetings.filter((m: { status: string }) => m.status === "CONFIRMED");
@@ -156,12 +187,27 @@ export default function SupplierBookingsPage() {
                         <p className="font-bold text-text-main">
                           {meeting.customer?.name ?? "לקוח"}
                         </p>
-                        {meeting.status === "PENDING" && (
-                          <Badge variant="warning" size="sm">
-                            <Clock className="h-3 w-3" />
-                            ממתין
-                          </Badge>
-                        )}
+                        {meeting.status === "PENDING" && (() => {
+                          const countdown = getCountdownLabel(meeting.createdAt, now);
+                          return (
+                            <div className="flex items-center gap-1.5">
+                              <Badge variant="warning" size="sm">
+                                <Clock className="h-3 w-3" />
+                                ממתין
+                              </Badge>
+                              <span
+                                className={cn(
+                                  "text-xs font-bold px-2 py-0.5 rounded-full",
+                                  countdown.color === "red"
+                                    ? "bg-red-100 text-red-700"
+                                    : "bg-amber-100 text-amber-700"
+                                )}
+                              >
+                                {countdown.label}
+                              </span>
+                            </div>
+                          );
+                        })()}
                         {meeting.status === "CONFIRMED" && (
                           <Badge variant="success" size="sm">
                             <CheckCircle className="h-3 w-3" />
@@ -174,6 +220,13 @@ export default function SupplierBookingsPage() {
                           </Badge>
                         )}
                       </div>
+
+                      {meeting.status !== "PENDING" && meeting.customer?.phone && (
+                        <p className="text-sm text-text-muted mt-0.5 flex items-center gap-1">
+                          <Phone className="h-3.5 w-3.5 flex-shrink-0" />
+                          <span className="ltr">{meeting.customer.phone}</span>
+                        </p>
+                      )}
 
                       <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-text-muted">
                         <span className="flex items-center gap-1">

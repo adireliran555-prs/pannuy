@@ -30,7 +30,14 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ success: true, data: meetings });
+    // Strip customer phone from PENDING meetings — only reveal after confirmation
+    const sanitized = meetings.map((m) => {
+      if (m.status !== "PENDING") return m;
+      const { phone: _phone, ...customerWithoutPhone } = m.customer;
+      return { ...m, customer: customerWithoutPhone };
+    });
+
+    return NextResponse.json({ success: true, data: sanitized });
   } catch (err) {
     console.error("[GET /api/supplier/meetings]", err);
     return NextResponse.json(

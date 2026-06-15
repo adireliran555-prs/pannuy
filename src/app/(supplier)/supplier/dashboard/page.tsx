@@ -42,6 +42,9 @@ function getMeetingsThisWeek(meetings: { requestedDate: string; status: string }
 
 export default function SupplierDashboardPage() {
   const [supplierName, setSupplierName] = useState("");
+  const [affiliateUrl, setAffiliateUrl] = useState<string | null>(null);
+  const [affiliateEarnings, setAffiliateEarnings] = useState<number>(0);
+  const [copied, setCopied] = useState(false);
 
   const { data: meetings = [] } = useSWR("/api/supplier/meetings", fetcher, {
     revalidateOnFocus: false,
@@ -58,6 +61,14 @@ export default function SupplierDashboardPage() {
           setSupplierName(json.supplier.name.split(" ")[0]);
         }
       });
+
+    fetch("/api/supplier/affiliate")
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.affiliateUrl) setAffiliateUrl(json.affiliateUrl);
+        if (typeof json.totalEarned === "number") setAffiliateEarnings(json.totalEarned);
+      })
+      .catch(() => {});
   }, []);
 
   const pendingMeetings = meetings.filter((m: { status: string }) => m.status === "PENDING");
@@ -133,6 +144,39 @@ export default function SupplierDashboardPage() {
             שלום{supplierName ? `, ${supplierName}` : ""} 👋
           </h1>
           <p className="text-text-muted mt-1">הנה מה שמחכה לכם היום</p>
+        </div>
+
+        {/* Affiliate link widget */}
+        <div className="bg-white rounded-2xl border border-border p-5 space-y-3">
+          <div>
+            <p className="font-black text-text-main text-base">הלינק השיווקי שלכם 🔗</p>
+            <p className="text-sm text-text-muted mt-0.5">
+              שלחו ללקוחות תפוסים — כשהם סוגרים ספק אחר, תרוויחו עמלה
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <input
+              readOnly
+              dir="ltr"
+              value={affiliateUrl ?? "טוען..."}
+              className="flex-1 rounded-xl border border-border bg-gray-50 px-3 py-2 text-sm text-text-main font-mono focus:outline-none truncate"
+            />
+            <button
+              onClick={() => {
+                if (!affiliateUrl) return;
+                navigator.clipboard.writeText(affiliateUrl).then(() => {
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                });
+              }}
+              className="flex-shrink-0 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white hover:bg-primary-dark transition-colors"
+            >
+              {copied ? "הועתק ✓" : "העתק"}
+            </button>
+          </div>
+          <p className="text-xs text-text-muted">
+            ₪{affiliateEarnings.toLocaleString("he-IL")} שהרווחתם עד כה
+          </p>
         </div>
 
         {/* Stats grid */}

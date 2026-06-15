@@ -125,10 +125,15 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
           {[
             { id: "PHOTOGRAPHER", label: "צילום חתונה", emoji: "📸", active: true },
             { id: "VIDEOGRAPHER", label: "צילום וידאו", emoji: "🎬", active: false },
-            { id: "BRIDAL_SUITE", label: "מקומות התארגנות", emoji: "🏛️", active: false },
-            { id: "DJ", label: "DJ ומוסיקה", emoji: "🎧", active: false },
+            { id: "BRIDAL_SUITE", label: "חדרי כלה", emoji: "🏛️", active: false },
+            { id: "DJ", label: "תקליטנים", emoji: "🎧", active: false },
             { id: "FLORIST", label: "עיצוב פרחוני", emoji: "💐", active: false },
             { id: "CATERING", label: "קייטרינג", emoji: "🍽️", active: false },
+            { id: "VENUE", label: "אולמות ואירועים", emoji: "🏛️", active: false },
+            { id: "HAIR_STYLIST", label: "מסרקות", emoji: "💇", active: false },
+            { id: "MAKEUP_ARTIST", label: "מאפרות", emoji: "💄", active: false },
+            { id: "PHOTO_BOOTH", label: "צלמי מגנטים", emoji: "🖼️", active: false },
+            { id: "EVENT_PRODUCER", label: "הפקת אירועים", emoji: "🎪", active: false },
           ].map(({ id, label, emoji, active }) => (
             <button
               key={id}

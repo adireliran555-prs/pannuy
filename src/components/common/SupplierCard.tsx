@@ -5,16 +5,20 @@ import Image from "next/image";
 import { Heart, MapPin, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatPrice } from "@/lib/utils";
-import Stars from "@/components/ui/Stars";
 import { useState } from "react";
 
 const CATEGORY_LABELS: Record<string, string> = {
   PHOTOGRAPHER: "צילום חתונה",
   VIDEOGRAPHER: "צילום וידאו",
-  BRIDAL_SUITE: "מקומות התארגנות",
-  DJ: "DJ ומוסיקה",
+  BRIDAL_SUITE: "חדרי כלה",
+  DJ: "תקליטנים",
   FLORIST: "עיצוב פרחוני",
   CATERING: "קייטרינג",
+  VENUE: "אולם/גן אירועים",
+  HAIR_STYLIST: "מסרקת",
+  MAKEUP_ARTIST: "מאפרת",
+  PHOTO_BOOTH: "צלם מגנטים",
+  EVENT_PRODUCER: "מפיק/הושבה",
 };
 
 interface SupplierCardProps {
@@ -144,9 +148,6 @@ export default function SupplierCard({
           <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
           <span>{city}</span>
         </div>
-
-        {/* Rating */}
-        <Stars rating={rating} count={ratingCount} size="sm" />
 
         {/* Price */}
         <div className="pt-1 border-t border-border/50">

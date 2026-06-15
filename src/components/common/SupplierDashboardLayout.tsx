@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Calendar, BookOpen, BarChart3, User, LogOut } from "lucide-react";
+import { LayoutDashboard, Calendar, BookOpen, BarChart3, User, LogOut, DollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { href: "/supplier/bookings", label: "הזמנות", icon: BookOpen },
   { href: "/supplier/calendar", label: "יומן", icon: Calendar },
   { href: "/supplier/analytics", label: "סטטיסטיקות", icon: BarChart3 },
+  { href: "/supplier/finances", label: "פיננסים", icon: DollarSign },
   { href: "/supplier/profile", label: "פרופיל", icon: User },
 ];
 
