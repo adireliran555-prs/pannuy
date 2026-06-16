@@ -85,6 +85,48 @@ export default function SupplierJoinPage() {
   const [photoUrl, setPhotoUrl] = useState("");
   const [photos, setPhotos] = useState<string[]>([]);
 
+  // Landing-page import
+  const [importUrl, setImportUrl] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [importMsg, setImportMsg] = useState<string | null>(null);
+
+  const handleImportLanding = async () => {
+    if (!importUrl.trim() || importing) return;
+    setImporting(true);
+    setImportMsg(null);
+    try {
+      const res = await fetch("/api/supplier/import-landing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: importUrl.trim() }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        setImportMsg(json.error ?? "הייבוא נכשל, נסו כתובת אחרת");
+        return;
+      }
+      const imgs: string[] = json.data?.images ?? [];
+      setPhotos((prev) => {
+        const merged = [...prev];
+        for (const u of imgs) {
+          if (merged.length >= 20) break;
+          if (!merged.includes(u)) merged.push(u);
+        }
+        return merged;
+      });
+      const found = json.data?.name ? ` · נמצא: ${json.data.name}` : "";
+      setImportMsg(
+        imgs.length > 0
+          ? `נוספו ${imgs.length} תמונות מהאתר${found}`
+          : `לא נמצאו תמונות באתר${found}`
+      );
+    } catch {
+      setImportMsg("הייבוא נכשל, נסו שוב");
+    } finally {
+      setImporting(false);
+    }
+  };
+
   // Step 4 state
   const [packages, setPackages] = useState<Package[]>([
     { id: "1", name: "", price: "", hours: "", includes: [], isPopular: false },
@@ -479,18 +521,48 @@ export default function SupplierJoinPage() {
                 </p>
               </div>
 
-              <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
-                בגרסה המלאה תוכלו להעלות תמונות ישירות. כרגע, הוסיפו קישורי URL לתמונות שלכם.
+              {/* Import from existing website / landing page */}
+              <div className="p-4 bg-primary-light/40 border border-primary/30 rounded-xl space-y-2">
+                <p className="text-sm font-bold text-text-main">
+                  יש לכם אתר או דף נחיתה? ייבאו ממנו תמונות ✨
+                </p>
+                <p className="text-xs text-text-muted">
+                  הדביקו קישור ונמשוך אוטומטית את התמונות והפרטים מהאתר שלכם.
+                </p>
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    value={importUrl}
+                    onChange={(e) => setImportUrl(e.target.value)}
+                    onKeyDown={(e) =>
+                      e.key === "Enter" && (e.preventDefault(), handleImportLanding())
+                    }
+                    placeholder="https://your-site.com"
+                    dir="ltr"
+                    className="flex-1 rounded-xl border border-border px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  />
+                  <Button
+                    onClick={handleImportLanding}
+                    isLoading={importing}
+                    disabled={!importUrl.trim() || photos.length >= 20}
+                    size="sm"
+                  >
+                    ייבאו
+                  </Button>
+                </div>
+                {importMsg && (
+                  <p className="text-xs font-semibold text-primary-dark">{importMsg}</p>
+                )}
               </div>
 
-              {/* URL input */}
+              {/* Manual URL input */}
               <div className="flex gap-2">
                 <input
                   type="url"
                   value={photoUrl}
                   onChange={(e) => setPhotoUrl(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addPhoto())}
-                  placeholder="https://..."
+                  placeholder="https://... (הוספת תמונה בודדת)"
                   dir="ltr"
                   className="flex-1 rounded-xl border border-border px-4 py-3 text-sm text-text-main focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                 />
