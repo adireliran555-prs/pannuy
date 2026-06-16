@@ -16,13 +16,13 @@ export async function PATCH(
     const { id } = await params;
     const body = await request.json();
     const { action, notes } = body as {
-      action?: "confirm" | "reject";
+      action?: "confirm" | "reject" | "complete";
       notes?: string;
     };
 
-    if (!action || !["confirm", "reject"].includes(action)) {
+    if (!action || !["confirm", "reject", "complete"].includes(action)) {
       return NextResponse.json(
-        { success: false, error: "action חייב להיות confirm או reject" },
+        { success: false, error: "action חייב להיות confirm, reject או complete" },
         { status: 400 }
       );
     }
@@ -49,11 +49,57 @@ export async function PATCH(
       );
     }
 
-    if (meeting.status !== "PENDING") {
+    // confirm/reject act on PENDING requests; complete acts on a CONFIRMED booking
+    // once the event has actually taken place (this is what releases referral money).
+    if (action === "complete") {
+      if (meeting.status !== "CONFIRMED") {
+        return NextResponse.json(
+          { success: false, error: "ניתן לסמן כהושלם רק אירוע מאושר" },
+          { status: 400 }
+        );
+      }
+    } else if (meeting.status !== "PENDING") {
       return NextResponse.json(
         { success: false, error: "ניתן לפעול רק על פגישות בהמתנה" },
         { status: 400 }
       );
+    }
+
+    // ── complete: the event happened. Release the referral commission by flipping
+    // its AffiliateEarning from PENDING → CONFIRMED so it counts toward the
+    // referrer's withdrawable balance. Notify the referrer.
+    if (action === "complete") {
+      const completed = await prisma.$transaction(async (tx) => {
+        const updatedMeeting = await tx.meeting.update({
+          where: { id },
+          data: { status: "COMPLETED", ...(notes ? { supplierNotes: notes } : {}) },
+        });
+
+        const earning = await tx.affiliateEarning.findUnique({
+          where: { meetingId: id },
+          select: { id: true, referringSupplierId: true, amountIls: true, status: true },
+        });
+
+        if (earning && earning.status === "PENDING") {
+          await tx.affiliateEarning.update({
+            where: { id: earning.id },
+            data: { status: "CONFIRMED" },
+          });
+          await tx.notification.create({
+            data: {
+              supplierId: earning.referringSupplierId,
+              type: "AFFILIATE_EARNED",
+              titleHe: "עמלת הפניה זמינה למשיכה 💰",
+              bodyHe: `האירוע שהפנית התקיים — ₪${earning.amountIls} נזקפו ליתרה שלך`,
+              metadata: { meetingId: id },
+            },
+          });
+        }
+
+        return updatedMeeting;
+      });
+
+      return NextResponse.json({ success: true, data: completed });
     }
 
     const newStatus = action === "confirm" ? "CONFIRMED" : "REJECTED";
@@ -119,7 +165,9 @@ export async function PATCH(
         },
       });
 
-      // Create affiliate earning when a referred meeting is confirmed
+      // Create the affiliate earning when a referred booking is confirmed, but
+      // keep it PENDING — the referrer only gets the money once the event has
+      // actually happened and the performing supplier marks it complete.
       if (action === "confirm" && meeting.referredBySupplierId) {
         await tx.affiliateEarning.create({
           data: {
@@ -127,7 +175,7 @@ export async function PATCH(
             receivingSupplierId: session.id,
             meetingId: meeting.id,
             amountIls: 300,
-            status: "CONFIRMED",
+            status: "PENDING",
           },
         });
       }

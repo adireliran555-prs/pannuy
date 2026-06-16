@@ -85,7 +85,7 @@ export default function SupplierBookingsPage() {
     return pastMeetings;
   };
 
-  const handleAction = async (id: string, action: "confirm" | "reject") => {
+  const handleAction = async (id: string, action: "confirm" | "reject" | "complete") => {
     setActionLoading(id + action);
     try {
       const res = await fetch(`/api/supplier/meetings/${id}`, {
@@ -272,6 +272,24 @@ export default function SupplierBookingsPage() {
                         <X className="h-4 w-4" />
                         דחי
                       </Button>
+                    </div>
+                  )}
+
+                  {meeting.status === "CONFIRMED" && (
+                    <div className="pt-2 border-t border-border">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => handleAction(meeting.id, "complete")}
+                        isLoading={actionLoading === meeting.id + "complete"}
+                        fullWidth
+                      >
+                        <CheckCircle className="h-4 w-4" />
+                        האירוע התקיים — סיום
+                      </Button>
+                      <p className="text-xs text-text-muted mt-1.5 text-center">
+                        סימון האירוע כהושלם משחרר עמלות הפניה לספקים שהפנו אליכם
+                      </p>
                     </div>
                   )}
                 </div>
