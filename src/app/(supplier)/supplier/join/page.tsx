@@ -6,13 +6,14 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Phone, User, Plus, X, Check, ChevronRight } from "lucide-react";
+import { Phone, User, Plus, X, Check, ChevronRight, Upload } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import OtpInput from "@/components/ui/OtpInput";
 import StepProgress from "@/components/ui/StepProgress";
 import { validateIsraeliPhone, ISRAELI_CITIES, cn } from "@/lib/utils";
 import { CATEGORY_LABELS } from "@/lib/categories";
+import { uploadToCloudinary, cloudinaryEnabled } from "@/lib/cloudinary";
 
 // Categories offered when joining — legacy categories (FLORIST, BRIDAL_SUITE) are excluded.
 const JOIN_CATEGORIES = [
@@ -89,6 +90,26 @@ export default function SupplierJoinPage() {
   const [importUrl, setImportUrl] = useState("");
   const [importing, setImporting] = useState(false);
   const [importMsg, setImportMsg] = useState<string | null>(null);
+
+  // Direct upload (Cloudinary)
+  const [uploading, setUploading] = useState(false);
+  const handleFileUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setUploading(true);
+    try {
+      for (const file of Array.from(files)) {
+        if (photos.length >= 20) break;
+        try {
+          const { url } = await uploadToCloudinary(file);
+          setPhotos((prev) => (prev.length < 20 ? [...prev, url] : prev));
+        } catch {
+          /* skip a failed file */
+        }
+      }
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleImportLanding = async () => {
     if (!importUrl.trim() || importing) return;
@@ -520,6 +541,30 @@ export default function SupplierJoinPage() {
                   הוסיפו תמונות מתיק העבודות שלכם
                 </p>
               </div>
+
+              {/* Direct upload (when Cloudinary is configured) */}
+              {cloudinaryEnabled() && (
+                <label
+                  className={cn(
+                    "flex flex-col items-center justify-center gap-2 border-2 border-dashed border-primary/40 rounded-2xl p-6 cursor-pointer hover:bg-primary-light/30 transition-colors",
+                    (uploading || photos.length >= 20) && "opacity-60 pointer-events-none"
+                  )}
+                >
+                  <Upload className="h-6 w-6 text-primary" />
+                  <span className="text-sm font-bold text-text-main">
+                    {uploading ? "מעלה..." : "העלו תמונות מהמכשיר"}
+                  </span>
+                  <span className="text-xs text-text-muted">עד 20 תמונות · JPG/PNG</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    disabled={uploading || photos.length >= 20}
+                    onChange={(e) => handleFileUpload(e.target.files)}
+                  />
+                </label>
+              )}
 
               {/* Import from existing website / landing page */}
               <div className="p-4 bg-primary-light/40 border border-primary/30 rounded-xl space-y-2">
