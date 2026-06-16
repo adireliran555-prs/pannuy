@@ -123,12 +123,12 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
       <div className="sticky top-0 z-30 bg-white border-b border-border shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-3 pb-0 flex items-center gap-3 overflow-x-auto">
           {[
-            { id: "PHOTOGRAPHER", label: "צילום חתונה", emoji: "📸", active: true },
-            { id: "VIDEOGRAPHER", label: "צילום וידאו", emoji: "🎬", active: false },
+            { id: "PHOTOGRAPHER", label: "צלמי סטילס", emoji: "📸", active: true },
+            { id: "VIDEOGRAPHER", label: "צלמי וידאו", emoji: "🎬", active: false },
             { id: "BRIDAL_SUITE", label: "חדרי כלה", emoji: "🏛️", active: false },
             { id: "DJ", label: "תקליטנים", emoji: "🎧", active: false },
             { id: "FLORIST", label: "עיצוב פרחוני", emoji: "💐", active: false },
-            { id: "CATERING", label: "קייטרינג", emoji: "🍽️", active: false },
+            { id: "CATERING", label: "קייטרינג ושפים", emoji: "🍽️", active: false },
             { id: "VENUE", label: "אולמות ואירועים", emoji: "🏛️", active: false },
             { id: "HAIR_STYLIST", label: "מסרקות", emoji: "💇", active: false },
             { id: "MAKEUP_ARTIST", label: "מאפרות", emoji: "💄", active: false },

@@ -26,12 +26,12 @@ import { formatPrice, cn } from "@/lib/utils";
 import type { NormalizedSupplier } from "@/lib/supplier";
 
 const CATEGORY_LABELS: Record<string, string> = {
-  PHOTOGRAPHER: "צילום חתונה",
-  VIDEOGRAPHER: "צילום וידאו",
+  PHOTOGRAPHER: "צלם סטילס",
+  VIDEOGRAPHER: "צלם וידאו",
   BRIDAL_SUITE: "חדרי כלה",
-  DJ: "תקליטנים",
+  DJ: "תקליטן",
   FLORIST: "עיצוב פרחוני",
-  CATERING: "קייטרינג",
+  CATERING: "קייטרינג ושפים",
   VENUE: "אולם/גן אירועים",
   HAIR_STYLIST: "מסרקת",
   MAKEUP_ARTIST: "מאפרת",

@@ -8,12 +8,12 @@ import { formatPrice } from "@/lib/utils";
 import { useState } from "react";
 
 const CATEGORY_LABELS: Record<string, string> = {
-  PHOTOGRAPHER: "צילום חתונה",
-  VIDEOGRAPHER: "צילום וידאו",
+  PHOTOGRAPHER: "צלם סטילס",
+  VIDEOGRAPHER: "צלם וידאו",
   BRIDAL_SUITE: "חדרי כלה",
-  DJ: "תקליטנים",
+  DJ: "תקליטן",
   FLORIST: "עיצוב פרחוני",
-  CATERING: "קייטרינג",
+  CATERING: "קייטרינג ושפים",
   VENUE: "אולם/גן אירועים",
   HAIR_STYLIST: "מסרקת",
   MAKEUP_ARTIST: "מאפרת",

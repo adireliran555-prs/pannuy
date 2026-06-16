@@ -178,16 +178,16 @@ export default async function HomePage() {
           <div className="flex gap-4 overflow-x-auto pb-4 sm:grid sm:grid-cols-4 snap-x snap-mandatory">
             {[
               {
-                title: "צילום חתונה",
+                title: "צלמי סטילס",
                 emoji: "📸",
                 href: "/search?category=PHOTOGRAPHER",
                 active: true,
                 bg: "bg-gradient-to-br from-rose-100 to-rose-200",
               },
               {
-                title: "מקומות התארגנות",
+                title: "אולמות וגני אירועים",
                 emoji: "🏛️",
-                href: `https://wa.me/972555173402?text=${encodeURIComponent("היי, תעדכנו אותי כשמקומות התארגנות יהיו זמינים בפנוי 🙏")}`,
+                href: `https://wa.me/972555173402?text=${encodeURIComponent("היי, תעדכנו אותי כשאולמות וגני אירועים יהיו זמינים בפנוי 🙏")}`,
                 active: false,
                 bg: "bg-gradient-to-br from-purple-100 to-purple-200",
               },

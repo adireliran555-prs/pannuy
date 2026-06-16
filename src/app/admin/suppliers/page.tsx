@@ -5,12 +5,17 @@ import SuppliersTable from "./SuppliersTable";
 export const dynamic = "force-dynamic";
 
 const CATEGORY_LABEL: Record<string, string> = {
-  PHOTOGRAPHER: "צילום חתונה",
-  VIDEOGRAPHER: "צילום וידאו",
-  BRIDAL_SUITE: "מקומות התארגנות",
-  DJ: "DJ ומוסיקה",
+  PHOTOGRAPHER: "צלם סטילס",
+  VIDEOGRAPHER: "צלם וידאו",
+  BRIDAL_SUITE: "חדרי כלה",
+  DJ: "תקליטן",
   FLORIST: "עיצוב פרחוני",
-  CATERING: "קייטרינג",
+  CATERING: "קייטרינג ושפים",
+  VENUE: "אולם/גן אירועים",
+  HAIR_STYLIST: "מסרקת",
+  MAKEUP_ARTIST: "מאפרת",
+  PHOTO_BOOTH: "צלם מגנטים",
+  EVENT_PRODUCER: "מפיק/הושבה",
 };
 
 export default async function AdminSuppliersPage() {
