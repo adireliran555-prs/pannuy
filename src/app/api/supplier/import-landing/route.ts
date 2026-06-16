@@ -98,24 +98,41 @@ export async function POST(request: NextRequest) {
 
     // ── Images ──
     const images = new Set<string>();
-    const ogImg = metaContent(html, [
-      /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i,
-    ]);
-    if (ogImg) images.add(ogImg);
-
-    const imgRe = /<img[^>]+src=["']([^"']+)["']/gi;
-    let m: RegExpExecArray | null;
-    while ((m = imgRe.exec(html)) && images.size < 30) {
-      let src = m[1];
-      if (src.startsWith("data:")) continue;
-      if (/\.svg(\?|$)/i.test(src)) continue; // skip vector icons
-      if (/sprite|logo|icon|favicon|placeholder|pixel|1x1|avatar/i.test(src)) continue;
+    const addImage = (raw: string | null | undefined) => {
+      if (!raw || images.size >= 30) return;
+      let src = raw.trim();
+      if (!src || src.startsWith("data:")) return;
+      // srcset → take the first candidate URL
+      if (src.includes(",") && / \d+(w|x)/.test(src)) {
+        src = src.split(",")[0].trim().split(/\s+/)[0];
+      }
+      if (/\.svg(\?|$)/i.test(src)) return; // skip vector icons
+      if (/sprite|logo|icon|favicon|placeholder|pixel|1x1|avatar|loading|spinner/i.test(src))
+        return;
       try {
-        src = new URL(src, url.toString()).toString(); // resolve relative
+        src = new URL(src, url.toString()).toString(); // resolve relative → absolute
       } catch {
-        continue;
+        return;
       }
       if (src.startsWith("http")) images.add(src);
+    };
+
+    addImage(
+      metaContent(html, [
+        /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i,
+      ])
+    );
+
+    // <img> with src AND common lazy-load attributes (data-src, data-lazy-src,
+    // data-original, srcset) — many sites put the real URL in a data-* attr.
+    const tagRe = /<img\b[^>]*>/gi;
+    const attrRe =
+      /(?:data-src|data-lazy-src|data-original|data-srcset|srcset|src)=["']([^"']+)["']/gi;
+    let tag: RegExpExecArray | null;
+    while ((tag = tagRe.exec(html)) && images.size < 30) {
+      let a: RegExpExecArray | null;
+      attrRe.lastIndex = 0;
+      while ((a = attrRe.exec(tag[0]))) addImage(a[1]);
     }
 
     // ── Phone (Israeli) ──
