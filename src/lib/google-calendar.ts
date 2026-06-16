@@ -448,12 +448,10 @@ export async function createCalendarEvent(
   const oauth2Client = await getSupplierOAuthClient(supplierId);
   const calendar = google.calendar({ version: "v3", auth: oauth2Client });
 
-  const supplier = await prisma.supplier.findUniqueOrThrow({
-    where: { id: supplierId },
-    select: { googleCalendarId: true, name: true },
-  });
-
-  const calendarId = supplier.googleCalendarId ?? "primary";
+  // Confirmed bookings are written to the supplier's PRIMARY calendar so they
+  // show up where the supplier actually looks. (We READ availability from the
+  // dedicated "פנוי — זמינות" calendar, but bookings belong in their main one.)
+  const calendarId = "primary";
 
   // Naive local datetime (no offset, no Z). Combined with timeZone below, Google
   // interprets these wall-clock times as Asia/Jerusalem. Applying both
@@ -497,12 +495,6 @@ export async function deleteCalendarEvent(
   const oauth2Client = await getSupplierOAuthClient(supplierId);
   const calendar = google.calendar({ version: "v3", auth: oauth2Client });
 
-  const supplier = await prisma.supplier.findUniqueOrThrow({
-    where: { id: supplierId },
-    select: { googleCalendarId: true },
-  });
-
-  const calendarId = supplier.googleCalendarId ?? "primary";
-
-  await calendar.events.delete({ calendarId, eventId });
+  // Booking events are created on the primary calendar (see createCalendarEvent).
+  await calendar.events.delete({ calendarId: "primary", eventId });
 }

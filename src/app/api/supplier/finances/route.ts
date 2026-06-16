@@ -14,18 +14,19 @@ export async function GET(request: NextRequest) {
       // Canonical balance (single source of truth)
       computeSupplierBalance(prisma, supplierId),
 
-      // Referral earnings (money in)
+      // Referral earnings (money in) — full detail for the referrals tab
       prisma.affiliateEarning.findMany({
         where: { referringSupplierId: supplierId },
         orderBy: { createdAt: "desc" },
-        take: 20,
+        take: 100,
         select: {
           id: true,
           amountIls: true,
           status: true,
           createdAt: true,
+          paidAt: true,
           meeting: { select: { requestedDate: true } },
-          receivingSupplier: { select: { name: true, category: true } },
+          receivingSupplier: { select: { name: true, category: true, slug: true } },
         },
       }),
 
@@ -39,6 +40,27 @@ export async function GET(request: NextRequest) {
     ]);
 
     const { totalEarned, withdrawableBalance, commissionOwed } = balance;
+
+    // Detailed referral rows: who performed the job, the event date, amount, status.
+    const referrals = recentEarned.map((r) => ({
+      id: r.id,
+      supplierName: r.receivingSupplier.name,
+      supplierCategory: r.receivingSupplier.category,
+      supplierSlug: r.receivingSupplier.slug,
+      eventDate: r.meeting.requestedDate,
+      amountIls: r.amountIls,
+      status: r.status, // PENDING | CONFIRMED | PAID | CANCELLED
+      createdAt: r.createdAt.toISOString(),
+      paidAt: r.paidAt?.toISOString() ?? null,
+    }));
+
+    // Referral funnel counts
+    const referralStats = {
+      total: referrals.length,
+      awaitingEvent: referrals.filter((x) => x.status === "PENDING").length,
+      dueToYou: referrals.filter((x) => x.status === "CONFIRMED").length,
+      paid: referrals.filter((x) => x.status === "PAID").length,
+    };
 
     const earnedTx = recentEarned.map((r) => ({
       id: r.id,
@@ -74,6 +96,8 @@ export async function GET(request: NextRequest) {
       totalEarned,
       withdrawableBalance,
       commissionOwed,
+      referrals,
+      referralStats,
       recentTransactions,
     });
   } catch (err) {

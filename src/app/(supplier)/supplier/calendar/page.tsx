@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { ChevronRight, ChevronLeft, RefreshCw, Calendar, CheckCircle } from "lucide-react";
 import SupplierDashboardLayout from "@/components/common/SupplierDashboardLayout";
@@ -51,25 +51,37 @@ function GoogleCalendarBanner({ onSynced }: { onSynced?: () => void }) {
     }
   };
 
-  const handleSync = async () => {
-    if (isSyncing) return;
-    setIsSyncing(true);
-    setSyncMsg(null);
-    try {
-      const res = await fetch("/api/supplier/calendar/sync", { method: "POST" });
-      const json = await res.json();
-      if (res.ok && json.success) {
-        setSyncMsg(`סונכרן ✓ (${json.data?.synced ?? 0} אירועים)`);
-        onSynced?.();
-      } else {
-        setSyncMsg(json.error ?? "הסנכרון נכשל");
+  const handleSync = useCallback(
+    async (silent = false) => {
+      setIsSyncing(true);
+      if (!silent) setSyncMsg(null);
+      try {
+        const res = await fetch("/api/supplier/calendar/sync", { method: "POST" });
+        const json = await res.json();
+        if (res.ok && json.success) {
+          setSyncMsg(`סונכרן ✓ (${json.data?.synced ?? 0} אירועים)`);
+          onSynced?.();
+        } else if (!silent) {
+          setSyncMsg(json.error ?? "הסנכרון נכשל");
+        }
+      } catch {
+        if (!silent) setSyncMsg("הסנכרון נכשל, נסו שוב");
+      } finally {
+        setIsSyncing(false);
       }
-    } catch {
-      setSyncMsg("הסנכרון נכשל, נסו שוב");
-    } finally {
-      setIsSyncing(false);
+    },
+    [onSynced]
+  );
+
+  // Auto-sync once when the page loads and we're connected, so the calendar is
+  // always fresh without the supplier pressing "סנכרן עכשיו".
+  const autoSyncedRef = useRef(false);
+  useEffect(() => {
+    if (calendarConnected && !autoSyncedRef.current) {
+      autoSyncedRef.current = true;
+      handleSync(true);
     }
-  };
+  }, [calendarConnected, handleSync]);
 
   if (calendarConnected) {
     return (
@@ -81,7 +93,7 @@ function GoogleCalendarBanner({ onSynced }: { onSynced?: () => void }) {
           </span>
           <button
             type="button"
-            onClick={handleSync}
+            onClick={() => handleSync(false)}
             disabled={isSyncing}
             className="ms-auto flex items-center gap-1.5 text-green-600 hover:text-green-800 disabled:opacity-50 text-sm font-semibold"
           >
