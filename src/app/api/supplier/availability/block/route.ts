@@ -12,25 +12,35 @@ export async function GET(request: NextRequest) {
     const year = parseInt(searchParams.get("year") ?? String(new Date().getFullYear()));
     const month = parseInt(searchParams.get("month") ?? String(new Date().getMonth() + 1));
 
-    const firstDay = new Date(year, month - 1, 1);
-    const lastDay = new Date(year, month, 0);
+    const firstDay = new Date(Date.UTC(year, month - 1, 1));
+    const lastDay = new Date(Date.UTC(year, month, 0));
 
+    // Any blocked slot makes that day busy on the supplier's calendar — manual
+    // full-day blocks (00:00) AND Google-synced timed meetings (e.g. 13:00).
+    // Don't filter by startTime, or timed Google events stay invisible.
     const slots = await prisma.availabilitySlot.findMany({
       where: {
         supplierId: session.id,
         date: { gte: firstDay, lte: lastDay },
         isBlocked: true,
-        startTime: "00:00",
       },
-      select: { id: true, date: true },
+      orderBy: { startTime: "asc" },
+      select: { id: true, date: true, source: true },
     });
+
+    // One entry per date; prefer a MANUAL row's id so "unblock" targets it.
+    const byDate = new Map<string, { id: string; date: string; source: string }>();
+    for (const s of slots) {
+      const date = s.date.toISOString().slice(0, 10);
+      const existing = byDate.get(date);
+      if (!existing || (existing.source !== "MANUAL" && s.source === "MANUAL")) {
+        byDate.set(date, { id: s.id, date, source: s.source });
+      }
+    }
 
     return NextResponse.json({
       success: true,
-      data: slots.map((s) => ({
-        id: s.id,
-        date: s.date.toISOString().slice(0, 10),
-      })),
+      data: Array.from(byDate.values()),
     });
   } catch (err) {
     console.error("[GET /api/supplier/availability/block]", err);
