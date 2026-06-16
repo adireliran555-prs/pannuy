@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireSupplierSession } from "@/lib/api-auth";
-import { exchangeCodeForTokens } from "@/lib/google-calendar";
+import {
+  exchangeCodeForTokens,
+  ensurePannuyCalendar,
+  syncSupplierBusyDays,
+} from "@/lib/google-calendar";
 
 export async function GET(request: NextRequest) {
   try {
@@ -43,6 +47,11 @@ export async function GET(request: NextRequest) {
         googleTokenExpiry: expiry,
       },
     });
+
+    // Provision the dedicated "פנוי — זמינות" calendar and pull anything already
+    // on it. Both are non-fatal — connection still succeeds if they fail.
+    await ensurePannuyCalendar(session.id);
+    await syncSupplierBusyDays(session.id).catch(() => {});
 
     const res = NextResponse.redirect(
       new URL("/supplier/calendar?connected=true", request.url)

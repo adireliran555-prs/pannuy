@@ -4,6 +4,7 @@ import { requireSupplierSession } from "@/lib/api-auth";
 import {
   registerCalendarWatch,
   syncSupplierBusyDays,
+  ensurePannuyCalendar,
 } from "@/lib/google-calendar";
 
 export async function POST(request: NextRequest) {
@@ -22,6 +23,10 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Make sure the dedicated "פנוי — זמינות" calendar exists (provisions it for
+    // suppliers who connected before this feature), then sync only from it.
+    await ensurePannuyCalendar(session.id);
 
     const { synced } = await syncSupplierBusyDays(session.id);
 

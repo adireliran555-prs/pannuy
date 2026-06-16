@@ -108,6 +108,61 @@ async function getSupplierOAuthClient(supplierId: string): Promise<OAuth2Client>
   return oauth2Client;
 }
 
+// ─── Dedicated Pannuy calendar ────────────────────────────────────────────────
+
+export const PANNUY_CALENDAR_NAME = "פנוי — זמינות";
+
+/**
+ * Create (or reuse) a dedicated "פנוי — זמינות" calendar in the supplier's Google
+ * account and store its id as the supplier's googleCalendarId. We then sync ONLY
+ * this calendar — the supplier adds blocking events to it (privacy-friendly: we
+ * never read their personal events). Idempotent and non-fatal.
+ */
+export async function ensurePannuyCalendar(supplierId: string): Promise<string | null> {
+  try {
+    const supplier = await prisma.supplier.findUniqueOrThrow({
+      where: { id: supplierId },
+      select: { googleCalendarId: true },
+    });
+    if (supplier.googleCalendarId && supplier.googleCalendarId !== "primary") {
+      return supplier.googleCalendarId; // already provisioned
+    }
+
+    const oauth2Client = await getSupplierOAuthClient(supplierId);
+    const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+
+    // Reuse an existing Pannuy calendar if the supplier already has one.
+    const list = await calendar.calendarList.list();
+    const existing = list.data.items?.find(
+      (c) => c.summary === PANNUY_CALENDAR_NAME
+    );
+
+    let calendarId = existing?.id ?? null;
+    if (!calendarId) {
+      const created = await calendar.calendars.insert({
+        requestBody: {
+          summary: PANNUY_CALENDAR_NAME,
+          description:
+            "צרו כאן אירועים כדי לחסום תאריכים בפנוי. רק אירועים ביומן זה נמשכים לאתר.",
+          timeZone: "Asia/Jerusalem",
+        },
+      });
+      calendarId = created.data.id ?? null;
+    }
+
+    if (calendarId) {
+      await prisma.supplier.update({
+        where: { id: supplierId },
+        data: { googleCalendarId: calendarId },
+      });
+    }
+    return calendarId;
+  } catch (err) {
+    console.warn("[ensurePannuyCalendar] failed:", err);
+    return null;
+  }
+}
+
 // ─── Busy slots ───────────────────────────────────────────────────────────────
 
 export async function getSupplierBusySlots(

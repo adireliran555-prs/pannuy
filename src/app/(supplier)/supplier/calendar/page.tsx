@@ -73,22 +73,29 @@ function GoogleCalendarBanner({ onSynced }: { onSynced?: () => void }) {
 
   if (calendarConnected) {
     return (
-      <div className="bg-green-50 border border-green-200 rounded-2xl px-5 py-4 flex items-center gap-3 flex-wrap">
-        <CheckCircle className="h-5 w-5 text-green-600" />
-        <span className="font-semibold text-green-700 text-sm">
-          מחובר ל-Google Calendar ✓
-        </span>
-        <button
-          type="button"
-          onClick={handleSync}
-          disabled={isSyncing}
-          className="ms-auto flex items-center gap-1.5 text-green-600 hover:text-green-800 disabled:opacity-50 text-sm font-semibold"
-        >
-          <RefreshCw className={cn("h-3.5 w-3.5", isSyncing && "animate-spin")} />
-          {isSyncing ? "מסנכרן..." : "סנכרן עכשיו"}
-        </button>
+      <div className="bg-green-50 border border-green-200 rounded-2xl px-5 py-4 space-y-2">
+        <div className="flex items-center gap-3 flex-wrap">
+          <CheckCircle className="h-5 w-5 text-green-600" />
+          <span className="font-semibold text-green-700 text-sm">
+            מחובר ל-Google Calendar ✓
+          </span>
+          <button
+            type="button"
+            onClick={handleSync}
+            disabled={isSyncing}
+            className="ms-auto flex items-center gap-1.5 text-green-600 hover:text-green-800 disabled:opacity-50 text-sm font-semibold"
+          >
+            <RefreshCw className={cn("h-3.5 w-3.5", isSyncing && "animate-spin")} />
+            {isSyncing ? "מסנכרן..." : "סנכרן עכשיו"}
+          </button>
+        </div>
+        <p className="text-xs text-green-700/90 leading-relaxed">
+          יצרנו עבורכם יומן בשם <span className="font-bold">&quot;פנוי — זמינות&quot;</span> ב-Google Calendar.
+          כדי לחסום תאריך, צרו אירוע ובחרו את היומן הזה — רק אירועים ביומן זה נמשכים לאתר,
+          שאר היומנים הפרטיים שלכם נשארים פרטיים.
+        </p>
         {syncMsg && (
-          <span className="w-full text-xs text-green-700">{syncMsg}</span>
+          <span className="block text-xs text-green-700">{syncMsg}</span>
         )}
       </div>
     );
