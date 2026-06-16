@@ -4,6 +4,7 @@ import { verifyOtp, signCustomerToken } from "@/lib/auth";
 import { CustomerSession } from "@/types";
 
 const SESSION_COOKIE_MAX_AGE = 7 * 24 * 60 * 60;
+const MAX_OTP_ATTEMPTS = 5;
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,7 +25,8 @@ export async function POST(request: NextRequest) {
     }
 
     const skipOtpCheck =
-      process.env.NODE_ENV !== "production" || process.env.BYPASS_OTP === "true";
+      process.env.NODE_ENV !== "production" &&
+      process.env.ALLOW_OTP_BYPASS === "true";
 
     const upsertUser = () =>
       prisma.user.upsert({
@@ -51,7 +53,39 @@ export async function POST(request: NextRequest) {
         orderBy: { createdAt: "desc" },
       });
 
-      if (!otpRecord || !(await verifyOtp(otp, otpRecord.hash))) {
+      if (!otpRecord) {
+        return NextResponse.json(
+          { success: false, error: "קוד שגוי או פג תוקף" },
+          { status: 401 }
+        );
+      }
+
+      if (otpRecord.attempts >= MAX_OTP_ATTEMPTS) {
+        await prisma.otp.update({
+          where: { id: otpRecord.id },
+          data: { used: true },
+        });
+        return NextResponse.json(
+          { success: false, error: "יותר מדי ניסיונות, בקשו קוד חדש" },
+          { status: 429 }
+        );
+      }
+
+      if (!(await verifyOtp(otp, otpRecord.hash))) {
+        const updated = await prisma.otp.update({
+          where: { id: otpRecord.id },
+          data: { attempts: { increment: 1 } },
+        });
+        if (updated.attempts >= MAX_OTP_ATTEMPTS) {
+          await prisma.otp.update({
+            where: { id: otpRecord.id },
+            data: { used: true },
+          });
+          return NextResponse.json(
+            { success: false, error: "יותר מדי ניסיונות, בקשו קוד חדש" },
+            { status: 429 }
+          );
+        }
         return NextResponse.json(
           { success: false, error: "קוד שגוי או פג תוקף" },
           { status: 401 }

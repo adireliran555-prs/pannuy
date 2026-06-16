@@ -141,18 +141,17 @@ export default function SuppliersTable({ initialRows }: { initialRows: Row[] }) 
                 <th className="px-4 py-3 text-start">שם</th>
                 <th className="px-4 py-3 text-start">קטגוריה</th>
                 <th className="px-4 py-3 text-start">עיר</th>
-                <th className="px-4 py-3 text-start">דירוג</th>
                 <th className="px-4 py-3 text-start">פגישות</th>
                 <th className="px-4 py-3 text-start">צפיות</th>
                 <th className="px-4 py-3 text-start">סטטוס</th>
-                <th className="px-4 py-3 text-start">הצטרפ.ה</th>
+                <th className="px-4 py-3 text-start">תאריך הצטרפות</th>
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="text-center py-10 text-text-muted">לא נמצאו ספקים</td>
+                  <td colSpan={8} className="text-center py-10 text-text-muted">לא נמצאו ספקים</td>
                 </tr>
               ) : (
                 filtered.map((r) => (
@@ -164,11 +163,6 @@ export default function SuppliersTable({ initialRows }: { initialRows: Row[] }) 
                     </td>
                     <td className="px-4 py-3 text-text-muted">{r.categoryLabel}</td>
                     <td className="px-4 py-3 text-text-muted">{r.city}</td>
-                    <td className="px-4 py-3">
-                      {r.ratingCount > 0 ? (
-                        <span className="font-bold">⭐ {r.rating.toFixed(1)} <span className="text-text-muted font-normal">({r.ratingCount})</span></span>
-                      ) : <span className="text-text-muted">—</span>}
-                    </td>
                     <td className="px-4 py-3 text-text-muted">{r.meetings}</td>
                     <td className="px-4 py-3 text-text-muted">{r.views}</td>
                     <td className="px-4 py-3">
@@ -216,7 +210,7 @@ export default function SuppliersTable({ initialRows }: { initialRows: Row[] }) 
                   </tr>
                   {expandedId === r.id && (
                     <tr className="bg-surface/40">
-                      <td colSpan={9} className="px-4 py-4">
+                      <td colSpan={8} className="px-4 py-4">
                         <SupplierDetail
                           row={r}
                           busy={busyId === r.id}

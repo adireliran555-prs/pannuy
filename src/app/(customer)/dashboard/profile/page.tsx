@@ -175,7 +175,7 @@ export default function ProfilePage() {
                 </label>
                 <input
                   type="text"
-                  placeholder="הקלידי שם עיר..."
+                  placeholder="הקלידו שם עיר..."
                   value={cityInput}
                   onChange={(e) => {
                     setCityInput(e.target.value);
@@ -216,7 +216,7 @@ export default function ProfilePage() {
                 isLoading={isLoading}
                 className="mt-2"
               >
-                שמרי שינויים
+                שמרו שינויים
               </Button>
             </form>
           )}
@@ -240,7 +240,7 @@ export default function ProfilePage() {
               window.location.href = "/start";
             }}
           >
-            התנתקי
+            התנתקו
           </button>
         </div>
       </div>

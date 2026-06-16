@@ -1,10 +1,14 @@
 import Link from "next/link";
-import { Camera, Calendar, TrendingUp, CheckCircle, ChevronLeft, Star } from "lucide-react";
+import { Camera, Calendar, TrendingUp, CheckCircle, ChevronLeft, Users, Gift, ShieldCheck } from "lucide-react";
 
 const FAQS = [
   {
     q: "האם ההצטרפות לפנוי כרוכה בתשלום?",
-    a: "לא! ההצטרפות לפנוי חינמית לחלוטין. אנחנו לוקחים עמלה רק על עסקאות שמסתכמות בהצלחה. אין תשלום חודשי, אין עמלת רישום.",
+    a: "לא! ההצטרפות לפנוי חינמית לחלוטין. אין תשלום חודשי ואין עמלת רישום. אנחנו גובים עמלה רק על עבודות שאתם סוגרים בפועל דרך הפלטפורמה — אם לא סגרתם, לא שילמתם.",
+  },
+  {
+    q: "אפשר להרוויח על הפניה של ספקים נוספים?",
+    a: "בהחלט. כשאתם מפנים אלינו ספקים נוספים, אתם מרוויחים עמלה על העבודות שהם סוגרים. ככל שהקהילה גדלה, כך גדלה ההכנסה שלכם.",
   },
   {
     q: "כמה זמן לוקח להקים פרופיל?",
@@ -16,7 +20,7 @@ const FAQS = [
   },
   {
     q: "מה קורה כשזוג מבקש פגישה?",
-    a: "תקבלו התראה מיידית, תוכלו לאשר או לדחות תוך שניות, ותתקשרו עם הזוג ישירות דרך הפלטפורמה. ללא ביניים.",
+    a: "תקבלו התראה מיידית, תוכלו לאשר או לדחות תוך שניות, ותתקשרו עם הזוג ישירות דרך הפלטפורמה. ללא מתווכים.",
   },
 ];
 
@@ -48,31 +52,45 @@ export default function ForSuppliersPage() {
             <span className="text-primary">לאלפי זוגות</span>
           </h1>
           <p className="text-lg text-white/80 mb-8 max-w-xl mx-auto leading-relaxed">
-            הצטרפו לפנוי — הפלטפורמה המובילה לספקי חתונות בישראל. לקבל לידים איכותיים ולנהל פגישות בקלות.
+            הצטרפו לפנוי — הפלטפורמה לספקי החתונות מהטופ של ישראל. קבלו לידים איכותיים ונהלו פגישות בקלות.
           </p>
           <Link
             href="/supplier/join"
             className="inline-flex items-center gap-2 bg-primary text-white font-bold text-lg px-10 py-5 rounded-full shadow-2xl hover:shadow-primary/30 hover:bg-primary-dark transition-all duration-200 hover:-translate-y-0.5"
           >
-            הצטרפו בחינם
+            הצטרפו עכשיו
             <ChevronLeft className="h-5 w-5" />
           </Link>
           <p className="mt-4 text-white/50 text-sm">
-            ללא עמלת רישום · אין תשלום חודשי
+            הצטרפות חינם · עמלה רק על עבודה שנסגרה
           </p>
         </div>
       </section>
 
-      {/* ── Stats ── */}
+      {/* ── Value props ── */}
       <section className="bg-white py-14 px-6 border-b border-border">
         <div className="max-w-4xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-8 text-center">
           {[
-            { value: "150+", label: "ספקים פעילים", sub: "ועוד מצטרפים מדי שבוע" },
-            { value: "₪8,500", label: "הכנסה חודשית ממוצעת", sub: "לספק/ת פעיל/ה בפלטפורמה" },
-            { value: "4.9 ⭐", label: "דירוג ממוצע", sub: "מדד שביעות הרצון שלנו" },
-          ].map(({ value, label, sub }) => (
-            <div key={label}>
-              <div className="text-4xl font-black text-primary mb-1">{value}</div>
+            {
+              icon: Gift,
+              label: "הצטרפות חינם",
+              sub: "בלי תשלום חודשי ובלי עמלת רישום",
+            },
+            {
+              icon: TrendingUp,
+              label: "עמלה רק על הצלחה",
+              sub: "אתם משלמים רק על עבודות שנסגרו דרך הפלטפורמה",
+            },
+            {
+              icon: Users,
+              label: "מרוויחים על הפניות",
+              sub: "קבלו עמלה על ספקים שאתם מפנים אלינו",
+            },
+          ].map(({ icon: Icon, label, sub }) => (
+            <div key={label} className="flex flex-col items-center">
+              <div className="w-12 h-12 rounded-2xl bg-primary-light flex items-center justify-center text-primary mb-3">
+                <Icon className="h-6 w-6" />
+              </div>
               <div className="font-bold text-text-main">{label}</div>
               <div className="text-text-muted text-sm mt-1">{sub}</div>
             </div>
@@ -88,7 +106,7 @@ export default function ForSuppliersPage() {
               למה פנוי?
             </h2>
             <p className="text-text-muted mt-2 max-w-xl mx-auto">
-              הכלים שצריכים להצליח, במקום אחד
+              כל הכלים שצריך כדי להצליח, במקום אחד
             </p>
           </div>
 
@@ -109,7 +127,7 @@ export default function ForSuppliersPage() {
               {
                 icon: Camera,
                 title: "ניהול עסקי",
-                desc: "כלים לניהול פגישות, ביקורות ואנליטיקה. ראו כמה זוגות צפו בפרופיל ואיפה מגיעות הפניות.",
+                desc: "כלים לניהול פגישות ואנליטיקה. ראו כמה זוגות צפו בפרופיל ומאיפה מגיעות הפניות.",
                 color: "bg-green-100 text-green-600",
               },
             ].map(({ icon: Icon, title, desc, color }) => (
@@ -180,48 +198,39 @@ export default function ForSuppliersPage() {
         </div>
       </section>
 
-      {/* ── Testimonials ── */}
+      {/* ── Why suppliers trust us ── */}
       <section className="py-20 px-6 bg-surface">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-10">
             <h2 className="text-3xl font-black text-text-main">
-              מה הספקים אומרים
+              ספקים מהטופ של ישראל
             </h2>
+            <p className="text-text-muted mt-2 max-w-xl mx-auto">
+              פנוי היא קהילה סגורה של ספקים מאומתים — לא מאגר פתוח. אנחנו מצרפים רק את הטובים בכל קטגוריה.
+            </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {[
               {
-                name: "ריבה אורן",
-                city: "תל אביב",
-                rating: 5,
-                text: "מאז שהצטרפתי לפנוי, מספר הפניות שלי גדל פי 3. הכלים ניהול הזמינות והפגישות חוסכים לי שעות בשבוע.",
+                icon: ShieldCheck,
+                title: "ספקים מאומתים בלבד",
+                text: "כל ספק עובר אימות לפני שהוא עולה לפלטפורמה. הזוגות יודעים שהם פונים למקצוענים אמיתיים.",
               },
               {
-                name: "טל חיון",
-                city: "ירושלים",
-                rating: 5,
-                text: "הפלטפורמה הכי ידידותית שנתקלתי בה. הפרופיל שלי מביא לידים איכותיים מזוגות שבאמת רוצים להתקדם.",
+                icon: Calendar,
+                title: "זמינות אמיתית",
+                text: "הזוגות רואים מראש מתי אתם פנויים, כך שמגיעות אליכם רק פניות שמתאימות לתאריך שלכם.",
               },
-            ].map(({ name, city, rating, text }) => (
+            ].map(({ icon: Icon, title, text }) => (
               <div
-                key={name}
-                className="bg-white rounded-2xl border border-border p-6 space-y-4"
+                key={title}
+                className="bg-white rounded-2xl border border-border p-6 space-y-3"
               >
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: rating }).map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
-                  ))}
+                <div className="w-11 h-11 rounded-2xl bg-primary-light flex items-center justify-center text-primary">
+                  <Icon className="h-5 w-5" />
                 </div>
-                <p className="text-text-muted leading-relaxed">&quot;{text}&quot;</p>
-                <div className="flex items-center gap-3 pt-2 border-t border-border">
-                  <div className="w-9 h-9 rounded-full bg-primary-light flex items-center justify-center text-primary font-bold text-sm">
-                    {name[0]}
-                  </div>
-                  <div>
-                    <p className="font-semibold text-text-main text-sm">{name}</p>
-                    <p className="text-text-muted text-xs">{city}</p>
-                  </div>
-                </div>
+                <h3 className="font-bold text-text-main text-lg">{title}</h3>
+                <p className="text-text-muted leading-relaxed text-sm">{text}</p>
               </div>
             ))}
           </div>
@@ -260,17 +269,17 @@ export default function ForSuppliersPage() {
             מוכנים להתחיל?
           </h2>
           <p className="text-lg text-text-muted mb-8">
-            הצטרפו לקהילת הספקים שלנו וקבלו גישה לאלפי זוגות חדשים בכל חודש
+            הצטרפו לקהילת הספקים שלנו וקבלו גישה לזוגות חדשים — בלי עלות מראש
           </p>
           <Link
             href="/supplier/join"
             className="inline-flex items-center gap-2 bg-primary text-white font-bold text-xl px-12 py-5 rounded-full shadow-xl hover:shadow-2xl hover:bg-primary-dark transition-all duration-200 hover:-translate-y-1"
           >
-            הצטרפו בחינם
+            הצטרפו עכשיו
             <ChevronLeft className="h-5 w-5" />
           </Link>
           <div className="mt-6 flex items-center justify-center gap-6 text-sm text-text-muted">
-            {["ללא עמלת רישום", "אין תשלום חודשי", "ביטול בכל עת"].map((item) => (
+            {["הצטרפות חינם", "עמלה רק על עבודה שנסגרה", "ביטול בכל עת"].map((item) => (
               <span key={item} className="flex items-center gap-1.5">
                 <CheckCircle className="h-4 w-4 text-green-500" />
                 {item}

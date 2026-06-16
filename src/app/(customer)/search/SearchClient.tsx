@@ -3,8 +3,9 @@
 import { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { SlidersHorizontal, X, ChevronDown, Star, Check } from "lucide-react";
+import { SlidersHorizontal, X, ChevronDown, Check } from "lucide-react";
 import { useSuppliers, NormalizedSupplier } from "@/hooks/useSuppliers";
+import { CATEGORY_LABELS } from "@/lib/categories";
 import SupplierCard from "@/components/common/SupplierCard";
 import { SupplierCardSkeleton } from "@/components/ui/Skeleton";
 import EmptyState from "@/components/ui/EmptyState";
@@ -33,8 +34,7 @@ const RECENTLY_VIEWED_KEY = "pannuy_recently_viewed";
 interface Filters {
   date: string;
   priceMax: number;
-  ratingMin: number;
-  sortBy: "relevance" | "rating" | "priceAsc" | "priceDesc";
+  sortBy: "relevance" | "priceAsc" | "priceDesc";
 }
 
 function SearchContent({ initialData }: { initialData?: InitialData }) {
@@ -47,7 +47,6 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
   const [filters, setFilters] = useState<Filters>({
     date: searchParams.get("date") || "",
     priceMax: 0,
-    ratingMin: 0,
     sortBy: "relevance",
   });
   const [selectedAreas, setSelectedAreas] = useState<string[]>(initialAreas);
@@ -55,7 +54,6 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
   const [showFilterDrawer, setShowFilterDrawer] = useState(false);
   const [showAreaDropdown, setShowAreaDropdown] = useState(false);
   const [showPriceDropdown, setShowPriceDropdown] = useState(false);
-  const [showRatingDropdown, setShowRatingDropdown] = useState(false);
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [page, setPage] = useState(1);
 
@@ -70,7 +68,6 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
   const closeAllDropdowns = () => {
     setShowAreaDropdown(false);
     setShowPriceDropdown(false);
-    setShowRatingDropdown(false);
     setShowSortDropdown(false);
   };
 
@@ -89,7 +86,7 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
       areas: selectedAreas.length > 0 ? selectedAreas : undefined,
       date: filters.date || undefined,
       priceMax: filters.priceMax || undefined,
-      ratingMin: filters.ratingMin || undefined,
+      sortBy: filters.sortBy,
       page,
     },
     initialData
@@ -99,17 +96,15 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
     selectedAreas.length > 0,
     !!filters.date,
     filters.priceMax > 0,
-    filters.ratingMin > 0,
   ].filter(Boolean).length;
 
   const clearFilter = (key: keyof Filters) => {
-    const defaults: Record<keyof Filters, string | number> = { date: "", priceMax: 0, ratingMin: 0, sortBy: "relevance" };
+    const defaults: Record<keyof Filters, string | number> = { date: "", priceMax: 0, sortBy: "relevance" };
     setFilters((f) => ({ ...f, [key]: defaults[key] }));
   };
 
   const SORT_LABELS: Record<Filters["sortBy"], string> = {
     relevance: "רלוונטיות",
-    rating: "דירוג גבוה",
     priceAsc: "מחיר עולה",
     priceDesc: "מחיר יורד",
   };
@@ -123,16 +118,16 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
       <div className="sticky top-0 z-30 bg-white border-b border-border shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-3 pb-0 flex items-center gap-3 overflow-x-auto">
           {[
-            { id: "PHOTOGRAPHER", label: "צלמי סטילס", emoji: "📸", active: true },
-            { id: "VIDEOGRAPHER", label: "צלמי וידאו", emoji: "🎬", active: false },
-            { id: "DJ", label: "תקליטנים", emoji: "🎧", active: false },
-            { id: "CATERING", label: "קייטרינג ושפים", emoji: "🍽️", active: false },
-            { id: "VENUE", label: "אולמות ואירועים", emoji: "🏛️", active: false },
-            { id: "HAIR_STYLIST", label: "מסרקות", emoji: "💇", active: false },
-            { id: "MAKEUP_ARTIST", label: "מאפרות", emoji: "💄", active: false },
-            { id: "PHOTO_BOOTH", label: "צלמי מגנטים", emoji: "🖼️", active: false },
-            { id: "EVENT_PRODUCER", label: "הפקת אירועים", emoji: "🎪", active: false },
-          ].map(({ id, label, emoji, active }) => (
+            { id: "PHOTOGRAPHER", emoji: "📸", active: true },
+            { id: "VIDEOGRAPHER", emoji: "🎬", active: false },
+            { id: "DJ", emoji: "🎧", active: false },
+            { id: "CATERING", emoji: "🍽️", active: false },
+            { id: "VENUE", emoji: "🏛️", active: false },
+            { id: "HAIR_STYLIST", emoji: "💇", active: false },
+            { id: "MAKEUP_ARTIST", emoji: "💄", active: false },
+            { id: "PHOTO_BOOTH", emoji: "🖼️", active: false },
+            { id: "EVENT_PRODUCER", emoji: "🎪", active: false },
+          ].map(({ id, emoji, active }) => (
             <button
               key={id}
               disabled={!active}
@@ -144,7 +139,7 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
               )}
             >
               <span>{emoji}</span>
-              {label}
+              {CATEGORY_LABELS[id]}
               {!active && (
                 <span className="text-[10px] font-bold bg-gray-700 text-white px-1.5 py-0.5 rounded-full">
                   בקרוב
@@ -241,7 +236,7 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
                       onClick={() => { setSelectedAreas([]); setShowAreaDropdown(false); }}
                       className="mt-2 w-full text-xs text-text-muted hover:text-primary transition-colors text-center"
                     >
-                      נקה בחירה
+                      נקו בחירה
                     </button>
                   )}
                 </div>
@@ -309,40 +304,6 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
               )}
             </div>
 
-            {/* Rating */}
-            <div className="relative">
-              <button
-                onClick={() => { closeAllDropdowns(); setShowRatingDropdown((v) => !v); }}
-                className={cn(
-                  "flex items-center gap-2 px-4 py-2.5 rounded-full border-2 text-sm font-semibold transition-colors whitespace-nowrap",
-                  filters.ratingMin > 0
-                    ? "border-primary bg-primary text-white"
-                    : "border-border text-text-main hover:border-primary"
-                )}
-              >
-                {filters.ratingMin > 0 ? `${filters.ratingMin}+ ⭐` : "דירוג"}
-                {filters.ratingMin > 0 ? (
-                  <X className="h-3.5 w-3.5" onClick={(e) => { e.stopPropagation(); clearFilter("ratingMin"); }} />
-                ) : (
-                  <ChevronDown className="h-3.5 w-3.5" />
-                )}
-              </button>
-              {showRatingDropdown && (
-                <div className="absolute top-full mt-1 z-50 bg-white border border-border rounded-2xl shadow-xl p-4 min-w-[160px]">
-                  {[4, 4.5, 4.8].map((r) => (
-                    <button
-                      key={r}
-                      className="flex items-center gap-2 w-full text-right px-3 py-2 text-sm hover:bg-primary-light rounded-lg transition-colors"
-                      onClick={() => { setFilters((f) => ({ ...f, ratingMin: r })); setShowRatingDropdown(false); }}
-                    >
-                      <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
-                      {r}+ ומעלה
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
             <div className="flex-1" />
 
             {/* Sort */}
@@ -383,7 +344,7 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-5 pb-0">
           <div className="flex items-center justify-between mb-3">
             <p className="text-sm font-semibold text-text-muted">צפיתם לאחרונה</p>
-            <button onClick={() => { localStorage.removeItem(RECENTLY_VIEWED_KEY); setRecentlyViewed([]); }} className="text-xs text-text-muted hover:text-text-main transition-colors">נקה</button>
+            <button onClick={() => { localStorage.removeItem(RECENTLY_VIEWED_KEY); setRecentlyViewed([]); }} className="text-xs text-text-muted hover:text-text-main transition-colors">נקו</button>
           </div>
           <div className="flex gap-3 overflow-x-auto pb-2">
             {recentlyViewed.map((slug) => (
@@ -540,37 +501,16 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
               </div>
             </div>
 
-            {/* Rating mobile */}
-            <div>
-              <label className="text-sm font-bold text-text-main block mb-2">דירוג מינימלי</label>
-              <div className="flex gap-2">
-                {[4, 4.5, 4.8].map((r) => (
-                  <button
-                    key={r}
-                    onClick={() => setFilters((f) => ({ ...f, ratingMin: r }))}
-                    className={cn(
-                      "flex items-center gap-1 py-2 px-4 rounded-xl border-2 text-sm font-medium transition-colors",
-                      filters.ratingMin === r
-                        ? "border-primary bg-primary text-white"
-                        : "border-border text-text-main"
-                    )}
-                  >
-                    ⭐ {r}+
-                  </button>
-                ))}
-              </div>
-            </div>
-
             <div className="flex gap-3 pt-2">
               <Button
                 variant="secondary"
                 fullWidth
                 onClick={() => {
-                  setFilters({ date: "", priceMax: 0, ratingMin: 0, sortBy: "relevance" });
+                  setFilters({ date: "", priceMax: 0, sortBy: "relevance" });
                   setSelectedAreas([]);
                 }}
               >
-                נקי הכל
+                נקו הכל
               </Button>
               <Button
                 fullWidth

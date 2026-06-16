@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -35,6 +35,18 @@ export default function StartPage() {
   const [otpError, setOtpError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState<FormData | null>(null);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [otpKey, setOtpKey] = useState(0);
+
+  const RESEND_COOLDOWN = 45;
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setInterval(() => {
+      setResendCooldown((c) => (c <= 1 ? 0 : c - 1));
+    }, 1000);
+    return () => clearInterval(t);
+  }, [resendCooldown]);
 
   const {
     register,
@@ -59,6 +71,7 @@ export default function StartPage() {
       }
       setFormData(data);
       setStage("otp");
+      setResendCooldown(RESEND_COOLDOWN);
     } finally {
       setIsLoading(false);
     }
@@ -80,6 +93,7 @@ export default function StartPage() {
         if (!res.ok) {
           setOtpError(json.error ?? "קוד שגוי. נסו שנית.");
           setOtp("");
+          setOtpKey((k) => k + 1);
           return;
         }
         const user = json.user;
@@ -95,8 +109,10 @@ export default function StartPage() {
   };
 
   const resendOtp = async () => {
+    if (resendCooldown > 0) return;
     setOtp("");
     setOtpError("");
+    setOtpKey((k) => k + 1);
     setIsLoading(true);
     try {
       await fetch("/api/auth/send-otp", {
@@ -104,6 +120,7 @@ export default function StartPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone: formData?.phone }),
       });
+      setResendCooldown(RESEND_COOLDOWN);
     } finally {
       setIsLoading(false);
     }
@@ -201,6 +218,7 @@ export default function StartPage() {
 
               <div className="flex flex-col items-center gap-4 py-4">
                 <OtpInput
+                  key={otpKey}
                   value={otp}
                   onChange={handleOtpChange}
                   error={otpError}
@@ -215,14 +233,17 @@ export default function StartPage() {
               </div>
 
               <div className="flex flex-col items-center gap-2">
-                <p className="text-sm text-text-muted">לא קיבלת?</p>
+                <p className="text-sm text-text-muted">לא קיבלתם?</p>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={resendOtp}
                   isLoading={isLoading}
+                  disabled={isLoading || resendCooldown > 0}
                 >
-                  שלחו שנית
+                  {resendCooldown > 0
+                    ? `שליחה חוזרת בעוד ${resendCooldown} שניות`
+                    : "שלחו שנית"}
                 </Button>
               </div>
 
@@ -233,9 +254,10 @@ export default function StartPage() {
                 onClick={() => {
                   setStage("form");
                   setOtp("");
+                  setResendCooldown(0);
                 }}
               >
-                שנה מספר טלפון
+                שנו מספר טלפון
               </Button>
             </>
           )}
@@ -243,10 +265,7 @@ export default function StartPage() {
 
         {/* Footer note */}
         <p className="text-center text-xs text-text-muted mt-6">
-          כבר יש לכם חשבון?{" "}
-          <Link href="/start" className="text-primary font-semibold">
-            התחברו
-          </Link>
+          יש לכם כבר חשבון? אותו מספר טלפון משמש גם לכניסה וגם להרשמה.
         </p>
       </div>
     </div>

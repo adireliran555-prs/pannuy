@@ -2,7 +2,16 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { CustomerSession, SupplierSession, AdminSession } from "@/types";
 
-const JWT_SECRET = process.env.JWT_SECRET ?? "pannuy-jwt-secret-local-dev";
+function resolveJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (secret) return secret;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("JWT_SECRET environment variable is required in production");
+  }
+  return "pannuy-jwt-secret-local-dev";
+}
+
+const JWT_SECRET = resolveJwtSecret();
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN ?? "7d";
 
 const BCRYPT_ROUNDS = 4;

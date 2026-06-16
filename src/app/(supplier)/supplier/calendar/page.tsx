@@ -44,7 +44,7 @@ function GoogleCalendarBanner() {
       <div className="bg-green-50 border border-green-200 rounded-2xl px-5 py-4 flex items-center gap-3">
         <CheckCircle className="h-5 w-5 text-green-600" />
         <span className="font-semibold text-green-700 text-sm">
-          מחובר לגוגל קלנדר ✓ — עדכון אחרון לפני 5 דקות
+          מחובר ל-Google Calendar ✓
         </span>
         <button className="ms-auto flex items-center gap-1.5 text-green-600 hover:text-green-800 text-sm font-semibold">
           <RefreshCw className="h-3.5 w-3.5" />
@@ -60,13 +60,13 @@ function GoogleCalendarBanner() {
         <Calendar className="h-6 w-6 text-blue-600" />
       </div>
       <div className="flex-1">
-        <h3 className="font-bold text-text-main">חברי Google Calendar</h3>
+        <h3 className="font-bold text-text-main">חברו את Google Calendar</h3>
         <p className="text-text-muted text-sm mt-0.5">
           סנכרון אוטומטי של הזמינות שלכם — כשיש לכם אירוע, פנוי תסמן אותו אוטומטית
         </p>
       </div>
       <Button onClick={handleGoogleConnect} isLoading={isConnecting}>
-        חברי עכשיו
+        חברו עכשיו
       </Button>
     </div>
   );
@@ -300,7 +300,7 @@ export default function SupplierCalendarPage() {
                   isLoading={isTogglingBlock}
                   onClick={() => toggleBlock(selectedDay)}
                 >
-                  בטלי חסימה
+                  בטלו חסימה
                 </Button>
               ) : (
                 <Button
@@ -309,7 +309,7 @@ export default function SupplierCalendarPage() {
                   isLoading={isTogglingBlock}
                   onClick={() => toggleBlock(selectedDay)}
                 >
-                  חסמי יום
+                  חסמו יום
                 </Button>
               )}
               <button

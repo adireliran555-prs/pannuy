@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { verifyOtp, signAdminToken, isAdminPhone } from "@/lib/auth";
 
 const SESSION_COOKIE_MAX_AGE = 7 * 24 * 60 * 60;
+const MAX_OTP_ATTEMPTS = 5;
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,23 +17,51 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "אין הרשאה" }, { status: 403 });
     }
 
-    const skipOtpCheck = process.env.NODE_ENV !== "production" || process.env.BYPASS_OTP === "true";
+    const otpRecord = await prisma.otp.findFirst({
+      where: { phone, used: false, expiresAt: { gt: new Date() } },
+      orderBy: { createdAt: "desc" },
+    });
 
-    if (!skipOtpCheck) {
-      const otpRecord = await prisma.otp.findFirst({
-        where: { phone, used: false, expiresAt: { gt: new Date() } },
-        orderBy: { createdAt: "desc" },
+    if (!otpRecord) {
+      return NextResponse.json(
+        { success: false, error: "קוד שגוי או פג תוקף" },
+        { status: 401 }
+      );
+    }
+
+    if (otpRecord.attempts >= MAX_OTP_ATTEMPTS) {
+      await prisma.otp.update({
+        where: { id: otpRecord.id },
+        data: { used: true },
       });
+      return NextResponse.json(
+        { success: false, error: "יותר מדי ניסיונות, בקשו קוד חדש" },
+        { status: 429 }
+      );
+    }
 
-      if (!otpRecord || !(await verifyOtp(otp, otpRecord.hash))) {
+    if (!(await verifyOtp(otp, otpRecord.hash))) {
+      const updated = await prisma.otp.update({
+        where: { id: otpRecord.id },
+        data: { attempts: { increment: 1 } },
+      });
+      if (updated.attempts >= MAX_OTP_ATTEMPTS) {
+        await prisma.otp.update({
+          where: { id: otpRecord.id },
+          data: { used: true },
+        });
         return NextResponse.json(
-          { success: false, error: "קוד שגוי או פג תוקף" },
-          { status: 401 }
+          { success: false, error: "יותר מדי ניסיונות, בקשו קוד חדש" },
+          { status: 429 }
         );
       }
-
-      await prisma.otp.update({ where: { id: otpRecord.id }, data: { used: true } });
+      return NextResponse.json(
+        { success: false, error: "קוד שגוי או פג תוקף" },
+        { status: 401 }
+      );
     }
+
+    await prisma.otp.update({ where: { id: otpRecord.id }, data: { used: true } });
 
     const token = signAdminToken({ phone });
 

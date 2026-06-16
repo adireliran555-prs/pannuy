@@ -284,7 +284,7 @@ export default function SupplierProfilePage() {
             </div>
 
             <Button fullWidth size="lg" isLoading={isLoading} onClick={handleSaveInfo}>
-              שמרי שינויים
+              שמרו שינויים
             </Button>
           </div>
         )}
@@ -461,7 +461,7 @@ export default function SupplierProfilePage() {
             )}
 
             <Button fullWidth size="lg" isLoading={isLoading} onClick={handleSavePackages}>
-              שמרי שינויים
+              שמרו שינויים
             </Button>
           </div>
         )}

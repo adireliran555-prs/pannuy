@@ -270,7 +270,7 @@ export default function SupplierBookingsPage() {
                         className="flex-shrink-0"
                       >
                         <X className="h-4 w-4" />
-                        דחי
+                        דחו
                       </Button>
                     </div>
                   )}

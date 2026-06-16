@@ -10,7 +10,6 @@ import EmptyState from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { formatHebrewDate } from "@/lib/utils";
 
-type SubscriptionStatus = "ACTIVE" | "INACTIVE" | "SUSPENDED";
 type TransactionType = "EARNED" | "OWED";
 type TransactionStatus = string;
 type PayoutStatus = "PENDING" | "APPROVED" | "PAID" | "REJECTED";
@@ -30,9 +29,6 @@ interface FinancesData {
   totalEarned: number;
   totalOwed: number;
   withdrawableBalance: number;
-  monthlyFeeIls: number;
-  subscriptionStatus: SubscriptionStatus;
-  subscriptionStartAt?: string | null;
   recentTransactions: Transaction[];
 }
 
@@ -64,15 +60,6 @@ const payoutsFetcher = (url: string) =>
 function formatILS(amount: number): string {
   return `₪${amount.toLocaleString("he-IL")}`;
 }
-
-const SUBSCRIPTION_STATUS_MAP: Record<
-  SubscriptionStatus,
-  { label: string; variant: "success" | "default" | "error" }
-> = {
-  ACTIVE: { label: "פעיל", variant: "success" },
-  INACTIVE: { label: "לא פעיל", variant: "default" },
-  SUSPENDED: { label: "מושהה", variant: "error" },
-};
 
 const TRANSACTION_TYPE_MAP: Record<
   TransactionType,
@@ -165,10 +152,6 @@ export default function SupplierFinancesPage() {
     },
   ];
 
-  const subStatus = (data?.subscriptionStatus ?? "INACTIVE") as SubscriptionStatus;
-  const subMeta = SUBSCRIPTION_STATUS_MAP[subStatus];
-  const subscriptionStartAt = data?.subscriptionStartAt;
-
   const transactions = data?.recentTransactions ?? [];
   const payouts = payoutsData?.payouts ?? [];
 
@@ -179,9 +162,9 @@ export default function SupplierFinancesPage() {
       <div className="space-y-8" dir="rtl">
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-black text-text-main">פיננסים ומנוי</h1>
+          <h1 className="text-2xl font-black text-text-main">פיננסים</h1>
           <p className="text-text-muted text-sm mt-1">
-            מצב המנוי שלכם ועמלות שותפים
+            עמלות ההפניה שלכם ויתרה למשיכה
           </p>
         </div>
 
@@ -198,7 +181,7 @@ export default function SupplierFinancesPage() {
                 </p>
               )}
               <p className="text-xs text-white/70 max-w-md">
-                עמלות שהרווחת פחות עמלות ששילמת ופחות דמי המנוי החודשי
+                עמלות שהרווחתם, פחות עמלות ששילמתם
               </p>
             </div>
             {!showPayoutForm && (
@@ -286,30 +269,14 @@ export default function SupplierFinancesPage() {
           ))}
         </div>
 
-        {/* Subscription card */}
-        <div className="bg-white rounded-2xl border border-border p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="font-bold text-text-main text-lg">מנוי חודשי</h2>
-            {isLoading ? (
-              <Skeleton className="h-6 w-16" />
-            ) : (
-              <Badge variant={subMeta.variant}>{subMeta.label}</Badge>
-            )}
-          </div>
-          <div className="space-y-1">
-            <p className="text-text-main font-semibold">
-              {data ? formatILS(data.monthlyFeeIls) : "₪1,000"} + מע&quot;מ לחודש
-            </p>
-            {!isLoading && subscriptionStartAt && (
-              <p className="text-text-muted text-sm">
-                פעיל מאז {formatHebrewDate(subscriptionStartAt)}
-              </p>
-            )}
-            {isLoading && <Skeleton className="h-4 w-40" />}
-          </div>
-          {!isLoading && subStatus !== "ACTIVE" && (
-            <Button size="sm">הפעלת מנוי</Button>
-          )}
+        {/* How earnings work */}
+        <div className="bg-white rounded-2xl border border-border p-6 space-y-2">
+          <h2 className="font-bold text-text-main text-lg">איך מרוויחים</h2>
+          <p className="text-text-main font-semibold">ההצטרפות חינם — בלי דמי מנוי</p>
+          <p className="text-text-muted text-sm leading-relaxed">
+            כשאתם מפנים זוג לספק אחר בפלטפורמה והעסקה נסגרת, אתם מרוויחים עמלת הפניה.
+            על עבודות שאתם סוגרים דרך הפלטפורמה אנחנו גובים עמלה. כל היתרה שצברתם זמינה כאן למשיכה.
+          </p>
         </div>
 
         {/* Transactions table */}

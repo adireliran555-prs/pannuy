@@ -47,7 +47,7 @@ export default function PackageCard({
         {/* Header */}
         <div>
           <h3 className="font-bold text-text-main text-lg">{name}</h3>
-          <p className="text-text-muted text-sm mt-0.5">{hours} שעות צילום</p>
+          <p className="text-text-muted text-sm mt-0.5">{hours} שעות</p>
         </div>
 
         {/* Price */}

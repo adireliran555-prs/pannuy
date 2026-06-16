@@ -2,34 +2,27 @@ export const revalidate = 60;
 
 import Link from "next/link";
 import Image from "next/image";
-import { Camera, CheckCircle, Star, Search, Calendar, ArrowLeft } from "lucide-react";
+import { Camera, CheckCircle, ShieldCheck, Search, Calendar, ArrowLeft } from "lucide-react";
 import Navbar from "@/components/common/Navbar";
 import SupplierCard from "@/components/common/SupplierCard";
 import HeroSearch from "@/components/common/HeroSearch";
+import { CATEGORY_LABELS } from "@/lib/categories";
 import prisma from "@/lib/prisma";
 
 export default async function HomePage() {
-  const [rawSuppliers, supplierCount, ratingAgg] = await Promise.all([
+  const [rawSuppliers, supplierCount] = await Promise.all([
     prisma.supplier.findMany({
       where: { isActive: true, isVerified: true },
       take: 6,
-      orderBy: [{ ratingAvg: "desc" }, { ratingCount: "desc" }],
+      orderBy: [{ createdAt: "desc" }],
       select: {
-        id: true, slug: true, name: true, city: true, category: true,
-        basePriceFrom: true, basePriceTo: true, ratingAvg: true, ratingCount: true,
+        id: true, slug: true, name: true, city: true, category: true, isVerified: true,
+        basePriceFrom: true, basePriceTo: true,
         photos: { where: { type: { in: ["PROFILE", "COVER"] } }, orderBy: { sortOrder: "asc" } },
       },
     }),
     prisma.supplier.count({ where: { isActive: true, isVerified: true } }),
-    prisma.supplier.aggregate({
-      where: { isActive: true, isVerified: true, ratingCount: { gt: 0 } },
-      _avg: { ratingAvg: true },
-      _sum: { ratingCount: true },
-    }),
   ]);
-
-  const avgRating = ratingAgg._avg.ratingAvg ?? 0;
-  const totalReviews = ratingAgg._sum.ratingCount ?? 0;
 
   const featuredSuppliers = rawSuppliers.map((s) => ({
     id: s.id,
@@ -37,8 +30,7 @@ export default async function HomePage() {
     name: s.name,
     city: s.city ?? "",
     category: s.category,
-    rating: s.ratingAvg ?? 0,
-    ratingCount: s.ratingCount ?? 0,
+    isVerified: s.isVerified,
     priceFrom: s.basePriceFrom ?? 0,
     priceTo: s.basePriceTo ?? undefined,
     profilePhoto:
@@ -85,7 +77,7 @@ export default async function HomePage() {
 
           {/* Sub-tagline */}
           <p className="text-base sm:text-lg text-text-muted mb-8 max-w-xl mx-auto">
-            בדיקת זמינות בזמן אמת&nbsp;·&nbsp;קביעת פגישה ישירות&nbsp;·&nbsp;ביקורות אמיתיות
+            בדיקת זמינות בזמן אמת&nbsp;·&nbsp;קביעת פגישה ישירות&nbsp;·&nbsp;ספקים מאומתים
           </p>
 
           {/* Quick search */}
@@ -135,7 +127,7 @@ export default async function HomePage() {
                 step: "2",
                 icon: Search,
                 title: "גלו ספקים פנויים",
-                desc: "עיין בפרופילים, תיקי עבודות, חבילות ומחירים — הכל במקום אחד",
+                desc: "עיינו בפרופילים, תיקי עבודות, חבילות ומחירים — הכל במקום אחד",
                 color: "bg-amber-100 text-amber-600",
               },
               {
@@ -178,30 +170,30 @@ export default async function HomePage() {
           <div className="flex gap-4 overflow-x-auto pb-4 sm:grid sm:grid-cols-4 snap-x snap-mandatory">
             {[
               {
-                title: "צלמי סטילס",
+                title: CATEGORY_LABELS.PHOTOGRAPHER,
                 emoji: "📸",
                 href: "/search?category=PHOTOGRAPHER",
                 active: true,
                 bg: "bg-gradient-to-br from-rose-100 to-rose-200",
               },
               {
-                title: "אולמות וגני אירועים",
+                title: CATEGORY_LABELS.VENUE,
                 emoji: "🏛️",
-                href: `https://wa.me/972555173402?text=${encodeURIComponent("היי, תעדכנו אותי כשאולמות וגני אירועים יהיו זמינים בפנוי 🙏")}`,
+                href: `https://wa.me/972555173402?text=${encodeURIComponent(`היי, תעדכנו אותי כש${CATEGORY_LABELS.VENUE} יהיו זמינים בפנוי 🙏`)}`,
                 active: false,
                 bg: "bg-gradient-to-br from-purple-100 to-purple-200",
               },
               {
-                title: "מאפרות",
+                title: CATEGORY_LABELS.MAKEUP_ARTIST,
                 emoji: "💄",
-                href: `https://wa.me/972555173402?text=${encodeURIComponent("היי, תעדכנו אותי כשמאפרות יהיו זמינות בפנוי 🙏")}`,
+                href: `https://wa.me/972555173402?text=${encodeURIComponent(`היי, תעדכנו אותי כש${CATEGORY_LABELS.MAKEUP_ARTIST} יהיו זמינות בפנוי 🙏`)}`,
                 active: false,
                 bg: "bg-gradient-to-br from-pink-100 to-pink-200",
               },
               {
-                title: "קייטרינג",
+                title: CATEGORY_LABELS.CATERING,
                 emoji: "🍽️",
-                href: `https://wa.me/972555173402?text=${encodeURIComponent("היי, תעדכנו אותי כשקייטרינג יהיה זמין בפנוי 🙏")}`,
+                href: `https://wa.me/972555173402?text=${encodeURIComponent(`היי, תעדכנו אותי כש${CATEGORY_LABELS.CATERING} יהיה זמין בפנוי 🙏`)}`,
                 active: false,
                 bg: "bg-gradient-to-br from-amber-100 to-amber-200",
               },
@@ -270,19 +262,19 @@ export default async function HomePage() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-10">
             <span className="text-sm font-bold text-primary uppercase tracking-widest">השראה</span>
-            <h2 className="text-3xl font-black text-text-main mt-2">חתונות אמיתיות</h2>
-            <p className="text-text-muted mt-2">צולמו על ידי הצלמים שלנו</p>
+            <h2 className="text-3xl font-black text-text-main mt-2">גלריית השראה</h2>
+            <p className="text-text-muted mt-2">רעיונות ואווירה לחתונה שלכם</p>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {[
-              { seed: "wedding1", caption: "תל אביב · יולי 2024" },
-              { seed: "wedding2", caption: "ירושלים · אוגוסט 2024" },
-              { seed: "wedding3", caption: "הרצליה · ספטמבר 2024" },
-              { seed: "wedding4", caption: "נתניה · אוקטובר 2024" },
-              { seed: "wedding5", caption: "רמת גן · נובמבר 2024" },
-              { seed: "wedding6", caption: "פתח תקווה · דצמבר 2024" },
-              { seed: "wedding7", caption: "חיפה · ינואר 2025" },
-              { seed: "wedding8", caption: "רחובות · פברואר 2025" },
+              { seed: "wedding1", caption: "השראה לחתונה" },
+              { seed: "wedding2", caption: "רגעים בלתי נשכחים" },
+              { seed: "wedding3", caption: "אווירה רומנטית" },
+              { seed: "wedding4", caption: "עיצוב חלומי" },
+              { seed: "wedding5", caption: "צבעים ופרחים" },
+              { seed: "wedding6", caption: "החתונה שלכם" },
+              { seed: "wedding7", caption: "רגע הקסם" },
+              { seed: "wedding8", caption: "חגיגה מושלמת" },
             ].map(({ seed, caption }, i) => (
               <div
                 key={seed}
@@ -323,9 +315,9 @@ export default async function HomePage() {
         <div className="max-w-4xl mx-auto">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 text-center text-white">
             {[
-              { value: `${supplierCount}`, label: "ספקים מאומתים", icon: Camera },
-              { value: `${totalReviews}`, label: "ביקורות מזוגות", icon: CheckCircle },
-              { value: avgRating > 0 ? `${avgRating.toFixed(1)} ⭐` : "—", label: "דירוג ממוצע", icon: Star },
+              { value: `${supplierCount}`, label: "ספקים מהטופ של ישראל", icon: Camera },
+              { value: "100%", label: "ספקים מאומתים", icon: ShieldCheck },
+              { value: "בזמן אמת", label: "זמינות אמיתית", icon: CheckCircle },
             ].map(({ value, label, icon: Icon }) => (
               <div key={label} className="flex flex-col items-center gap-2">
                 <Icon className="h-8 w-8 text-white/70" />

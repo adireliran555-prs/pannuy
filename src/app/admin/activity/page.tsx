@@ -74,19 +74,19 @@ export default async function AdminActivityPage() {
     })),
     ...reviews.map<Event>((r) => ({
       kind: "review",
-      text: `${r.customer?.name} כתב/ה ביקורת על ${r.supplier?.name}: ${r.rating}⭐`,
+      text: `${r.customer?.name} כתב ביקורת על ${r.supplier?.name}`,
       at: r.createdAt,
     })),
     ...saves.map<Event>((s) => ({
       kind: "save",
-      text: `${s.customer?.name} שמר/ה את ${s.supplier?.name}`,
+      text: `${s.customer?.name} שמר את ${s.supplier?.name}`,
       at: s.createdAt,
     })),
     ...views.map<Event>((v) => ({
       kind: "view",
       text: v.customer?.name
         ? `${v.customer.name} צפה בפרופיל ${v.supplier?.name}`
-        : `אורח/ת צפה בפרופיל ${v.supplier?.name}`,
+        : `אורח צפה בפרופיל ${v.supplier?.name}`,
       at: v.createdAt,
     })),
   ]

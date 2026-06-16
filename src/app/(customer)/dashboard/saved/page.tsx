@@ -54,7 +54,7 @@ export default function SavedPage() {
         ) : saved.length === 0 ? (
           <EmptyState
             emoji="🤍"
-            title="עדיין לא שמרת ספקים"
+            title="עדיין לא שמרתם ספקים"
             description="לחצו על הלב בכרטיס הספק כדי לשמור אותו לעתיד"
             ctaLabel="גלו ספקים"
             onCta={() => router.push("/search")}

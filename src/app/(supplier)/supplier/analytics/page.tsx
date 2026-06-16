@@ -71,7 +71,7 @@ export default function SupplierAnalyticsPage() {
       bg: "bg-green-50",
     },
     {
-      label: "אחוז הגשה",
+      label: "שיעור אישור",
       value: `${stats.rate}%`,
       delta: null,
       icon: Percent,

@@ -32,6 +32,7 @@ model Otp {
   hash      String
   expiresAt DateTime
   used      Boolean  @default(false)
+  attempts  Int      @default(0)
   createdAt DateTime @default(now())
 
   @@index([phone])
@@ -67,6 +68,7 @@ model Supplier {
   subscriptionStartAt  DateTime?
   highlights           String[]           // admin-curated praise points (replaces star reviews)
   googleChannelId      String?            // Google Calendar push-notification channel
+  googleChannelToken   String?            // secret token validated on webhook calls
   googleResourceId     String?
   googleChannelExpiry  DateTime?
 

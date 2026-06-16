@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "crypto";
 import { getCache, setCache } from "@/lib/redis";
 import { Category } from "@prisma/client";
-import { searchSuppliers } from "@/lib/searchSuppliers";
+import { searchSuppliers, type SearchFilters } from "@/lib/searchSuppliers";
 
 const CACHE_TTL = 60; // 1 minute
 
@@ -20,9 +20,11 @@ export async function GET(request: NextRequest) {
     const priceMax = searchParams.get("priceMax")
       ? parseInt(searchParams.get("priceMax")!, 10)
       : undefined;
-    const ratingMin = searchParams.get("ratingMin")
-      ? parseFloat(searchParams.get("ratingMin")!)
-      : undefined;
+    const sortParam = searchParams.get("sortBy");
+    const sortBy: SearchFilters["sortBy"] =
+      sortParam === "priceAsc" || sortParam === "priceDesc" || sortParam === "relevance"
+        ? sortParam
+        : undefined;
     const page = parseInt(searchParams.get("page") ?? "1", 10);
     const limit = searchParams.get("limit")
       ? parseInt(searchParams.get("limit")!, 10)
@@ -33,7 +35,7 @@ export async function GET(request: NextRequest) {
         ? (categoryParam as Category)
         : undefined;
 
-    const filters = { areas, date, category, priceMin, priceMax, ratingMin, page, limit };
+    const filters = { areas, date, category, priceMin, priceMax, sortBy, page, limit };
     const cacheKey = `search:${createHash("md5").update(JSON.stringify(filters)).digest("hex")}`;
 
     const cached = await getCache(cacheKey);

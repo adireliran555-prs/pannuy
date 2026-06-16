@@ -6,7 +6,7 @@ import {
   Users,
   Briefcase,
   CalendarCheck,
-  Star,
+  MessageSquare,
   Eye,
   TrendingUp,
   TrendingDown,
@@ -27,26 +27,13 @@ import {
 } from "recharts";
 import AdminLayout from "@/components/common/AdminLayout";
 import { cn } from "@/lib/utils";
+import { CATEGORY_LABELS } from "@/lib/categories";
 
 type Timeframe = "week" | "month" | "3months";
 const TF_LABEL: Record<Timeframe, string> = {
   week: "7 ימים",
   month: "30 ימים",
   "3months": "90 ימים",
-};
-
-const CATEGORY_LABEL: Record<string, string> = {
-  PHOTOGRAPHER: "צלמים",
-  VIDEOGRAPHER: "וידאו",
-  BRIDAL_SUITE: "חדרי כלה",
-  DJ: "תקליטנים",
-  FLORIST: "פרחים",
-  CATERING: "קייטרינג",
-  VENUE: "אולמות",
-  HAIR_STYLIST: "מסרקות",
-  MAKEUP_ARTIST: "מאפרות",
-  PHOTO_BOOTH: "מגנטים",
-  EVENT_PRODUCER: "הפקה",
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -141,10 +128,10 @@ export default function AdminDashboard() {
       color: "text-green-600 bg-green-50",
     },
     {
-      label: "דירוג ממוצע",
-      value: data ? data.totals.avgRating.toFixed(2) : "—",
-      sub: `${data?.totals.reviews ?? 0} ביקורות`,
-      icon: Star,
+      label: "ביקורות",
+      value: data?.totals.reviews ?? 0,
+      sub: `מצטברות`,
+      icon: MessageSquare,
       color: "text-purple-600 bg-purple-50",
     },
     {
@@ -290,7 +277,7 @@ export default function AdminDashboard() {
             <ResponsiveContainer width="100%" height={240}>
               <PieChart>
                 <Pie
-                  data={data?.suppliersByCategory.map((s) => ({ name: CATEGORY_LABEL[s.category] ?? s.category, value: s.count, category: s.category })) ?? []}
+                  data={data?.suppliersByCategory.map((s) => ({ name: CATEGORY_LABELS[s.category] ?? s.category, value: s.count, category: s.category })) ?? []}
                   dataKey="value"
                   innerRadius={60}
                   outerRadius={90}
@@ -308,31 +295,8 @@ export default function AdminDashboard() {
           </ChartCard>
         </div>
 
-        {/* Top suppliers tables */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <ChartCard title="ספקים מובילים — דירוג">
-            <ul className="divide-y divide-border">
-              {(data?.topByRating ?? []).map((s, i) => (
-                <li key={s.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
-                  <div className="w-7 h-7 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-xs font-black">
-                    {i + 1}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-text-main truncate">{s.name}</div>
-                    <div className="text-xs text-text-muted">{CATEGORY_LABEL[s.category] ?? s.category}</div>
-                  </div>
-                  <div className="text-sm font-bold text-text-main">
-                    ⭐ {s.ratingAvg.toFixed(1)}{" "}
-                    <span className="text-text-muted font-normal">({s.ratingCount})</span>
-                  </div>
-                </li>
-              ))}
-              {(data?.topByRating ?? []).length === 0 && (
-                <li className="py-6 text-center text-sm text-text-muted">אין נתונים עדיין</li>
-              )}
-            </ul>
-          </ChartCard>
-
+        {/* Top suppliers */}
+        <div className="grid grid-cols-1 gap-4">
           <ChartCard title="ספקים מובילים — בקשות פגישה">
             <ResponsiveContainer width="100%" height={Math.max(180, ((data?.topByMeetings ?? []).length || 1) * 36)}>
               <BarChart data={data?.topByMeetings ?? []} layout="vertical" margin={{ left: 0, right: 8 }}>

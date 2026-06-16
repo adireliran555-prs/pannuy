@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import useSWR from "swr";
-import { Calendar, Clock, Star, Eye, CheckCircle, X, ArrowLeft, TrendingUp } from "lucide-react";
+import { Calendar, Clock, Eye, CheckCircle, X, ArrowLeft, TrendingUp, ShieldCheck } from "lucide-react";
 import SupplierDashboardLayout from "@/components/common/SupplierDashboardLayout";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
@@ -20,6 +20,13 @@ async function fetcher(url: string) {
   if (!res.ok) throw new Error("Failed");
   const json = await res.json();
   return json.data ?? json.supplier ?? json.user ?? null;
+}
+
+async function analyticsFetcher(url: string) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Failed");
+  const json = await res.json();
+  return (json.data ?? null) as { views?: number } | null;
 }
 
 function getMeetingsThisWeek(meetings: { requestedDate: string; status: string }[]) {
@@ -50,6 +57,9 @@ export default function SupplierDashboardPage() {
     revalidateOnFocus: false,
   });
   const { data: profile } = useSWR("/api/supplier/profile", fetcher, {
+    revalidateOnFocus: false,
+  });
+  const { data: analytics } = useSWR("/api/supplier/analytics", analyticsFetcher, {
     revalidateOnFocus: false,
   });
 
@@ -97,8 +107,8 @@ export default function SupplierDashboardPage() {
   const completedCount = completionItems.filter((i) => i.done).length;
   const completionPct = Math.round((completedCount / completionItems.length) * 100);
 
-  const ratingDisplay =
-    profile?.ratingAvg != null ? profile.ratingAvg.toFixed(1) : "—";
+  const profileViews =
+    typeof analytics?.views === "number" ? analytics.views.toLocaleString("he-IL") : "—";
 
   const stats = [
     {
@@ -118,20 +128,20 @@ export default function SupplierDashboardPage() {
       valueColor: "text-amber-700",
     },
     {
-      label: "דירוג ממוצע",
-      value: ratingDisplay,
-      icon: Star,
-      bg: "bg-green-50",
-      iconColor: "text-green-600",
-      valueColor: "text-green-700",
-    },
-    {
       label: "צפיות בפרופיל",
-      value: "—",
+      value: profileViews,
       icon: Eye,
       bg: "bg-blue-50",
       iconColor: "text-blue-600",
       valueColor: "text-blue-700",
+    },
+    {
+      label: "סטטוס ספק",
+      value: "מאומת",
+      icon: ShieldCheck,
+      bg: "bg-green-50",
+      iconColor: "text-green-600",
+      valueColor: "text-green-700",
     },
   ];
 
@@ -338,7 +348,7 @@ export default function SupplierDashboardPage() {
                       href="/supplier/profile"
                       className="ms-auto text-xs font-semibold text-primary hover:text-primary-dark"
                     >
-                      השלימי →
+                      השלימו →
                     </Link>
                   )}
                 </li>

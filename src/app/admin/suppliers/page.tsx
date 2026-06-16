@@ -1,22 +1,9 @@
 import prisma from "@/lib/prisma";
 import AdminLayout from "@/components/common/AdminLayout";
 import SuppliersTable from "./SuppliersTable";
+import { CATEGORY_LABELS_SINGULAR } from "@/lib/categories";
 
 export const dynamic = "force-dynamic";
-
-const CATEGORY_LABEL: Record<string, string> = {
-  PHOTOGRAPHER: "צלם סטילס",
-  VIDEOGRAPHER: "צלם וידאו",
-  BRIDAL_SUITE: "חדרי כלה",
-  DJ: "תקליטן",
-  FLORIST: "עיצוב פרחוני",
-  CATERING: "קייטרינג ושפים",
-  VENUE: "אולם/גן אירועים",
-  HAIR_STYLIST: "מסרקת",
-  MAKEUP_ARTIST: "מאפרת",
-  PHOTO_BOOTH: "צלם מגנטים",
-  EVENT_PRODUCER: "מפיק/הושבה",
-};
 
 export default async function AdminSuppliersPage() {
   const suppliers = await prisma.supplier.findMany({
@@ -45,7 +32,7 @@ export default async function AdminSuppliersPage() {
     name: s.name,
     phone: s.phone,
     city: s.city ?? "—",
-    categoryLabel: CATEGORY_LABEL[s.category] ?? s.category,
+    categoryLabel: CATEGORY_LABELS_SINGULAR[s.category] ?? s.category,
     rating: s.ratingAvg,
     ratingCount: s.ratingCount,
     isVerified: s.isVerified,

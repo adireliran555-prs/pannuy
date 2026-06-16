@@ -57,6 +57,8 @@ const STATUS_CONFIG = {
 
 export default function MeetingsPage() {
   const [activeTab, setActiveTab] = useState<Tab>("upcoming");
+  const [cancelError, setCancelError] = useState("");
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
   const { upcoming, past, cancelled, isLoading, mutate } = useMeetings();
 
   const tabs: { id: Tab; label: string; count?: number }[] = [
@@ -74,8 +76,21 @@ export default function MeetingsPage() {
   const meetings = getMeetings();
 
   const handleCancel = async (id: string) => {
-    await fetch(`/api/meetings/${id}/cancel`, { method: "PATCH" });
-    mutate();
+    setCancelError("");
+    setCancellingId(id);
+    try {
+      const res = await fetch(`/api/meetings/${id}/cancel`, { method: "PATCH" });
+      if (!res.ok) {
+        const json = await res.json().catch(() => null);
+        setCancelError(json?.error ?? "ביטול הפגישה נכשל. נסו שנית.");
+        return;
+      }
+      mutate();
+    } catch {
+      setCancelError("ביטול הפגישה נכשל. נסו שנית.");
+    } finally {
+      setCancellingId(null);
+    }
   };
 
   return (
@@ -90,6 +105,14 @@ export default function MeetingsPage() {
             נהלו את כל הפגישות עם הספקים
           </p>
         </div>
+
+        {/* Cancel error */}
+        {cancelError && (
+          <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-700 text-sm font-semibold">
+            <AlertCircle className="h-5 w-5 flex-shrink-0" />
+            {cancelError}
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="flex gap-1 bg-gray-100 rounded-2xl p-1">
@@ -238,19 +261,15 @@ export default function MeetingsPage() {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleCancel(meeting.id)}
+                            isLoading={cancellingId === meeting.id}
                             className="text-red-500 hover:text-red-600 hover:bg-red-50"
                           >
-                            בטלי פגישה
-                          </Button>
-                        )}
-                        {meeting.status === "COMPLETED" && (
-                          <Button variant="secondary" size="sm">
-                            כתבי ביקורת ✍️
+                            בטלו פגישה
                           </Button>
                         )}
                         <Link href={`/suppliers/${meeting.supplier.slug}`}>
                           <Button variant="ghost" size="sm">
-                            צפי בפרופיל
+                            צפו בפרופיל
                           </Button>
                         </Link>
                       </div>

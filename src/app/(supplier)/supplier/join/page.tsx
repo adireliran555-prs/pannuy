@@ -12,6 +12,20 @@ import Input from "@/components/ui/Input";
 import OtpInput from "@/components/ui/OtpInput";
 import StepProgress from "@/components/ui/StepProgress";
 import { validateIsraeliPhone, ISRAELI_CITIES, cn } from "@/lib/utils";
+import { CATEGORY_LABELS } from "@/lib/categories";
+
+// Categories offered when joining — legacy categories (FLORIST, BRIDAL_SUITE) are excluded.
+const JOIN_CATEGORIES = [
+  "PHOTOGRAPHER",
+  "VIDEOGRAPHER",
+  "DJ",
+  "CATERING",
+  "VENUE",
+  "HAIR_STYLIST",
+  "MAKEUP_ARTIST",
+  "PHOTO_BOOTH",
+  "EVENT_PRODUCER",
+] as const;
 
 const STEPS = [
   { label: "פרטי קשר" },
@@ -336,17 +350,7 @@ export default function SupplierJoinPage() {
                     תחום עיסוק
                   </label>
                   <div className="grid grid-cols-2 gap-3">
-                    {[
-                      { id: "PHOTOGRAPHER", label: "צלם/ת סטילס 📸" },
-                      { id: "VIDEOGRAPHER", label: "צלם/ת וידיאו 🎬" },
-                      { id: "DJ", label: "תקליטן/ית 🎵" },
-                      { id: "CATERING", label: "קייטרינג/שף 🍽️" },
-                      { id: "VENUE", label: "אולם/גן אירועים 🏛️" },
-                      { id: "HAIR_STYLIST", label: "מסרקת 💇" },
-                      { id: "MAKEUP_ARTIST", label: "מאפרת 💄" },
-                      { id: "PHOTO_BOOTH", label: "צלם/ת מגנטים 🖼️" },
-                      { id: "EVENT_PRODUCER", label: "מפיק/ה / הושבה 🎪" },
-                    ].map(({ id, label }) => (
+                    {JOIN_CATEGORIES.map((id) => (
                       <button
                         key={id}
                         type="button"
@@ -358,7 +362,7 @@ export default function SupplierJoinPage() {
                             : "border-border text-text-main hover:border-primary/40"
                         )}
                       >
-                        {label}
+                        {CATEGORY_LABELS[id]}
                       </button>
                     ))}
                   </div>
@@ -560,7 +564,7 @@ export default function SupplierJoinPage() {
                   חבילות ומחירים 💰
                 </h1>
                 <p className="text-text-muted text-sm mt-1">
-                  הגדירי עד 3 חבילות
+                  הגדירו עד 3 חבילות
                 </p>
               </div>
 

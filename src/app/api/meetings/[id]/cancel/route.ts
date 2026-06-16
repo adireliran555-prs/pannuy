@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireCustomerSession } from "@/lib/api-auth";
 import { invalidateAvailabilityCache } from "@/lib/availability";
+import { deleteCalendarEvent } from "@/lib/google-calendar";
 
 const MIN_HOURS_BEFORE_CANCELLATION = 24;
 
@@ -24,6 +25,7 @@ export async function PATCH(
         status: true,
         requestedDate: true,
         startTime: true,
+        googleEventId: true,
         supplier: { select: { name: true } },
       },
     });
@@ -69,6 +71,17 @@ export async function PATCH(
         data: { status: "CANCELLED" },
       });
 
+      // Free the time back up: delete the MANUAL slot this booking created so
+      // the slot can be rebooked. (GOOGLE slots are owned by calendar sync.)
+      await tx.availabilitySlot.deleteMany({
+        where: {
+          supplierId: meeting.supplierId,
+          date: meeting.requestedDate,
+          startTime: meeting.startTime,
+          source: "MANUAL",
+        },
+      });
+
       // Notify supplier
       await tx.notification.create({
         data: {
@@ -80,6 +93,15 @@ export async function PATCH(
         },
       });
     });
+
+    // Remove the Google Calendar event if one was created. Non-fatal.
+    if (meeting.googleEventId) {
+      try {
+        await deleteCalendarEvent(meeting.supplierId, meeting.googleEventId);
+      } catch (calErr) {
+        console.warn("[meetings/[id]/cancel] Google Calendar delete failed:", calErr);
+      }
+    }
 
     await invalidateAvailabilityCache(meeting.supplierId);
 

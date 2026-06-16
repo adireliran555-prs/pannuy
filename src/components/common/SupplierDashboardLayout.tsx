@@ -1,15 +1,16 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { LayoutDashboard, Calendar, BookOpen, BarChart3, User, LogOut, DollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
-  { href: "/supplier/dashboard", label: "דשבורד", icon: LayoutDashboard },
-  { href: "/supplier/bookings", label: "הזמנות", icon: BookOpen },
-  { href: "/supplier/calendar", label: "יומן", icon: Calendar },
-  { href: "/supplier/analytics", label: "סטטיסטיקות", icon: BarChart3 },
+  { href: "/supplier/dashboard", label: "ראשי", icon: LayoutDashboard },
+  { href: "/supplier/bookings", label: "פגישות", icon: BookOpen },
+  { href: "/supplier/calendar", label: "לוח זמנים", icon: Calendar },
+  { href: "/supplier/analytics", label: "אנליטיקה", icon: BarChart3 },
   { href: "/supplier/finances", label: "פיננסים", icon: DollarSign },
   { href: "/supplier/profile", label: "פרופיל", icon: User },
 ];
@@ -23,6 +24,17 @@ export default function SupplierDashboardLayout({
 }: SupplierDashboardLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const [supplierInitial, setSupplierInitial] = useState("");
+
+  useEffect(() => {
+    fetch("/api/supplier/auth/me")
+      .then((r) => r.json())
+      .then((json) => {
+        const name: string | undefined = json?.supplier?.name;
+        if (name) setSupplierInitial(name.trim().charAt(0));
+      })
+      .catch(() => {});
+  }, []);
 
   const handleLogout = async () => {
     await fetch("/api/supplier/auth/logout", { method: "POST" });
@@ -38,7 +50,7 @@ export default function SupplierDashboardLayout({
             <div className="bg-white rounded-2xl border border-border p-4 sticky top-24">
               <div className="mb-4 px-2 pb-3 border-b border-border">
                 <div className="w-10 h-10 rounded-full bg-primary-light flex items-center justify-center text-primary font-black text-lg mb-2">
-                  צ
+                  {supplierInitial || "ס"}
                 </div>
                 <h2 className="font-bold text-text-main text-base">פאנל הספקים</h2>
                 <p className="text-text-muted text-xs">ניהול העסק שלכם</p>

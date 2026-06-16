@@ -5,21 +5,8 @@ import Image from "next/image";
 import { Heart, MapPin, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatPrice } from "@/lib/utils";
+import { CATEGORY_LABELS_SINGULAR } from "@/lib/categories";
 import { useState } from "react";
-
-const CATEGORY_LABELS: Record<string, string> = {
-  PHOTOGRAPHER: "צלם סטילס",
-  VIDEOGRAPHER: "צלם וידאו",
-  BRIDAL_SUITE: "חדרי כלה",
-  DJ: "תקליטן",
-  FLORIST: "עיצוב פרחוני",
-  CATERING: "קייטרינג ושפים",
-  VENUE: "אולם/גן אירועים",
-  HAIR_STYLIST: "מסרקת",
-  MAKEUP_ARTIST: "מאפרת",
-  PHOTO_BOOTH: "צלם מגנטים",
-  EVENT_PRODUCER: "מפיק/הושבה",
-};
 
 interface SupplierCardProps {
   id: string;
@@ -28,12 +15,13 @@ interface SupplierCardProps {
   city: string;
   profilePhoto: string;
   coverPhoto?: string;
-  rating: number;
-  ratingCount: number;
+  rating?: number;
+  ratingCount?: number;
   priceFrom: number;
   priceTo?: number;
   category: string;
   isAvailable?: boolean;
+  isVerified?: boolean;
   isSaved?: boolean;
   onSave?: (id: string, saved: boolean) => void;
   className?: string;
@@ -46,12 +34,11 @@ export default function SupplierCard({
   city,
   profilePhoto,
   coverPhoto,
-  rating,
-  ratingCount,
   priceFrom,
   priceTo,
   category,
   isAvailable,
+  isVerified,
   isSaved: initialSaved = false,
   onSave,
   className,
@@ -98,7 +85,7 @@ export default function SupplierCard({
         <button
           onClick={handleSave}
           aria-label={saved ? "הסר משמורות" : "שמרו"}
-          className="absolute top-3 left-3 w-9 h-9 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-md hover:scale-110 transition-transform duration-200"
+          className="absolute top-1.5 left-1.5 w-11 h-11 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-md hover:scale-110 transition-transform duration-200"
         >
           <Heart
             className={cn(
@@ -111,9 +98,9 @@ export default function SupplierCard({
 
         {/* Badges top-right */}
         <div className="absolute top-3 right-3 flex flex-col gap-1 items-end">
-          {rating >= 4.8 && ratingCount >= 10 && (
+          {isVerified && (
             <span className="inline-flex items-center gap-1 bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">
-              ⭐ מומלץ
+              מהטופ של ישראל
             </span>
           )}
           {isAvailable !== undefined && (
@@ -139,7 +126,7 @@ export default function SupplierCard({
             {name}
           </h3>
           <span className="text-xs font-medium bg-primary-light text-primary-dark px-2 py-0.5 rounded-full whitespace-nowrap">
-            {CATEGORY_LABELS[category] ?? category}
+            {CATEGORY_LABELS_SINGULAR[category] ?? category}
           </span>
         </div>
 

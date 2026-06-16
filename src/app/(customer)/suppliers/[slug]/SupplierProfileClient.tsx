@@ -10,9 +10,8 @@ import {
   Share2,
   Heart,
   CheckCircle,
-  ChevronLeft,
+  ChevronRight,
   Phone,
-  Award,
   Check,
   Sparkles,
 } from "lucide-react";
@@ -20,26 +19,11 @@ import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import PhotoGallery from "@/components/common/PhotoGallery";
 import PackageCard from "@/components/common/PackageCard";
-import ReviewCard from "@/components/common/ReviewCard";
 import AvailabilityCalendar from "@/components/common/AvailabilityCalendar";
 import SimilarSuppliers from "@/components/common/SimilarSuppliers";
-import EmptyState from "@/components/ui/EmptyState";
 import { formatPrice, cn } from "@/lib/utils";
+import { CATEGORY_LABELS_SINGULAR } from "@/lib/categories";
 import type { NormalizedSupplier } from "@/lib/supplier";
-
-const CATEGORY_LABELS: Record<string, string> = {
-  PHOTOGRAPHER: "צלם סטילס",
-  VIDEOGRAPHER: "צלם וידאו",
-  BRIDAL_SUITE: "חדרי כלה",
-  DJ: "תקליטן",
-  FLORIST: "עיצוב פרחוני",
-  CATERING: "קייטרינג ושפים",
-  VENUE: "אולם/גן אירועים",
-  HAIR_STYLIST: "מסרקת",
-  MAKEUP_ARTIST: "מאפרת",
-  PHOTO_BOOTH: "צלם מגנטים",
-  EVENT_PRODUCER: "מפיק/הושבה",
-};
 
 const MARKET_PRICE_RANGES: Record<string, { min: number; max: number; avg: number }> = {
   PHOTOGRAPHER: { min: 3000, max: 15000, avg: 8500 },
@@ -57,6 +41,7 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
   const router = useRouter();
   const [bioExpanded, setBioExpanded] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [savePending, setSavePending] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
   const [showStickyBar, setShowStickyBar] = useState(false);
 
@@ -86,6 +71,52 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // Reflect persisted saved state (best-effort; ignore if unauthenticated)
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/saved")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (cancelled || !json?.data) return;
+        const found = (json.data as { supplierId: string }[]).some(
+          (s) => s.supplierId === supplier.id
+        );
+        if (found) setIsSaved(true);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [supplier.id]);
+
+  // Persist save toggle; route unauthenticated users to /start
+  const handleToggleSave = async () => {
+    if (savePending) return;
+    setSavePending(true);
+    const next = !isSaved;
+    setIsSaved(next); // optimistic
+    try {
+      const res = next
+        ? await fetch("/api/saved", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ supplierId: supplier.id }),
+          })
+        : await fetch(`/api/saved/${supplier.id}`, { method: "DELETE" });
+
+      if (res.status === 401) {
+        setIsSaved(!next); // revert
+        router.push("/start");
+        return;
+      }
+      if (!res.ok) setIsSaved(!next); // revert on failure
+    } catch {
+      setIsSaved(!next); // revert
+    } finally {
+      setSavePending(false);
+    }
+  };
+
   const handleShare = async () => {
     const url = window.location.href;
     const text = `בדקו את ${supplier.name} בפנוי 💍`;
@@ -104,11 +135,7 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
   };
 
   const bioShort = supplier.bio.length > 200 && !bioExpanded;
-  const categoryLabel = CATEGORY_LABELS[supplier.category] ?? supplier.category;
-
-  // Deterministic social proof numbers seeded from supplier id
-  const savedCount = ((supplier.id.charCodeAt(0) ?? 5) % 12) + 3;
-  const bookedCount = ((supplier.id.charCodeAt(1) ?? 3) % 8) + 2;
+  const categoryLabel = CATEGORY_LABELS_SINGULAR[supplier.category] ?? supplier.category;
 
   return (
     <div className="min-h-screen bg-surface">
@@ -146,7 +173,7 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
           onClick={() => router.back()}
           className="absolute top-4 right-4 p-2.5 bg-white/90 backdrop-blur-sm rounded-full text-text-main hover:bg-white transition-colors shadow-md"
         >
-          <ChevronLeft className="h-5 w-5" />
+          <ChevronRight className="h-5 w-5" />
         </button>
 
         {/* Share + Save */}
@@ -164,8 +191,10 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
             <Share2 className="h-5 w-5" />
           </button>
           <button
-            onClick={() => setIsSaved((v) => !v)}
-            className="p-2.5 bg-white/90 backdrop-blur-sm rounded-full shadow-md transition-all hover:scale-110"
+            onClick={handleToggleSave}
+            disabled={savePending}
+            title={isSaved ? "הסירו מהשמורים" : "שמרו"}
+            className="p-2.5 bg-white/90 backdrop-blur-sm rounded-full shadow-md transition-all hover:scale-110 disabled:opacity-60"
           >
             <Heart className={`h-5 w-5 transition-all ${isSaved ? "fill-red-500 stroke-red-500" : "stroke-gray-600"}`} />
           </button>
@@ -207,15 +236,17 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
           </div>
         </div>
 
-        {/* Social proof nudges */}
+        {/* Trust signals */}
         <div className="flex flex-wrap gap-3 py-3 border-b border-border">
-          <span className="text-xs text-text-muted flex items-center gap-1">
-            <Heart className="h-3.5 w-3.5 fill-rose-400 stroke-rose-400" />
-            {savedCount} זוגות שמרו השבוע
-          </span>
-          <span className="text-xs text-text-muted flex items-center gap-1">
-            <Award className="h-3.5 w-3.5 text-amber-500" />
-            {bookedCount} חתונות החודש
+          {supplier.isVerified && (
+            <span className="text-xs font-semibold text-green-700 flex items-center gap-1">
+              <CheckCircle className="h-3.5 w-3.5" />
+              ספק מאומת
+            </span>
+          )}
+          <span className="text-xs font-semibold text-primary flex items-center gap-1">
+            <Sparkles className="h-3.5 w-3.5" />
+            מהטופ של ישראל
           </span>
           <span className="text-xs font-semibold text-green-700 flex items-center gap-1">
             <CheckCircle className="h-3.5 w-3.5" />
@@ -247,7 +278,7 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
                     onClick={() => setBioExpanded((v) => !v)}
                     className="mt-2 text-primary font-semibold text-sm hover:text-primary-dark"
                   >
-                    {bioExpanded ? "הצג פחות" : "קרא עוד"}
+                    {bioExpanded ? "הצג פחות" : "קראו עוד"}
                   </button>
                 )}
                 <div className="mt-4 pt-4 border-t border-border">
@@ -302,34 +333,10 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
                   </ul>
                 ) : (
                   <p className="text-text-muted leading-relaxed">
-                    מהטופ של ישראל — ספק/ית נבחר/ת ומאומת/ת בקטגוריה.
+                    מהטופ של ישראל — ספק נבחר ומאומת בקטגוריה.
                   </p>
                 )}
               </div>
-            </section>
-
-            {/* Reviews */}
-            <section>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-black text-text-main">ביקורות</h2>
-              </div>
-
-              {supplier.reviews.length === 0 ? (
-                <EmptyState emoji="💬" title="אין ביקורות עדיין" description="הספק/ת חדש/ה בפלטפורמה" />
-              ) : (
-                <div className="space-y-4">
-                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  {supplier.reviews.map((review: any) => (
-                    <ReviewCard
-                      key={review.id}
-                      reviewerName={review.reviewerName}
-                      date={review.date}
-                      rating={review.rating}
-                      text={review.text}
-                    />
-                  ))}
-                </div>
-              )}
             </section>
 
             {/* Availability */}
@@ -411,15 +418,16 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
               </button>
 
               <button
-                onClick={() => setIsSaved((v) => !v)}
-                className={`w-full flex items-center justify-center gap-2 py-3 rounded-full border-2 font-semibold text-sm transition-all ${
+                onClick={handleToggleSave}
+                disabled={savePending}
+                className={`w-full flex items-center justify-center gap-2 py-3 rounded-full border-2 font-semibold text-sm transition-all disabled:opacity-60 ${
                   isSaved
                     ? "border-red-300 text-red-500 bg-red-50"
                     : "border-border text-text-muted hover:border-primary hover:text-primary"
                 }`}
               >
                 <Heart className={`h-4 w-4 ${isSaved ? "fill-red-500 stroke-red-500" : ""}`} />
-                {isSaved ? "שמורה ❤" : "שמרו"}
+                {isSaved ? "שמור ❤" : "שמרו"}
               </button>
 
               <p className="text-xs text-text-muted text-center">

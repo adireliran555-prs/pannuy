@@ -22,7 +22,7 @@ interface SuppliersFilters {
   category?: string;
   priceMin?: number;
   priceMax?: number;
-  ratingMin?: number;
+  sortBy?: "relevance" | "priceAsc" | "priceDesc";
   page?: number;
   limit?: number;
 }
@@ -62,7 +62,7 @@ function buildUrl(filters: SuppliersFilters): string {
   if (filters.category) params.set("category", filters.category);
   if (filters.priceMin) params.set("priceMin", String(filters.priceMin));
   if (filters.priceMax) params.set("priceMax", String(filters.priceMax));
-  if (filters.ratingMin) params.set("ratingMin", String(filters.ratingMin));
+  if (filters.sortBy && filters.sortBy !== "relevance") params.set("sortBy", filters.sortBy);
   if (filters.page) params.set("page", String(filters.page));
   if (filters.limit !== undefined) params.set("limit", String(filters.limit));
   return `/api/suppliers?${params.toString()}`;

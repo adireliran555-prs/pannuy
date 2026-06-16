@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireSupplierSession } from "@/lib/api-auth";
 import { MONTHLY_FEE_ILS } from "@/lib/payments";
+import { computeSupplierBalance } from "@/lib/balance";
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,30 +11,15 @@ export async function GET(request: NextRequest) {
 
     const supplierId = session.id;
 
-    const [supplier, earnedRows, owedRows, recentEarned, recentOwed, payoutsAgg] =
+    const [supplier, balance, recentEarned, recentOwed] =
       await Promise.all([
         prisma.supplier.findUnique({
           where: { id: supplierId },
           select: { subscriptionStatus: true, subscriptionStartAt: true },
         }),
 
-        // Confirmed/paid earnings where this supplier is the referrer
-        prisma.affiliateEarning.findMany({
-          where: {
-            referringSupplierId: supplierId,
-            status: { in: ["CONFIRMED", "PAID"] },
-          },
-          select: { amountIls: true },
-        }),
-
-        // Confirmed/paid earnings where this supplier is the receiver (owes others)
-        prisma.affiliateEarning.findMany({
-          where: {
-            receivingSupplierId: supplierId,
-            status: { in: ["CONFIRMED", "PAID"] },
-          },
-          select: { amountIls: true },
-        }),
+        // Canonical balance (single source of truth)
+        computeSupplierBalance(prisma, supplierId),
 
         // Recent transactions as referrer (last 20 combined, fetch 20 each then merge)
         prisma.affiliateEarning.findMany({
@@ -64,15 +50,6 @@ export async function GET(request: NextRequest) {
             referringSupplier: { select: { name: true, category: true } },
           },
         }),
-
-        // Payout requests in flight or paid (reduce withdrawable balance)
-        prisma.payoutRequest.aggregate({
-          where: {
-            supplierId,
-            status: { in: ["PENDING", "APPROVED", "PAID"] },
-          },
-          _sum: { amountIls: true },
-        }),
       ]);
 
     if (!supplier) {
@@ -82,15 +59,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const totalEarned = earnedRows.reduce((sum, r) => sum + r.amountIls, 0);
-    const totalOwed = owedRows.reduce((sum, r) => sum + r.amountIls, 0);
+    const { totalEarned, totalOwed, withdrawableBalance } = balance;
     const netBalance = totalEarned - totalOwed;
-
-    const totalPayouts = payoutsAgg._sum.amountIls ?? 0;
-    const subscriptionFee =
-      supplier.subscriptionStatus === "ACTIVE" ? MONTHLY_FEE_ILS : 0;
-    const withdrawableBalance =
-      totalEarned - totalOwed - subscriptionFee - totalPayouts;
 
     // Merge and sort recent transactions, take last 20
     const earnedTx = recentEarned.map((r) => ({

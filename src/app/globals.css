@@ -84,7 +84,7 @@ a, button {
 /* RTL number display */
 .ltr {
   direction: ltr;
-  unicode-bidi: bidi-override;
+  unicode-bidi: isolate;
 }
 
 /* Skeleton shimmer animation */

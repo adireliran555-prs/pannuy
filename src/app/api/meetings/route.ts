@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireCustomerSession } from "@/lib/api-auth";
 import { invalidateAvailabilityCache } from "@/lib/availability";
-import { MeetingType, MeetingStatus } from "@prisma/client";
+import { MeetingType, MeetingStatus, Prisma } from "@prisma/client";
+
+// Sentinel used to bail out of the booking transaction when the requested slot
+// is already taken. Caught below and translated to a 409.
+const SLOT_TAKEN = "SLOT_TAKEN";
 
 export async function POST(request: NextRequest) {
   try {
@@ -51,23 +55,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Re-check slot availability in DB (not cache)
     const dateObj = new Date(date);
-    const existingBlock = await prisma.availabilitySlot.findFirst({
-      where: {
-        supplierId,
-        date: dateObj,
-        startTime,
-        isBlocked: true,
-      },
-    });
-
-    if (existingBlock) {
-      return NextResponse.json(
-        { success: false, error: "הזמן המבוקש כבר תפוס" },
-        { status: 409 }
-      );
-    }
 
     // Resolve affiliate referral from cookie
     const refCode = request.cookies.get("pannuy_ref")?.value ?? null;
@@ -83,57 +71,96 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create meeting + notification atomically
-    const meeting = await prisma.$transaction(async (tx) => {
-      const newMeeting = await tx.meeting.create({
-        data: {
-          customerId: session.id,
-          supplierId,
-          requestedDate: dateObj,
-          startTime,
-          endTime,
-          status: MeetingStatus.PENDING,
-          meetingType: validMeetingType,
-          customerNotes: notes ?? null,
-          ...(referredBySupplierId ? { referredBySupplierId } : {}),
-        },
-        include: {
-          supplier: {
-            select: { name: true, slug: true },
-          },
-          customer: {
-            select: { name: true, phone: true },
-          },
-        },
-      });
+    // Availability check, meeting create, notification, and slot block all run
+    // in ONE serializable transaction so two concurrent bookings for the same
+    // (supplier, date, startTime) cannot both succeed. The DB's nullable
+    // googleEventId unique index does not constrain MANUAL slots (NULLs are
+    // distinct in Postgres), so we rely on SERIALIZABLE isolation: the
+    // re-check + insert pair conflicts on overlapping writes and one tx aborts.
+    let meeting;
+    try {
+      meeting = await prisma.$transaction(
+        async (tx) => {
+          // Re-check slot availability in DB (not cache) inside the tx.
+          const existingBlock = await tx.availabilitySlot.findFirst({
+            where: {
+              supplierId,
+              date: dateObj,
+              startTime,
+              isBlocked: true,
+            },
+          });
 
-      // Notify supplier
-      await tx.notification.create({
-        data: {
-          supplierId,
-          type: "MEETING_REQUEST",
-          titleHe: "בקשת פגישה חדשה",
-          bodyHe: `${session.name} ביקש פגישה ב-${date} בשעה ${startTime}`,
-          metadata: { meetingId: newMeeting.id },
+          if (existingBlock) {
+            throw new Error(SLOT_TAKEN);
+          }
+
+          // Block the slot to prevent double-booking. Created inside the tx so
+          // it either commits atomically with the meeting or not at all.
+          await tx.availabilitySlot.create({
+            data: {
+              supplierId,
+              date: dateObj,
+              startTime,
+              endTime,
+              isBlocked: true,
+              source: "MANUAL",
+            },
+          });
+
+          const newMeeting = await tx.meeting.create({
+            data: {
+              customerId: session.id,
+              supplierId,
+              requestedDate: dateObj,
+              startTime,
+              endTime,
+              status: MeetingStatus.PENDING,
+              meetingType: validMeetingType,
+              customerNotes: notes ?? null,
+              ...(referredBySupplierId ? { referredBySupplierId } : {}),
+            },
+            include: {
+              supplier: {
+                select: { name: true, slug: true },
+              },
+              customer: {
+                select: { name: true, phone: true },
+              },
+            },
+          });
+
+          // Notify supplier
+          await tx.notification.create({
+            data: {
+              supplierId,
+              type: "MEETING_REQUEST",
+              titleHe: "בקשת פגישה חדשה",
+              bodyHe: `${session.name} ביקש פגישה ב-${date} בשעה ${startTime}`,
+              metadata: { meetingId: newMeeting.id },
+            },
+          });
+
+          return newMeeting;
         },
-      });
-
-      return newMeeting;
-    });
-
-    // Block the slot to prevent double-booking
-    await prisma.availabilitySlot.create({
-      data: {
-        supplierId,
-        date: dateObj,
-        startTime,
-        endTime,
-        isBlocked: true,
-        source: "MANUAL",
-      },
-    }).catch(() => {
-      // Slot might already exist — ignore unique constraint errors
-    });
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+      );
+    } catch (txErr) {
+      // Either our explicit slot-taken bail-out, a unique-constraint hit, or a
+      // serialization failure from a concurrent booking → the slot is taken.
+      const isSlotTaken =
+        (txErr instanceof Error && txErr.message === SLOT_TAKEN) ||
+        (txErr instanceof Prisma.PrismaClientKnownRequestError &&
+          (txErr.code === "P2002" || // unique constraint
+            txErr.code === "P2034")); // transaction conflict / deadlock
+      if (isSlotTaken) {
+        return NextResponse.json(
+          { success: false, error: "הזמן המבוקש כבר תפוס" },
+          { status: 409 }
+        );
+      }
+      throw txErr;
+    }
 
     await invalidateAvailabilityCache(supplierId);
 

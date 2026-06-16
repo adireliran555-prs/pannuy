@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -26,13 +26,42 @@ export default function SupplierLoginPage() {
   const [otpError, setOtpError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [phone, setPhone] = useState("");
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [otpKey, setOtpKey] = useState(0);
+
+  const RESEND_COOLDOWN = 45;
 
   const {
     register,
     handleSubmit,
-    getValues,
     formState: { errors },
   } = useForm<FormData>({ resolver: zodResolver(schema) });
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setInterval(() => {
+      setResendCooldown((c) => (c <= 1 ? 0 : c - 1));
+    }, 1000);
+    return () => clearInterval(t);
+  }, [resendCooldown]);
+
+  const resendOtp = async () => {
+    if (resendCooldown > 0) return;
+    setOtp("");
+    setOtpError("");
+    setOtpKey((k) => k + 1);
+    setIsLoading(true);
+    try {
+      await fetch("/api/supplier/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone }),
+      });
+      setResendCooldown(RESEND_COOLDOWN);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const onSubmit = async (data: FormData) => {
     setIsLoading(true);
@@ -49,6 +78,7 @@ export default function SupplierLoginPage() {
       }
       setPhone(data.phone);
       setStage("otp");
+      setResendCooldown(RESEND_COOLDOWN);
     } finally {
       setIsLoading(false);
     }
@@ -68,6 +98,8 @@ export default function SupplierLoginPage() {
         const json = await res.json();
         if (!res.ok) {
           setOtpError(json.error ?? "קוד שגוי");
+          setOtp("");
+          setOtpKey((k) => k + 1);
           return;
         }
         router.push("/supplier/dashboard");
@@ -119,7 +151,7 @@ export default function SupplierLoginPage() {
               </form>
 
               <p className="text-center text-sm text-text-muted">
-                עדיין לא נרשמת?{" "}
+                עדיין לא נרשמתם?{" "}
                 <Link href="/supplier/join" className="text-primary font-semibold">
                   הצטרפו לפנוי
                 </Link>
@@ -141,6 +173,7 @@ export default function SupplierLoginPage() {
 
               <div className="flex flex-col items-center gap-4 py-4">
                 <OtpInput
+                  key={otpKey}
                   value={otp}
                   onChange={handleOtpChange}
                   error={otpError}
@@ -155,27 +188,17 @@ export default function SupplierLoginPage() {
               </div>
 
               <div className="flex flex-col items-center gap-2">
-                <p className="text-sm text-text-muted">לא קיבלת?</p>
+                <p className="text-sm text-text-muted">לא קיבלתם?</p>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={async () => {
-                    setOtp("");
-                    setOtpError("");
-                    setIsLoading(true);
-                    try {
-                      await fetch("/api/supplier/auth/send-otp", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ phone }),
-                      });
-                    } finally {
-                      setIsLoading(false);
-                    }
-                  }}
+                  onClick={resendOtp}
                   isLoading={isLoading}
+                  disabled={isLoading || resendCooldown > 0}
                 >
-                  שלחו שנית
+                  {resendCooldown > 0
+                    ? `שליחה חוזרת בעוד ${resendCooldown} שניות`
+                    : "שלחו שנית"}
                 </Button>
               </div>
 
@@ -186,6 +209,7 @@ export default function SupplierLoginPage() {
                 onClick={() => {
                   setStage("form");
                   setOtp("");
+                  setResendCooldown(0);
                 }}
               >
                 שנו מספר טלפון

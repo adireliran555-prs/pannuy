@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { google } from "googleapis";
 import { OAuth2Client } from "google-auth-library";
 import { AvailabilitySource } from "@prisma/client";
@@ -28,7 +29,7 @@ export function getOAuthClient(refreshToken?: string): OAuth2Client {
 
 // ─── Auth URL ─────────────────────────────────────────────────────────────────
 
-export function getAuthUrl(supplierId: string): string {
+export function getAuthUrl(state: string): string {
   const oauth2Client = getOAuthClient();
   return oauth2Client.generateAuthUrl({
     access_type: "offline",
@@ -37,7 +38,7 @@ export function getAuthUrl(supplierId: string): string {
       "https://www.googleapis.com/auth/calendar",
       "https://www.googleapis.com/auth/calendar.events",
     ],
-    state: supplierId,
+    state,
   });
 }
 
@@ -303,7 +304,11 @@ export async function registerCalendarWatch(
     });
 
     const calendarId = supplier.googleCalendarId ?? "primary";
-    const channelId = `watch-${supplierId}`;
+    // Random, unguessable channel id and secret token. The token is echoed back
+    // by Google in the x-goog-channel-token header on every push notification,
+    // and we verify it in the webhook handler before trusting the call.
+    const channelId = randomUUID();
+    const channelToken = randomUUID();
     const baseUrl = process.env.GOOGLE_WEBHOOK_URL ?? "https://pannuy.vercel.app";
 
     const res = await calendar.events.watch({
@@ -312,15 +317,31 @@ export async function registerCalendarWatch(
         id: channelId,
         type: "web_hook",
         address: `${baseUrl}/api/supplier/calendar/webhook`,
+        token: channelToken,
+      },
+    });
+
+    const resourceId = res.data.resourceId ?? null;
+    const expiry = res.data.expiration
+      ? new Date(Number(res.data.expiration))
+      : null;
+
+    // Persist channel identity + secret token so the webhook can authenticate
+    // incoming notifications against this supplier.
+    await prisma.supplier.update({
+      where: { id: supplierId },
+      data: {
+        googleChannelId: channelId,
+        googleChannelToken: channelToken,
+        googleResourceId: resourceId,
+        googleChannelExpiry: expiry,
       },
     });
 
     return {
       channelId,
-      resourceId: res.data.resourceId ?? null,
-      expiry: res.data.expiration
-        ? new Date(Number(res.data.expiration))
-        : null,
+      resourceId,
+      expiry,
     };
   } catch (err) {
     console.error("[registerCalendarWatch]", err);
@@ -377,8 +398,11 @@ export async function createCalendarEvent(
 
   const calendarId = supplier.googleCalendarId ?? "primary";
 
-  const startDateTime = new Date(`${meeting.date}T${meeting.startTime}:00`);
-  const endDateTime = new Date(`${meeting.date}T${meeting.endTime}:00`);
+  // Naive local datetime (no offset, no Z). Combined with timeZone below, Google
+  // interprets these wall-clock times as Asia/Jerusalem. Applying both
+  // .toISOString() (UTC) AND timeZone would double-shift the event.
+  const startDateTime = `${meeting.date}T${meeting.startTime}:00`;
+  const endDateTime = `${meeting.date}T${meeting.endTime}:00`;
 
   const res = await calendar.events.insert({
     calendarId,
@@ -392,11 +416,11 @@ export async function createCalendarEvent(
         .filter(Boolean)
         .join("\n"),
       start: {
-        dateTime: startDateTime.toISOString(),
+        dateTime: startDateTime,
         timeZone: "Asia/Jerusalem",
       },
       end: {
-        dateTime: endDateTime.toISOString(),
+        dateTime: endDateTime,
         timeZone: "Asia/Jerusalem",
       },
     },

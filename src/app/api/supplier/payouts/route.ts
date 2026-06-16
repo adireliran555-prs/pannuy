@@ -1,41 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireSupplierSession } from "@/lib/api-auth";
-
-async function computeAvailableBalance(supplierId: string): Promise<number> {
-  const [earned, owed, payouts] = await Promise.all([
-    // Earnings where this supplier is the referrer (money coming in)
-    prisma.affiliateEarning.aggregate({
-      where: {
-        referringSupplierId: supplierId,
-        status: { in: ["CONFIRMED", "PAID"] },
-      },
-      _sum: { amountIls: true },
-    }),
-    // Earnings where this supplier is the receiver (money owed out)
-    prisma.affiliateEarning.aggregate({
-      where: {
-        receivingSupplierId: supplierId,
-        status: { in: ["CONFIRMED", "PAID"] },
-      },
-      _sum: { amountIls: true },
-    }),
-    // Payout requests already in flight or paid
-    prisma.payoutRequest.aggregate({
-      where: {
-        supplierId,
-        status: { in: ["PENDING", "APPROVED", "PAID"] },
-      },
-      _sum: { amountIls: true },
-    }),
-  ]);
-
-  const totalEarned = earned._sum.amountIls ?? 0;
-  const totalOwed = owed._sum.amountIls ?? 0;
-  const totalPayouts = payouts._sum.amountIls ?? 0;
-
-  return totalEarned - totalOwed - totalPayouts;
-}
+import { computeSupplierBalance } from "@/lib/balance";
 
 export async function GET(request: NextRequest) {
   try {
@@ -44,8 +10,8 @@ export async function GET(request: NextRequest) {
 
     const supplierId = session.id;
 
-    const [availableBalance, payouts] = await Promise.all([
-      computeAvailableBalance(supplierId),
+    const [balance, payouts] = await Promise.all([
+      computeSupplierBalance(prisma, supplierId),
       prisma.payoutRequest.findMany({
         where: { supplierId },
         orderBy: { createdAt: "desc" },
@@ -61,7 +27,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      availableBalance,
+      availableBalance: balance.withdrawableBalance,
       payouts: payouts.map((p) => ({
         id: p.id,
         amountIls: p.amountIls,
@@ -94,28 +60,43 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const availableBalance = await computeAvailableBalance(supplierId);
+    // Recompute the balance and create the request inside ONE transaction so
+    // concurrent payout requests cannot double-spend the same balance.
+    const result = await prisma.$transaction(async (tx) => {
+      const { withdrawableBalance } = await computeSupplierBalance(
+        tx,
+        supplierId
+      );
 
-    if (amountIls > availableBalance) {
+      if (amountIls > withdrawableBalance) {
+        return { ok: false as const };
+      }
+
+      const payout = await tx.payoutRequest.create({
+        data: {
+          supplierId,
+          amountIls,
+          status: "PENDING",
+        },
+        select: {
+          id: true,
+          amountIls: true,
+          status: true,
+          createdAt: true,
+        },
+      });
+
+      return { ok: true as const, payout };
+    });
+
+    if (!result.ok) {
       return NextResponse.json(
         { success: false, error: "סכום המשיכה גבוה מהיתרה הזמינה" },
         { status: 400 }
       );
     }
 
-    const payout = await prisma.payoutRequest.create({
-      data: {
-        supplierId,
-        amountIls,
-        status: "PENDING",
-      },
-      select: {
-        id: true,
-        amountIls: true,
-        status: true,
-        createdAt: true,
-      },
-    });
+    const { payout } = result;
 
     return NextResponse.json({
       success: true,
