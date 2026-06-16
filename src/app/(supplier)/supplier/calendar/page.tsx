@@ -15,15 +15,27 @@ interface BlockedDay {
   date: string;
 }
 
-function GoogleCalendarBanner() {
+function GoogleCalendarBanner({ onSynced }: { onSynced?: () => void }) {
   const searchParams = useSearchParams();
   const [calendarConnected, setCalendarConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncMsg, setSyncMsg] = useState<string | null>(null);
 
   useEffect(() => {
+    // Connected if we just returned from OAuth (?connected=true) OR the profile
+    // already has a linked Google calendar.
     if (searchParams.get("connected") === "true") {
       setCalendarConnected(true);
+      return;
     }
+    fetch("/api/supplier/profile")
+      .then((r) => r.json())
+      .then((j) => {
+        const supplier = j.data ?? j.supplier ?? j;
+        if (supplier?.googleCalendarId) setCalendarConnected(true);
+      })
+      .catch(() => {});
   }, [searchParams]);
 
   const handleGoogleConnect = async () => {
@@ -39,17 +51,45 @@ function GoogleCalendarBanner() {
     }
   };
 
+  const handleSync = async () => {
+    if (isSyncing) return;
+    setIsSyncing(true);
+    setSyncMsg(null);
+    try {
+      const res = await fetch("/api/supplier/calendar/sync", { method: "POST" });
+      const json = await res.json();
+      if (res.ok && json.success) {
+        setSyncMsg(`סונכרן ✓ (${json.data?.synced ?? 0} אירועים)`);
+        onSynced?.();
+      } else {
+        setSyncMsg(json.error ?? "הסנכרון נכשל");
+      }
+    } catch {
+      setSyncMsg("הסנכרון נכשל, נסו שוב");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   if (calendarConnected) {
     return (
-      <div className="bg-green-50 border border-green-200 rounded-2xl px-5 py-4 flex items-center gap-3">
+      <div className="bg-green-50 border border-green-200 rounded-2xl px-5 py-4 flex items-center gap-3 flex-wrap">
         <CheckCircle className="h-5 w-5 text-green-600" />
         <span className="font-semibold text-green-700 text-sm">
           מחובר ל-Google Calendar ✓
         </span>
-        <button className="ms-auto flex items-center gap-1.5 text-green-600 hover:text-green-800 text-sm font-semibold">
-          <RefreshCw className="h-3.5 w-3.5" />
-          סנכרן עכשיו
+        <button
+          type="button"
+          onClick={handleSync}
+          disabled={isSyncing}
+          className="ms-auto flex items-center gap-1.5 text-green-600 hover:text-green-800 disabled:opacity-50 text-sm font-semibold"
+        >
+          <RefreshCw className={cn("h-3.5 w-3.5", isSyncing && "animate-spin")} />
+          {isSyncing ? "מסנכרן..." : "סנכרן עכשיו"}
         </button>
+        {syncMsg && (
+          <span className="w-full text-xs text-green-700">{syncMsg}</span>
+        )}
       </div>
     );
   }
@@ -219,7 +259,7 @@ export default function SupplierCalendarPage() {
 
         {/* Google Calendar connection */}
         <Suspense fallback={null}>
-          <GoogleCalendarBanner />
+          <GoogleCalendarBanner onSynced={() => loadData(year, month)} />
         </Suspense>
 
         {/* Calendar */}
@@ -276,12 +316,18 @@ export default function SupplierCalendarPage() {
                   className={cn(
                     "relative aspect-square flex items-center justify-center text-sm font-semibold rounded-xl transition-all duration-150",
                     status ? STATUS_STYLES[status] : STATUS_STYLES.available,
-                    isToday && !status && "ring-2 ring-primary",
-                    isSelected && "ring-2 ring-primary ring-offset-1",
+                    // Today: emphasized number + a dot marker (no ring), so it's
+                    // distinct from the selected day's ring.
+                    isToday && !status && "text-primary font-black",
+                    // Selected: a clear ring + offset (the only ringed day).
+                    isSelected && "ring-2 ring-primary ring-offset-2",
                     !isClickable && "cursor-default"
                   )}
                 >
                   {day}
+                  {isToday && (
+                    <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary" />
+                  )}
                 </button>
               );
             })}
