@@ -339,10 +339,8 @@ export default function SupplierJoinPage() {
                     {[
                       { id: "PHOTOGRAPHER", label: "צלם/ת סטילס 📸" },
                       { id: "VIDEOGRAPHER", label: "צלם/ת וידיאו 🎬" },
-                      { id: "BRIDAL_SUITE", label: "חדר כלה 💍" },
                       { id: "DJ", label: "תקליטן/ית 🎵" },
                       { id: "CATERING", label: "קייטרינג/שף 🍽️" },
-                      { id: "FLORIST", label: "עיצוב פרחוני 💐" },
                       { id: "VENUE", label: "אולם/גן אירועים 🏛️" },
                       { id: "HAIR_STYLIST", label: "מסרקת 💇" },
                       { id: "MAKEUP_ARTIST", label: "מאפרת 💄" },

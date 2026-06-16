@@ -33,6 +33,7 @@ export async function GET(
         ratingCount: true,
         isVerified: true,
         responseRate: true,
+        highlights: true,
         createdAt: true,
         photos: {
           orderBy: { sortOrder: "asc" },

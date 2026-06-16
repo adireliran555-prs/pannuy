@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireSupplierSession } from "@/lib/api-auth";
-
-const MONTHLY_FEE_ILS = 1000;
+import { MONTHLY_FEE_ILS } from "@/lib/payments";
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,7 +10,7 @@ export async function GET(request: NextRequest) {
 
     const supplierId = session.id;
 
-    const [supplier, earnedRows, owedRows, recentEarned, recentOwed] =
+    const [supplier, earnedRows, owedRows, recentEarned, recentOwed, payoutsAgg] =
       await Promise.all([
         prisma.supplier.findUnique({
           where: { id: supplierId },
@@ -65,6 +64,15 @@ export async function GET(request: NextRequest) {
             referringSupplier: { select: { name: true, category: true } },
           },
         }),
+
+        // Payout requests in flight or paid (reduce withdrawable balance)
+        prisma.payoutRequest.aggregate({
+          where: {
+            supplierId,
+            status: { in: ["PENDING", "APPROVED", "PAID"] },
+          },
+          _sum: { amountIls: true },
+        }),
       ]);
 
     if (!supplier) {
@@ -77,6 +85,12 @@ export async function GET(request: NextRequest) {
     const totalEarned = earnedRows.reduce((sum, r) => sum + r.amountIls, 0);
     const totalOwed = owedRows.reduce((sum, r) => sum + r.amountIls, 0);
     const netBalance = totalEarned - totalOwed;
+
+    const totalPayouts = payoutsAgg._sum.amountIls ?? 0;
+    const subscriptionFee =
+      supplier.subscriptionStatus === "ACTIVE" ? MONTHLY_FEE_ILS : 0;
+    const withdrawableBalance =
+      totalEarned - totalOwed - subscriptionFee - totalPayouts;
 
     // Merge and sort recent transactions, take last 20
     const earnedTx = recentEarned.map((r) => ({
@@ -112,10 +126,11 @@ export async function GET(request: NextRequest) {
       success: true,
       subscriptionStatus: supplier.subscriptionStatus,
       subscriptionStartAt: supplier.subscriptionStartAt?.toISOString() ?? null,
-      monthlyFeeFils: MONTHLY_FEE_ILS,
+      monthlyFeeIls: MONTHLY_FEE_ILS,
       totalEarned,
       totalOwed,
       netBalance,
+      withdrawableBalance,
       recentTransactions,
     });
   } catch (err) {

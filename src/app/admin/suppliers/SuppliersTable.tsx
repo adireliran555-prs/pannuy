@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Search, Check, X, ExternalLink, LogIn } from "lucide-react";
+import { Search, Check, X, ExternalLink, LogIn, AlertTriangle, ChevronDown, Save } from "lucide-react";
 import { cn, formatRelativeHebrew } from "@/lib/utils";
 
 interface Row {
@@ -17,6 +17,8 @@ interface Row {
   ratingCount: number;
   isVerified: boolean;
   isActive: boolean;
+  warningCount: number;
+  highlights: string[];
   createdAt: string;
   meetings: number;
   views: number;
@@ -28,6 +30,7 @@ export default function SuppliersTable({ initialRows }: { initialRows: Row[] }) 
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<"all" | "verified" | "unverified" | "inactive">("all");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const filtered = rows.filter((r) => {
     if (q && !`${r.name} ${r.city} ${r.phone}`.toLowerCase().includes(q.toLowerCase())) return false;
@@ -57,6 +60,44 @@ export default function SuppliersTable({ initialRows }: { initialRows: Row[] }) 
     const j = await res.json().catch(() => ({}));
     if (res.ok && j.redirect) window.location.href = j.redirect;
     else setBusyId(null);
+  };
+
+  const issueWarning = async (id: string) => {
+    const reasonHe = window.prompt("סיבת האזהרה (תוצג לספק):");
+    if (!reasonHe || !reasonHe.trim()) return;
+    setBusyId(id);
+    const res = await fetch(`/api/admin/suppliers/${id}/warning`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reasonHe: reasonHe.trim() }),
+    });
+    const j = await res.json().catch(() => ({}));
+    setBusyId(null);
+    if (res.ok) {
+      setRows((rs) =>
+        rs.map((r) =>
+          r.id === id
+            ? { ...r, warningCount: j.warningCount ?? r.warningCount + 1, isActive: j.deactivated ? false : r.isActive }
+            : r
+        )
+      );
+      router.refresh();
+    }
+  };
+
+  const saveHighlights = async (id: string, lines: string[]) => {
+    setBusyId(id);
+    const res = await fetch(`/api/admin/suppliers/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ highlights: lines }),
+    });
+    setBusyId(null);
+    if (res.ok) {
+      const cleaned = lines.map((l) => l.trim()).filter((l) => l.length > 0);
+      setRows((rs) => rs.map((r) => (r.id === id ? { ...r, highlights: cleaned } : r)));
+      router.refresh();
+    }
   };
 
   return (
@@ -115,7 +156,8 @@ export default function SuppliersTable({ initialRows }: { initialRows: Row[] }) 
                 </tr>
               ) : (
                 filtered.map((r) => (
-                  <tr key={r.id} className="hover:bg-surface/50">
+                  <FragmentRow key={r.id}>
+                  <tr className="hover:bg-surface/50">
                     <td className="px-4 py-3 font-semibold text-text-main">
                       <div>{r.name}</div>
                       <div className="text-xs text-text-muted" dir="ltr">{r.phone}</div>
@@ -133,6 +175,12 @@ export default function SuppliersTable({ initialRows }: { initialRows: Row[] }) 
                       <div className="flex flex-wrap gap-1">
                         <Pill on={r.isVerified} onClick={() => toggle(r.id, "isVerified", !r.isVerified)} disabled={busyId === r.id} onLabel="מאומת" offLabel="לא מאומת" />
                         <Pill on={r.isActive} onClick={() => toggle(r.id, "isActive", !r.isActive)} disabled={busyId === r.id} onLabel="פעיל" offLabel="כבוי" greenWhenOn />
+                        {r.warningCount > 0 && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border bg-red-50 text-red-700 border-red-200">
+                            <AlertTriangle className="h-3 w-3" />
+                            {r.warningCount} אזהרות
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-xs text-text-muted whitespace-nowrap">
@@ -156,9 +204,29 @@ export default function SuppliersTable({ initialRows }: { initialRows: Row[] }) 
                           <LogIn className="h-3 w-3" />
                           צפו כספק
                         </button>
+                        <button
+                          onClick={() => setExpandedId((id) => (id === r.id ? null : r.id))}
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-text-muted hover:text-primary"
+                        >
+                          <ChevronDown className={cn("h-3 w-3 transition-transform", expandedId === r.id && "rotate-180")} />
+                          ניהול
+                        </button>
                       </div>
                     </td>
                   </tr>
+                  {expandedId === r.id && (
+                    <tr className="bg-surface/40">
+                      <td colSpan={9} className="px-4 py-4">
+                        <SupplierDetail
+                          row={r}
+                          busy={busyId === r.id}
+                          onWarn={() => issueWarning(r.id)}
+                          onSaveHighlights={(lines) => saveHighlights(r.id, lines)}
+                        />
+                      </td>
+                    </tr>
+                  )}
+                  </FragmentRow>
                 ))
               )}
             </tbody>
@@ -200,6 +268,70 @@ function Pill({
       {on ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
       {on ? onLabel : offLabel}
     </button>
+  );
+}
+
+function FragmentRow({ children }: { children: React.ReactNode }) {
+  return <Fragment>{children}</Fragment>;
+}
+
+function SupplierDetail({
+  row,
+  busy,
+  onWarn,
+  onSaveHighlights,
+}: {
+  row: Row;
+  busy: boolean;
+  onWarn: () => void;
+  onSaveHighlights: (lines: string[]) => void;
+}) {
+  const [text, setText] = useState(row.highlights.join("\n"));
+  const dirty = text !== row.highlights.join("\n");
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Warnings */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <h4 className="font-bold text-sm text-text-main">אזהרות</h4>
+          <span className="text-xs text-text-muted">{row.warningCount} עד כה</span>
+        </div>
+        <p className="text-xs text-text-muted leading-relaxed">
+          הוצאת אזהרה תירשם ותוצג לספק. שתי אזהרות יכבו את הספק אוטומטית.
+        </p>
+        <button
+          onClick={onWarn}
+          disabled={busy}
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold border-2 border-red-200 bg-red-50 text-red-700 hover:bg-red-100 disabled:opacity-50"
+        >
+          <AlertTriangle className="h-4 w-4" />
+          הוצא אזהרה
+        </button>
+      </div>
+
+      {/* Highlights */}
+      <div className="space-y-2">
+        <h4 className="font-bold text-sm text-text-main">נקודות חוזק</h4>
+        <p className="text-xs text-text-muted">נקודת חוזק אחת בכל שורה.</p>
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          rows={4}
+          dir="rtl"
+          className="w-full p-3 rounded-xl border-2 border-border focus:border-primary outline-none text-sm bg-white resize-y"
+          placeholder={"לדוגמה:\nשירות מהיר ואדיב\nניסיון של מעל 10 שנים"}
+        />
+        <button
+          onClick={() => onSaveHighlights(text.split("\n"))}
+          disabled={busy || !dirty}
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold border-2 border-primary bg-primary text-white hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Save className="h-4 w-4" />
+          שמירה
+        </button>
+      </div>
+    </div>
   );
 }
 

@@ -125,9 +125,7 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
           {[
             { id: "PHOTOGRAPHER", label: "צלמי סטילס", emoji: "📸", active: true },
             { id: "VIDEOGRAPHER", label: "צלמי וידאו", emoji: "🎬", active: false },
-            { id: "BRIDAL_SUITE", label: "חדרי כלה", emoji: "🏛️", active: false },
             { id: "DJ", label: "תקליטנים", emoji: "🎧", active: false },
-            { id: "FLORIST", label: "עיצוב פרחוני", emoji: "💐", active: false },
             { id: "CATERING", label: "קייטרינג ושפים", emoji: "🍽️", active: false },
             { id: "VENUE", label: "אולמות ואירועים", emoji: "🏛️", active: false },
             { id: "HAIR_STYLIST", label: "מסרקות", emoji: "💇", active: false },

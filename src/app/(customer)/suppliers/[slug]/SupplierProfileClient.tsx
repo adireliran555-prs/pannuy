@@ -13,6 +13,8 @@ import {
   ChevronLeft,
   Phone,
   Award,
+  Check,
+  Sparkles,
 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
@@ -277,6 +279,32 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
                     onSelect={() => router.push(`/book/${supplier.id}`)}
                   />
                 ))}
+              </div>
+            </section>
+
+            {/* Why choose this supplier — admin-curated highlights */}
+            <section>
+              <div className="flex items-center gap-2 mb-4">
+                <Sparkles className="h-5 w-5 text-primary" />
+                <h2 className="text-xl font-black text-text-main">למה לבחור בספק הזה</h2>
+              </div>
+              <div className="bg-white rounded-2xl border border-border p-6">
+                {supplier.highlights && supplier.highlights.length > 0 ? (
+                  <ul className="space-y-3">
+                    {(supplier.highlights as string[]).map((highlight, i) => (
+                      <li key={i} className="flex items-start gap-3">
+                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary-light text-primary flex items-center justify-center mt-0.5">
+                          <Check className="h-4 w-4" />
+                        </span>
+                        <span className="text-text-main leading-relaxed">{highlight}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-text-muted leading-relaxed">
+                    מהטופ של ישראל — ספק/ית נבחר/ת ומאומת/ת בקטגוריה.
+                  </p>
+                )}
               </div>
             </section>
 

@@ -12,9 +12,15 @@ export async function PATCH(
   const { id } = await params;
   const body = await request.json().catch(() => ({}));
 
-  const data: { isVerified?: boolean; isActive?: boolean } = {};
+  const data: { isVerified?: boolean; isActive?: boolean; highlights?: string[] } = {};
   if (typeof body.isVerified === "boolean") data.isVerified = body.isVerified;
   if (typeof body.isActive === "boolean") data.isActive = body.isActive;
+  if (Array.isArray(body.highlights)) {
+    data.highlights = body.highlights
+      .filter((h: unknown): h is string => typeof h === "string")
+      .map((h: string) => h.trim())
+      .filter((h: string) => h.length > 0);
+  }
   if (Object.keys(data).length === 0) {
     return NextResponse.json({ success: false, error: "no fields" }, { status: 400 });
   }

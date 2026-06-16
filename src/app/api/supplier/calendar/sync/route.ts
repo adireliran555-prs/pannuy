@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireSupplierSession } from "@/lib/api-auth";
-import { getSupplierBusySlots } from "@/lib/google-calendar";
-import { invalidateAvailabilityCache } from "@/lib/availability";
-import { AvailabilitySource } from "@prisma/client";
+import {
+  registerCalendarWatch,
+  syncSupplierBusyDays,
+} from "@/lib/google-calendar";
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,58 +23,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const now = new Date();
-    const threeMonthsLater = new Date(now);
-    threeMonthsLater.setMonth(threeMonthsLater.getMonth() + 3);
+    const { synced } = await syncSupplierBusyDays(session.id);
 
-    const busySlots = await getSupplierBusySlots(
-      session.id,
-      now,
-      threeMonthsLater
-    );
-
-    // Upsert busy slots from Google into AvailabilitySlot
-    let upsertedCount = 0;
-    for (const busy of busySlots) {
-      const start = new Date(busy.start);
-      const end = new Date(busy.end);
-      const dateStr = start.toISOString().slice(0, 10);
-
-      // Map to HH:mm working slot format
-      const startTime = `${String(start.getHours()).padStart(2, "0")}:${String(start.getMinutes()).padStart(2, "0")}`;
-      const endTime = `${String(end.getHours()).padStart(2, "0")}:${String(end.getMinutes()).padStart(2, "0")}`;
-
-      await prisma.availabilitySlot.upsert({
-        where: {
-          supplierId_date_googleEventId: {
-            supplierId: session.id,
-            date: new Date(dateStr),
-            googleEventId: `${dateStr}-${startTime}`,
+    // Register a push-notification watch so future changes sync automatically.
+    // Best-effort — never fail the sync because of this.
+    try {
+      const { channelId, resourceId, expiry } = await registerCalendarWatch(
+        session.id
+      );
+      if (channelId) {
+        await prisma.supplier.update({
+          where: { id: session.id },
+          data: {
+            googleChannelId: channelId,
+            googleResourceId: resourceId,
+            googleChannelExpiry: expiry,
           },
-        },
-        create: {
-          supplierId: session.id,
-          date: new Date(dateStr),
-          startTime,
-          endTime,
-          isBlocked: true,
-          source: AvailabilitySource.GOOGLE,
-          googleEventId: `${dateStr}-${startTime}`,
-        },
-        update: {
-          startTime,
-          endTime,
-          syncedAt: new Date(),
-        },
-      });
-      upsertedCount++;
+        });
+      }
+    } catch (watchErr) {
+      console.error("[POST /api/supplier/calendar/sync] watch", watchErr);
     }
-
-    await invalidateAvailabilityCache(session.id);
 
     return NextResponse.json({
       success: true,
-      data: { synced: upsertedCount },
+      data: { synced },
     });
   } catch (err) {
     console.error("[POST /api/supplier/calendar/sync]", err);

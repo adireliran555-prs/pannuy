@@ -65,6 +65,10 @@ model Supplier {
   warningCount         Int                @default(0)
   subscriptionStatus   SubscriptionStatus @default(INACTIVE)
   subscriptionStartAt  DateTime?
+  highlights           String[]           // admin-curated praise points (replaces star reviews)
+  googleChannelId      String?            // Google Calendar push-notification channel
+  googleResourceId     String?
+  googleChannelExpiry  DateTime?
 
   photos             SupplierPhoto[]
   packages           SupplierPackage[]
@@ -76,9 +80,77 @@ model Supplier {
   profileViews       ProfileView[]
   earningsAsReferrer AffiliateEarning[] @relation("EarningsAsReferrer")
   earningsAsReceiver AffiliateEarning[] @relation("EarningsAsReceiver")
+  warnings           SupplierWarning[]
+  payments           PaymentTransaction[]
+  payoutRequests     PayoutRequest[]
 
   @@index([category])
   @@index([isActive, isVerified])
+}
+
+model SupplierWarning {
+  id         String   @id @default(uuid())
+  supplierId String
+  reasonHe   String   @db.Text
+  createdAt  DateTime @default(now())
+
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@index([supplierId])
+}
+
+model PaymentTransaction {
+  id          String        @id @default(uuid())
+  supplierId  String
+  type        PaymentType
+  amountIls   Int
+  status      PaymentStatus @default(PENDING)
+  provider    String?       // e.g. "payplus"
+  providerRef String?       // gateway transaction id
+  meetingId   String?       // for deposit charges
+  note        String?
+  createdAt   DateTime      @default(now())
+  settledAt   DateTime?
+
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@index([supplierId])
+  @@index([type, status])
+}
+
+model PayoutRequest {
+  id          String       @id @default(uuid())
+  supplierId  String
+  amountIls   Int
+  status      PayoutStatus @default(PENDING)
+  note        String?
+  createdAt   DateTime     @default(now())
+  processedAt DateTime?
+
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@index([supplierId])
+  @@index([status])
+}
+
+enum PaymentType {
+  SUBSCRIPTION
+  DEPOSIT
+  COMMISSION
+  PAYOUT
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum PayoutStatus {
+  PENDING
+  APPROVED
+  PAID
+  REJECTED
 }
 
 enum Category {

@@ -15,6 +15,7 @@ import {
   Globe,
   Store,
   ExternalLink,
+  Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +25,7 @@ const NAV = [
   { href: "/admin/customers", label: "לקוחות", icon: Users },
   { href: "/admin/meetings", label: "פגישות", icon: CalendarCheck },
   { href: "/admin/reviews", label: "ביקורות", icon: Star },
+  { href: "/admin/payouts", label: "משיכות", icon: Wallet },
   { href: "/admin/activity", label: "פעילות", icon: Activity },
 ];
 

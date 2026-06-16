@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { requireSupplierSession } from "@/lib/api-auth";
 import { createCalendarEvent } from "@/lib/google-calendar";
 import { invalidateAvailabilityCache } from "@/lib/availability";
+import { chargeDeposit } from "@/lib/payments";
 
 export async function PATCH(
   request: NextRequest,
@@ -76,6 +77,24 @@ export async function PATCH(
       }
     }
 
+    // Attempt to charge the deposit on confirm. Non-fatal: a failure must not
+    // block confirmation — we record the PaymentTransaction as PENDING instead.
+    // Package price is not reliably known here, so we use 0 as a placeholder.
+    const depositAmountIls = 0;
+    let depositResult: { ok: boolean; providerRef?: string } = { ok: false };
+    if (action === "confirm") {
+      try {
+        depositResult = await chargeDeposit({
+          amountIls: depositAmountIls,
+          meetingId: meeting.id,
+          customerName: meeting.customer.name,
+        });
+      } catch (payErr) {
+        console.warn("[supplier/meetings/[id]] chargeDeposit failed:", payErr);
+        // Non-fatal — record as PENDING below.
+      }
+    }
+
     const updated = await prisma.$transaction(async (tx) => {
       const updatedMeeting = await tx.meeting.update({
         where: { id },
@@ -109,6 +128,22 @@ export async function PATCH(
             meetingId: meeting.id,
             amountIls: 300,
             status: "CONFIRMED",
+          },
+        });
+      }
+
+      // Record a deposit payment transaction on confirm
+      if (action === "confirm") {
+        await tx.paymentTransaction.create({
+          data: {
+            supplierId: session.id,
+            type: "DEPOSIT",
+            amountIls: depositAmountIls,
+            status: depositResult.ok ? "COMPLETED" : "PENDING",
+            provider: "PAYPLUS",
+            providerRef: depositResult.providerRef ?? null,
+            meetingId: meeting.id,
+            ...(depositResult.ok ? { settledAt: new Date() } : {}),
           },
         });
       }

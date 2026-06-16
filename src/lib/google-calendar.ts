@@ -1,6 +1,8 @@
 import { google } from "googleapis";
 import { OAuth2Client } from "google-auth-library";
+import { AvailabilitySource } from "@prisma/client";
 import prisma from "@/lib/prisma";
+import { invalidateAvailabilityCache } from "@/lib/availability";
 
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID ?? "";
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET ?? "";
@@ -135,6 +137,220 @@ export async function getSupplierBusySlots(
     .map((b) => ({ start: b.start!, end: b.end! }));
 }
 
+// ─── Busy days (all-day + timed events) ───────────────────────────────────────
+
+export async function getSupplierBusyDays(
+  supplierId: string,
+  startDate: Date,
+  endDate: Date
+): Promise<{ dates: string[]; timed: { start: string; end: string }[] }> {
+  const oauth2Client = await getSupplierOAuthClient(supplierId);
+  const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+
+  const supplier = await prisma.supplier.findUniqueOrThrow({
+    where: { id: supplierId },
+    select: { googleCalendarId: true },
+  });
+
+  const calendarId = supplier.googleCalendarId ?? "primary";
+
+  const res = await calendar.events.list({
+    calendarId,
+    timeMin: startDate.toISOString(),
+    timeMax: endDate.toISOString(),
+    singleEvents: true,
+    orderBy: "startTime",
+    maxResults: 2500,
+  });
+
+  const dates = new Set<string>();
+  const timed: { start: string; end: string }[] = [];
+
+  for (const event of res.data.items ?? []) {
+    // "transparent" = "free" in Google → must NOT block.
+    if (event.transparency === "transparent") continue;
+
+    const startDateStr = event.start?.date;
+    const endDateStr = event.end?.date;
+
+    if (startDateStr) {
+      // All-day event. Google's `end.date` is exclusive.
+      const cursor = new Date(`${startDateStr}T00:00:00Z`);
+      const endExclusive = endDateStr
+        ? new Date(`${endDateStr}T00:00:00Z`)
+        : new Date(cursor.getTime() + 24 * 60 * 60 * 1000);
+
+      while (cursor < endExclusive) {
+        dates.add(cursor.toISOString().slice(0, 10));
+        cursor.setUTCDate(cursor.getUTCDate() + 1);
+      }
+      continue;
+    }
+
+    const startDateTime = event.start?.dateTime;
+    const endDateTime = event.end?.dateTime;
+    if (startDateTime && endDateTime) {
+      timed.push({ start: startDateTime, end: endDateTime });
+    }
+  }
+
+  return { dates: Array.from(dates), timed };
+}
+
+// ─── Sync busy days into AvailabilitySlot (shared helper) ──────────────────────
+
+export async function syncSupplierBusyDays(
+  supplierId: string
+): Promise<{ synced: number }> {
+  const now = new Date();
+  const threeMonthsLater = new Date(now);
+  threeMonthsLater.setMonth(threeMonthsLater.getMonth() + 3);
+
+  const { dates, timed } = await getSupplierBusyDays(
+    supplierId,
+    now,
+    threeMonthsLater
+  );
+
+  let upsertedCount = 0;
+
+  // All-day events block the entire day.
+  for (const date of dates) {
+    const googleEventId = `allday-${date}`;
+    await prisma.availabilitySlot.upsert({
+      where: {
+        supplierId_date_googleEventId: {
+          supplierId,
+          date: new Date(date),
+          googleEventId,
+        },
+      },
+      create: {
+        supplierId,
+        date: new Date(date),
+        startTime: "00:00",
+        endTime: "23:59",
+        isBlocked: true,
+        source: AvailabilitySource.GOOGLE,
+        googleEventId,
+      },
+      update: {
+        startTime: "00:00",
+        endTime: "23:59",
+        syncedAt: new Date(),
+      },
+    });
+    upsertedCount++;
+  }
+
+  // Timed events block their specific slot.
+  for (const slot of timed) {
+    const start = new Date(slot.start);
+    const end = new Date(slot.end);
+    const dateStr = start.toISOString().slice(0, 10);
+
+    const startTime = `${String(start.getHours()).padStart(2, "0")}:${String(start.getMinutes()).padStart(2, "0")}`;
+    const endTime = `${String(end.getHours()).padStart(2, "0")}:${String(end.getMinutes()).padStart(2, "0")}`;
+    const googleEventId = `${dateStr}-${startTime}`;
+
+    await prisma.availabilitySlot.upsert({
+      where: {
+        supplierId_date_googleEventId: {
+          supplierId,
+          date: new Date(dateStr),
+          googleEventId,
+        },
+      },
+      create: {
+        supplierId,
+        date: new Date(dateStr),
+        startTime,
+        endTime,
+        isBlocked: true,
+        source: AvailabilitySource.GOOGLE,
+        googleEventId,
+      },
+      update: {
+        startTime,
+        endTime,
+        syncedAt: new Date(),
+      },
+    });
+    upsertedCount++;
+  }
+
+  await invalidateAvailabilityCache(supplierId);
+
+  return { synced: upsertedCount };
+}
+
+// ─── Push-notification watch (register / stop) ─────────────────────────────────
+
+export async function registerCalendarWatch(
+  supplierId: string
+): Promise<{
+  channelId: string | null;
+  resourceId: string | null;
+  expiry: Date | null;
+}> {
+  try {
+    const oauth2Client = await getSupplierOAuthClient(supplierId);
+    const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+
+    const supplier = await prisma.supplier.findUniqueOrThrow({
+      where: { id: supplierId },
+      select: { googleCalendarId: true },
+    });
+
+    const calendarId = supplier.googleCalendarId ?? "primary";
+    const channelId = `watch-${supplierId}`;
+    const baseUrl = process.env.GOOGLE_WEBHOOK_URL ?? "https://pannuy.vercel.app";
+
+    const res = await calendar.events.watch({
+      calendarId,
+      requestBody: {
+        id: channelId,
+        type: "web_hook",
+        address: `${baseUrl}/api/supplier/calendar/webhook`,
+      },
+    });
+
+    return {
+      channelId,
+      resourceId: res.data.resourceId ?? null,
+      expiry: res.data.expiration
+        ? new Date(Number(res.data.expiration))
+        : null,
+    };
+  } catch (err) {
+    console.error("[registerCalendarWatch]", err);
+    return { channelId: null, resourceId: null, expiry: null };
+  }
+}
+
+export async function stopCalendarWatch(supplierId: string): Promise<void> {
+  try {
+    const supplier = await prisma.supplier.findUniqueOrThrow({
+      where: { id: supplierId },
+      select: { googleChannelId: true, googleResourceId: true },
+    });
+
+    if (!supplier.googleChannelId || !supplier.googleResourceId) return;
+
+    const oauth2Client = await getSupplierOAuthClient(supplierId);
+    const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+
+    await calendar.channels.stop({
+      requestBody: {
+        id: supplier.googleChannelId,
+        resourceId: supplier.googleResourceId,
+      },
+    });
+  } catch (err) {
+    console.error("[stopCalendarWatch]", err);
+  }
+}
+
 // ─── Meeting event details ─────────────────────────────────────────────────────
 
 interface MeetingEventDetails {
@@ -167,7 +383,7 @@ export async function createCalendarEvent(
   const res = await calendar.events.insert({
     calendarId,
     requestBody: {
-      summary: `פגישה עם ${meeting.customerName} - פנוי`,
+      summary: `סגור מהאתר: ${meeting.meetingType} - ${meeting.customerName} (טלפון: ${meeting.customerPhone})`,
       description: [
         `סוג פגישה: ${meeting.meetingType}`,
         `טלפון: ${meeting.customerPhone}`,
