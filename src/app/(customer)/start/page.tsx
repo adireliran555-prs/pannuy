@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -29,7 +28,6 @@ const STEPS = [
 ];
 
 export default function StartPage() {
-  const router = useRouter();
   const [stage, setStage] = useState<"form" | "otp">("form");
   const [otp, setOtp] = useState("");
   const [otpError, setOtpError] = useState("");
@@ -99,11 +97,15 @@ export default function StartPage() {
           return;
         }
         const user = json.user;
-        if (user?.weddingDate) {
-          router.push("/dashboard/meetings");
-        } else {
-          router.push("/start/wedding");
-        }
+        // Hard navigation so the session cookie is sent and middleware
+        // re-evaluates server-side (router.push can reuse a pre-auth prefetch).
+        window.location.href = user?.weddingDate
+          ? "/dashboard/meetings"
+          : "/start/wedding";
+      } catch {
+        setOtpError("שגיאת תקשורת. נסו שוב.");
+        setOtp("");
+        setOtpKey((k) => k + 1);
       } finally {
         setIsLoading(false);
       }

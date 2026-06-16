@@ -1,14 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Shield, ArrowLeft } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import OtpInput from "@/components/ui/OtpInput";
 
 export default function AdminLoginPage() {
-  const router = useRouter();
   const [step, setStep] = useState<"phone" | "otp">("phone");
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
@@ -54,7 +52,9 @@ export default function AdminLoginPage() {
       if (!res.ok || !j.success) {
         setError(j.error ?? "קוד שגוי");
       } else {
-        router.push("/admin");
+        // Hard navigation so the admin cookie is sent and middleware
+        // re-evaluates server-side.
+        window.location.href = "/admin";
       }
     } finally {
       setLoading(false);
