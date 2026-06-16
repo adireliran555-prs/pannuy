@@ -266,7 +266,7 @@ export default function MeetingsPage() {
         {activeTab === "upcoming" && !isLoading && meetings.length === 0 && (
           <div className="bg-gradient-to-br from-rose-50 to-amber-50 rounded-2xl p-6 text-center border border-border">
             <p className="text-text-main font-semibold mb-2">
-              מוכנה להתחיל לחפש? 📸
+              מוכנים להתחיל לחפש? 📸
             </p>
             <p className="text-text-muted text-sm mb-4">
               גלו ספקים פנויים בתאריך ובאזור שלכם

@@ -271,7 +271,7 @@ export default async function HomePage() {
           <div className="text-center mb-10">
             <span className="text-sm font-bold text-primary uppercase tracking-widest">השראה</span>
             <h2 className="text-3xl font-black text-text-main mt-2">חתונות אמיתיות</h2>
-            <p className="text-text-muted mt-2">צולמו על ידי הצלמ.ות שלנו</p>
+            <p className="text-text-muted mt-2">צולמו על ידי הצלמים שלנו</p>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {[
@@ -343,7 +343,7 @@ export default async function HomePage() {
       <section className="py-24 px-6 bg-gradient-to-br from-rose-50 to-amber-50">
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="text-3xl sm:text-5xl font-black text-text-main mb-4">
-            מוכנה להתחיל?
+            מוכנים להתחיל?
           </h2>
           <p className="text-lg text-text-muted mb-8">
             הצטרפו לאלפי זוגות שמצאו את הספקים המושלמים שלהם דרך פנוי

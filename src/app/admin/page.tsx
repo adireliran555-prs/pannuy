@@ -36,12 +36,17 @@ const TF_LABEL: Record<Timeframe, string> = {
 };
 
 const CATEGORY_LABEL: Record<string, string> = {
-  PHOTOGRAPHER: "צלמ.ות",
+  PHOTOGRAPHER: "צלמים",
   VIDEOGRAPHER: "וידאו",
-  BRIDAL_SUITE: "התארגנות",
-  DJ: "DJ",
+  BRIDAL_SUITE: "חדרי כלה",
+  DJ: "תקליטנים",
   FLORIST: "פרחים",
   CATERING: "קייטרינג",
+  VENUE: "אולמות",
+  HAIR_STYLIST: "מסרקות",
+  MAKEUP_ARTIST: "מאפרות",
+  PHOTO_BOOTH: "מגנטים",
+  EVENT_PRODUCER: "הפקה",
 };
 
 const STATUS_LABEL: Record<string, string> = {

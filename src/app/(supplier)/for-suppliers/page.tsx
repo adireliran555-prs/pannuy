@@ -40,7 +40,7 @@ export default function ForSuppliersPage() {
 
         <div className="relative z-10 text-center px-6 max-w-3xl mx-auto">
           <span className="inline-block bg-primary/20 border border-primary/40 text-primary font-bold text-sm px-4 py-1.5 rounded-full mb-6">
-            לצלמ.ות חתונה
+            לצלמי חתונה
           </span>
           <h1 className="text-4xl sm:text-6xl font-black text-white leading-tight mb-4">
             הציגו את האמנות שלכם
@@ -257,7 +257,7 @@ export default function ForSuppliersPage() {
       <section className="py-24 px-6 bg-gradient-to-br from-amber-50 to-rose-50">
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="text-4xl sm:text-5xl font-black text-text-main mb-4">
-            מוכנה להתחיל?
+            מוכנים להתחיל?
           </h2>
           <p className="text-lg text-text-muted mb-8">
             הצטרפו לקהילת הספקים שלנו וקבלו גישה לאלפי זוגות חדשים בכל חודש
