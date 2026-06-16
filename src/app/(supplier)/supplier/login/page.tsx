@@ -28,6 +28,7 @@ export default function SupplierLoginPage() {
   const [phone, setPhone] = useState("");
   const [resendCooldown, setResendCooldown] = useState(0);
   const [otpKey, setOtpKey] = useState(0);
+  const [devOtp, setDevOtp] = useState<string | null>(null);
 
   const RESEND_COOLDOWN = 45;
 
@@ -79,6 +80,7 @@ export default function SupplierLoginPage() {
       setPhone(data.phone);
       setStage("otp");
       setResendCooldown(RESEND_COOLDOWN);
+      if (json.devOtp) setDevOtp(json.devOtp);
     } finally {
       setIsLoading(false);
     }
@@ -172,6 +174,12 @@ export default function SupplierLoginPage() {
               </div>
 
               <div className="flex flex-col items-center gap-4 py-4">
+                {devOtp && (
+                  <div className="w-full text-center bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 text-sm text-amber-800">
+                    מצב פיתוח · קוד אימות:{" "}
+                    <span dir="ltr" className="font-black tracking-widest">{devOtp}</span>
+                  </div>
+                )}
                 <OtpInput
                   key={otpKey}
                   value={otp}

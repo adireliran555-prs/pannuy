@@ -29,6 +29,12 @@ export default function AdminLoginPage() {
         setError(j.error ?? "שגיאה");
       } else {
         setStep("otp");
+        // Dev mode (no SMS configured): the code comes back in the response —
+        // fill it in and log straight in.
+        if (j.devOtp) {
+          setOtp(j.devOtp);
+          verify(j.devOtp);
+        }
       }
     } finally {
       setLoading(false);

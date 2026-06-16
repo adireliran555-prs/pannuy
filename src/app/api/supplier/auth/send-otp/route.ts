@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { generateOtp, hashOtp } from "@/lib/auth";
-import { sendOtp } from "@/lib/sms";
+import { sendOtp, devOtpEchoEnabled } from "@/lib/sms";
 
 const OTP_EXPIRES_MINUTES = parseInt(
   process.env.OTP_EXPIRES_MINUTES ?? "5",
@@ -52,7 +52,10 @@ export async function POST(request: NextRequest) {
       sendOtp(phone, otp),
     ]);
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({
+      success: true,
+      ...(devOtpEchoEnabled() ? { devOtp: otp } : {}),
+    });
   } catch (err) {
     console.error("[POST /api/supplier/auth/send-otp]", err);
     return NextResponse.json(

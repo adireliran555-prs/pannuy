@@ -5,12 +5,11 @@ import useSWR, { mutate } from "swr";
 import SupplierDashboardLayout from "@/components/common/SupplierDashboardLayout";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
 import EmptyState from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { formatHebrewDate } from "@/lib/utils";
 
-type TransactionType = "EARNED" | "OWED";
+type TransactionType = "EARNED" | "COMMISSION";
 type TransactionStatus = string;
 type PayoutStatus = "PENDING" | "APPROVED" | "PAID" | "REJECTED";
 
@@ -25,10 +24,9 @@ interface Transaction {
 }
 
 interface FinancesData {
-  netBalance: number;
   totalEarned: number;
-  totalOwed: number;
   withdrawableBalance: number;
+  commissionOwed: number;
   recentTransactions: Transaction[];
 }
 
@@ -65,8 +63,8 @@ const TRANSACTION_TYPE_MAP: Record<
   TransactionType,
   { label: string; className: string }
 > = {
-  EARNED: { label: "הרוויח", className: "text-green-600 font-semibold" },
-  OWED: { label: "חייב", className: "text-red-600 font-semibold" },
+  EARNED: { label: "עמלת הפניה", className: "text-green-600 font-semibold" },
+  COMMISSION: { label: "עמלת פלטפורמה", className: "text-red-600 font-semibold" },
 };
 
 const PAYOUT_STATUS_MAP: Record<
@@ -94,38 +92,26 @@ export default function SupplierFinancesPage() {
 
   const withdrawableBalance = data?.withdrawableBalance ?? 0;
 
-  const [showPayoutForm, setShowPayoutForm] = useState(false);
-  const [payoutAmount, setPayoutAmount] = useState("");
   const [payoutError, setPayoutError] = useState<string | null>(null);
   const [payoutSubmitting, setPayoutSubmitting] = useState(false);
   const [payoutSuccess, setPayoutSuccess] = useState(false);
 
+  // A payout withdraws the full available balance (the server claims the exact
+  // set of earnings), so there's no amount to enter.
   async function submitPayout() {
     setPayoutError(null);
-    const amount = Number(payoutAmount);
-    if (!payoutAmount || Number.isNaN(amount) || amount <= 0) {
-      setPayoutError("נא להזין סכום תקין");
-      return;
-    }
-    if (amount > withdrawableBalance) {
-      setPayoutError("הסכום גבוה מהיתרה למשיכה");
-      return;
-    }
-
     setPayoutSubmitting(true);
     try {
       const res = await fetch(PAYOUTS_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amountIls: amount }),
+        body: JSON.stringify({}),
       });
       if (!res.ok) {
         setPayoutError("שליחת הבקשה נכשלה, נסו שוב");
         return;
       }
       setPayoutSuccess(true);
-      setPayoutAmount("");
-      setShowPayoutForm(false);
       await Promise.all([mutate(FINANCES_URL), mutate(PAYOUTS_URL)]);
     } catch {
       setPayoutError("שליחת הבקשה נכשלה, נסו שוב");
@@ -136,18 +122,13 @@ export default function SupplierFinancesPage() {
 
   const statCards = [
     {
-      label: "יתרת עמלות",
-      value: data ? formatILS(data.netBalance) : "—",
-      colorClass: "text-primary",
-    },
-    {
-      label: "עמלות שהרווחתם",
+      label: "סה״כ הרווחתם מהפניות",
       value: data ? formatILS(data.totalEarned) : "—",
       colorClass: "text-green-600",
     },
     {
-      label: "עמלות שחייבים לאחרים",
-      value: data ? formatILS(data.totalOwed) : "—",
+      label: "עמלת פלטפורמה לתשלום",
+      value: data ? formatILS(data.commissionOwed) : "—",
       colorClass: "text-red-600",
     },
   ];
@@ -181,24 +162,19 @@ export default function SupplierFinancesPage() {
                 </p>
               )}
               <p className="text-xs text-white/70 max-w-md">
-                עמלות שהרווחתם, פחות עמלות ששילמתם
+                עמלות הפניה שאושרו וטרם נמשכו
               </p>
             </div>
-            {!showPayoutForm && (
-              <Button
-                variant="secondary"
-                size="sm"
-                disabled={isLoading || payoutDisabled}
-                className="bg-white text-primary border-white hover:bg-white/90 shrink-0"
-                onClick={() => {
-                  setPayoutSuccess(false);
-                  setPayoutError(null);
-                  setShowPayoutForm(true);
-                }}
-              >
-                בקשת משיכה
-              </Button>
-            )}
+            <Button
+              variant="secondary"
+              size="sm"
+              isLoading={payoutSubmitting}
+              disabled={isLoading || payoutDisabled}
+              className="bg-white text-primary border-white hover:bg-white/90 shrink-0"
+              onClick={submitPayout}
+            >
+              משכו {formatILS(withdrawableBalance)}
+            </Button>
           </div>
 
           {payoutSuccess && (
@@ -206,54 +182,15 @@ export default function SupplierFinancesPage() {
               בקשת המשיכה נשלחה ✓
             </p>
           )}
-
-          {showPayoutForm && (
-            <div className="bg-white/10 rounded-xl p-4 space-y-3">
-              <div>
-                <Input
-                  ltr
-                  type="number"
-                  inputMode="numeric"
-                  min={1}
-                  max={withdrawableBalance}
-                  placeholder={`עד ${formatILS(withdrawableBalance)}`}
-                  value={payoutAmount}
-                  onChange={(e) => {
-                    setPayoutAmount(e.target.value);
-                    setPayoutError(null);
-                  }}
-                  error={payoutError ?? undefined}
-                />
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  isLoading={payoutSubmitting}
-                  className="bg-white text-primary border-white hover:bg-white/90"
-                  onClick={submitPayout}
-                >
-                  אישור
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-white hover:bg-white/15"
-                  onClick={() => {
-                    setShowPayoutForm(false);
-                    setPayoutAmount("");
-                    setPayoutError(null);
-                  }}
-                >
-                  ביטול
-                </Button>
-              </div>
-            </div>
+          {payoutError && (
+            <p className="text-sm font-semibold bg-white/15 rounded-xl px-4 py-2">
+              {payoutError}
+            </p>
           )}
         </div>
 
         {/* Stat cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {statCards.map(({ label, value, colorClass }) => (
             <div
               key={label}

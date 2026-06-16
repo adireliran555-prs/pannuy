@@ -5,6 +5,10 @@
 
 export const MONTHLY_FEE_ILS = 1000;
 
+// Flat platform commission a supplier owes us for each job completed through the
+// platform. Placeholder until booking captures a job price (then make it a %).
+export const PLATFORM_COMMISSION_ILS = 200;
+
 // Payplus REST API base. When PAYPLUS_API_KEY is configured these functions would
 // POST to the relevant endpoints under this base.
 const PAYPLUS_API_BASE = "https://restapi.payplus.co.il/api/v1.0/";

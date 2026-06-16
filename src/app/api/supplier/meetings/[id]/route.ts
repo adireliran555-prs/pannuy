@@ -3,7 +3,7 @@ import prisma from "@/lib/prisma";
 import { requireSupplierSession } from "@/lib/api-auth";
 import { createCalendarEvent, deleteCalendarEvent } from "@/lib/google-calendar";
 import { invalidateAvailabilityCache } from "@/lib/availability";
-import { chargeDeposit } from "@/lib/payments";
+import { chargeDeposit, PLATFORM_COMMISSION_ILS } from "@/lib/payments";
 
 export async function PATCH(
   request: NextRequest,
@@ -73,6 +73,19 @@ export async function PATCH(
         const updatedMeeting = await tx.meeting.update({
           where: { id },
           data: { status: "COMPLETED", ...(notes ? { supplierNotes: notes } : {}) },
+        });
+
+        // The performing supplier owes us a platform commission for this job.
+        // Recorded as PENDING; collected once a payment provider is wired.
+        await tx.paymentTransaction.create({
+          data: {
+            supplierId: session.id,
+            type: "COMMISSION",
+            amountIls: PLATFORM_COMMISSION_ILS,
+            status: "PENDING",
+            meetingId: id,
+            note: "עמלת פלטפורמה לאירוע שהושלם",
+          },
         });
 
         const earning = await tx.affiliateEarning.findUnique({

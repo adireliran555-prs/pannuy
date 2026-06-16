@@ -59,34 +59,13 @@ export async function PATCH(
       });
 
       if (isNewlyPaid) {
-        // Settle the supplier's CONFIRMED affiliate earnings (as referrer) up to
-        // the payout amount, oldest first, flipping them to PAID.
-        const confirmed = await tx.affiliateEarning.findMany({
-          where: {
-            referringSupplierId: updated.supplierId,
-            status: "CONFIRMED",
-          },
-          orderBy: { createdAt: "asc" },
-          select: { id: true, amountIls: true },
+        // Settle exactly the earnings this payout claimed (payoutRequestId === id).
+        // Because a payout claims a whole set of CONFIRMED earnings, this matches
+        // the payout amount precisely — no drift, no stranded rows.
+        await tx.affiliateEarning.updateMany({
+          where: { payoutRequestId: id, status: "CONFIRMED" },
+          data: { status: "PAID", paidAt: now },
         });
-
-        let remaining = updated.amountIls;
-        const toSettle: string[] = [];
-        for (const earning of confirmed) {
-          if (remaining <= 0) break;
-          // Only settle a row that fits whole within the remaining amount; never
-          // partially settle an earning.
-          if (earning.amountIls > remaining) continue;
-          toSettle.push(earning.id);
-          remaining -= earning.amountIls;
-        }
-
-        if (toSettle.length > 0) {
-          await tx.affiliateEarning.updateMany({
-            where: { id: { in: toSettle } },
-            data: { status: "PAID", paidAt: now },
-          });
-        }
 
         // Record the disbursement as a completed PAYOUT transaction.
         await tx.paymentTransaction.create({
@@ -97,6 +76,14 @@ export async function PATCH(
             status: "COMPLETED",
             settledAt: now,
           },
+        });
+      }
+
+      // Rejecting a payout releases its claimed earnings back to withdrawable.
+      if (status === "REJECTED" && current.status !== "PAID") {
+        await tx.affiliateEarning.updateMany({
+          where: { payoutRequestId: id },
+          data: { payoutRequestId: null },
         });
       }
 

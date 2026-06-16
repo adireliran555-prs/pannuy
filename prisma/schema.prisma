@@ -129,7 +129,8 @@ model PayoutRequest {
   createdAt   DateTime     @default(now())
   processedAt DateTime?
 
-  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  supplier Supplier           @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  earnings AffiliateEarning[]
 
   @@index([supplierId])
   @@index([status])
@@ -296,15 +297,18 @@ model AffiliateEarning {
   meetingId           String          @unique
   amountIls           Int
   status              AffiliateStatus @default(PENDING)
+  payoutRequestId     String?         // set when claimed by a payout request
   createdAt           DateTime        @default(now())
   paidAt              DateTime?
 
-  referringSupplier Supplier @relation("EarningsAsReferrer", fields: [referringSupplierId], references: [id])
-  receivingSupplier Supplier @relation("EarningsAsReceiver", fields: [receivingSupplierId], references: [id])
-  meeting           Meeting  @relation(fields: [meetingId], references: [id])
+  referringSupplier Supplier       @relation("EarningsAsReferrer", fields: [referringSupplierId], references: [id])
+  receivingSupplier Supplier       @relation("EarningsAsReceiver", fields: [receivingSupplierId], references: [id])
+  meeting           Meeting        @relation(fields: [meetingId], references: [id])
+  payoutRequest     PayoutRequest? @relation(fields: [payoutRequestId], references: [id])
 
   @@index([referringSupplierId])
   @@index([receivingSupplierId])
+  @@index([payoutRequestId])
 }
 
 enum AffiliateStatus {

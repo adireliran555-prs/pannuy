@@ -51,35 +51,38 @@ export async function POST(request: NextRequest) {
     if (error) return error;
 
     const supplierId = session.id;
-    const body = await request.json();
-    const { amountIls } = body as { amountIls?: number };
 
-    if (typeof amountIls !== "number" || !Number.isFinite(amountIls) || amountIls <= 0) {
-      return NextResponse.json(
-        { success: false, error: "סכום המשיכה חייב להיות גדול מאפס" },
-        { status: 400 }
-      );
-    }
-
-    // Recompute the balance and create the request inside ONE Serializable
-    // transaction so concurrent payout requests cannot double-spend the same
-    // balance (READ COMMITTED would let both reads see the pre-insert balance).
-    // Retry a few times on serialization failure (40001 / P2034).
+    // A payout withdraws the FULL available balance and claims exactly the
+    // CONFIRMED, unclaimed earnings that make it up — so the payout amount is
+    // always a whole set of earnings (no arbitrary amounts, no settlement drift).
+    // Done in ONE Serializable transaction so concurrent requests can't
+    // double-claim; retried on serialization failure (P2034).
     const runTxn = () =>
       prisma.$transaction(
         async (tx) => {
-          const { withdrawableBalance } = await computeSupplierBalance(
-            tx,
-            supplierId
-          );
+          const claimable = await tx.affiliateEarning.findMany({
+            where: {
+              referringSupplierId: supplierId,
+              status: "CONFIRMED",
+              payoutRequestId: null,
+            },
+            select: { id: true, amountIls: true },
+          });
 
-          if (amountIls > withdrawableBalance) {
+          const total = claimable.reduce((s, e) => s + e.amountIls, 0);
+          if (total <= 0) {
             return { ok: false as const };
           }
 
           const payout = await tx.payoutRequest.create({
-            data: { supplierId, amountIls, status: "PENDING" },
+            data: { supplierId, amountIls: total, status: "PENDING" },
             select: { id: true, amountIls: true, status: true, createdAt: true },
+          });
+
+          // Claim the earnings for this payout.
+          await tx.affiliateEarning.updateMany({
+            where: { id: { in: claimable.map((e) => e.id) } },
+            data: { payoutRequestId: payout.id },
           });
 
           return { ok: true as const, payout };
@@ -108,7 +111,7 @@ export async function POST(request: NextRequest) {
 
     if (!result || !result.ok) {
       return NextResponse.json(
-        { success: false, error: "סכום המשיכה גבוה מהיתרה הזמינה" },
+        { success: false, error: "אין יתרה זמינה למשיכה" },
         { status: 400 }
       );
     }
