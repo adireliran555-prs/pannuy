@@ -44,6 +44,13 @@ export async function POST(request: NextRequest) {
     const hash = await hashOtp(otp);
     const expiresAt = new Date(Date.now() + OTP_EXPIRES_MINUTES * 60 * 1000);
 
+    // Invalidate any prior live codes so only the newest is valid — this makes
+    // the per-code verify-attempt lockout effectively per-phone.
+    await prisma.otp.updateMany({
+      where: { phone, used: false },
+      data: { used: true },
+    });
+
     await Promise.all([
       prisma.otp.create({ data: { phone, hash, expiresAt } }),
       sendOtp(phone, otp),

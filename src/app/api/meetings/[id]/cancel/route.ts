@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { requireCustomerSession } from "@/lib/api-auth";
 import { invalidateAvailabilityCache } from "@/lib/availability";
 import { deleteCalendarEvent } from "@/lib/google-calendar";
+import { israelWallClockToInstant } from "@/lib/timezone";
 
 const MIN_HOURS_BEFORE_CANCELLATION = 24;
 
@@ -51,9 +52,10 @@ export async function PATCH(
       );
     }
 
-    // Enforce 24h cancellation window
-    const meetingStart = new Date(
-      `${meeting.requestedDate.toISOString().slice(0, 10)}T${meeting.startTime}:00`
+    // Enforce 24h cancellation window — meeting time is Israel wall-clock.
+    const meetingStart = israelWallClockToInstant(
+      meeting.requestedDate.toISOString().slice(0, 10),
+      meeting.startTime
     );
     const hoursUntilMeeting =
       (meetingStart.getTime() - Date.now()) / (1000 * 60 * 60);
@@ -80,6 +82,13 @@ export async function PATCH(
           startTime: meeting.startTime,
           source: "MANUAL",
         },
+      });
+
+      // If this booking carried a referral, void its still-PENDING earning so it
+      // doesn't linger forever on the referrer's dashboard for a cancelled event.
+      await tx.affiliateEarning.updateMany({
+        where: { meetingId: id, status: "PENDING" },
+        data: { status: "CANCELLED" },
       });
 
       // Notify supplier

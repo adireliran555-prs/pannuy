@@ -89,7 +89,7 @@ export default function SupplierDashboardPage() {
   const completionItems = [
     {
       label: "Google Calendar מחובר",
-      done: !!profile?.googleRefreshToken,
+      done: !!profile?.googleCalendarId,
     },
     {
       label: "5+ תמונות הועלו",

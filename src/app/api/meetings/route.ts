@@ -37,6 +37,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate time format and ordering server-side (don't trust the client).
+    const timeRe = /^([01]\d|2[0-3]):[0-5]\d$/;
+    if (!timeRe.test(startTime) || !timeRe.test(endTime) || endTime <= startTime) {
+      return NextResponse.json(
+        { success: false, error: "זמני הפגישה לא תקינים" },
+        { status: 400 }
+      );
+    }
+
     const validMeetingType =
       meetingType && Object.values(MeetingType).includes(meetingType as MeetingType)
         ? (meetingType as MeetingType)
@@ -81,13 +90,16 @@ export async function POST(request: NextRequest) {
     try {
       meeting = await prisma.$transaction(
         async (tx) => {
-          // Re-check slot availability in DB (not cache) inside the tx.
+          // Re-check availability inside the tx with an OVERLAP test so a
+          // covering block — a full-day block (00:00–23:59) or a multi-hour
+          // block — also rejects the booking, not just an exact start-time match.
           const existingBlock = await tx.availabilitySlot.findFirst({
             where: {
               supplierId,
               date: dateObj,
-              startTime,
               isBlocked: true,
+              startTime: { lte: startTime },
+              endTime: { gt: startTime },
             },
           });
 

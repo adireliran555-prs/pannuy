@@ -3,6 +3,7 @@ import { google } from "googleapis";
 import { OAuth2Client } from "google-auth-library";
 import { AvailabilitySource } from "@prisma/client";
 import prisma from "@/lib/prisma";
+import { jerusalemParts } from "@/lib/timezone";
 import { invalidateAvailabilityCache } from "@/lib/availability";
 
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID ?? "";
@@ -244,14 +245,15 @@ export async function syncSupplierBusyDays(
     upsertedCount++;
   }
 
-  // Timed events block their specific slot.
+  // Timed events block their specific slot. Read the event instants as Israel
+  // wall-clock (not the UTC server tz) so the correct local hour is blocked.
   for (const slot of timed) {
-    const start = new Date(slot.start);
-    const end = new Date(slot.end);
-    const dateStr = start.toISOString().slice(0, 10);
+    const startParts = jerusalemParts(new Date(slot.start));
+    const endParts = jerusalemParts(new Date(slot.end));
+    const dateStr = startParts.date;
 
-    const startTime = `${String(start.getHours()).padStart(2, "0")}:${String(start.getMinutes()).padStart(2, "0")}`;
-    const endTime = `${String(end.getHours()).padStart(2, "0")}:${String(end.getMinutes()).padStart(2, "0")}`;
+    const startTime = startParts.time;
+    const endTime = endParts.time;
     const googleEventId = `${dateStr}-${startTime}`;
 
     await prisma.availabilitySlot.upsert({

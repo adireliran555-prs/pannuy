@@ -1,13 +1,13 @@
 import { getCache, setCache, delCachePattern } from "@/lib/redis";
 import prisma from "@/lib/prisma";
 import { getSupplierBusySlots } from "@/lib/google-calendar";
+import { jerusalemParts, utcDateKey } from "@/lib/timezone";
 import { AvailabilityDay, TimeSlot } from "@/types";
 
 // ─── Working hours config (Israeli standard) ──────────────────────────────────
 
 const WORK_START_HOUR = 9; // 09:00
 const WORK_END_HOUR = 19; // last slot starts at 18:00, ends at 19:00
-const SLOT_DURATION_HOURS = 1;
 
 function generateWorkingSlots(): string[] {
   const slots: string[] = [];
@@ -18,6 +18,21 @@ function generateWorkingSlots(): string[] {
 }
 
 const ALL_WORKING_SLOTS = generateWorkingSlots();
+
+// "HH:mm" → decimal hour (e.g. "14:30" → 14.5; "23:59" → ~24)
+function toDecimalHour(hhmm: string): number {
+  const [h, m] = hhmm.split(":").map(Number);
+  return h + (m || 0) / 60;
+}
+
+// Every working slot whose [hour, hour+1) overlaps the block [start, end).
+// Handles full-day blocks (00:00–23:59), Google all-day, and 1-hour bookings.
+function workingSlotsCoveredBy(startDec: number, endDec: number): string[] {
+  return ALL_WORKING_SLOTS.filter((t) => {
+    const s = parseInt(t, 10);
+    return s < endDec && s + 1 > startDec;
+  });
+}
 
 // ─── Cache key helper ─────────────────────────────────────────────────────────
 
@@ -48,9 +63,11 @@ async function computeAvailabilityForMonth(
   year: number,
   month: number
 ): Promise<AvailabilityDay[]> {
-  // Build the full date range for the month
-  const firstDay = new Date(year, month - 1, 1);
-  const lastDay = new Date(year, month, 0); // day 0 = last day of previous month
+  // Build the full date range for the month in UTC (Vercel runs UTC; @db.Date
+  // rows come back as UTC midnight, so anchor everything to UTC to avoid an
+  // off-by-one day shift on non-UTC runtimes).
+  const firstDay = new Date(Date.UTC(year, month - 1, 1));
+  const lastDay = new Date(Date.UTC(year, month, 0)); // day 0 = last day of month
 
   // Fetch DB blocked slots for the month
   const dbBlocked = await prisma.availabilitySlot.findMany({
@@ -64,15 +81,21 @@ async function computeAvailabilityForMonth(
     },
   });
 
-  // Build a map: dateStr -> Set of blocked start times
+  // Build a map: dateStr -> Set of blocked working-slot times. Expand each
+  // blocked row across the working slots it covers, so a full-day block
+  // (00:00–23:59) or a multi-hour block hides every overlapped slot.
   const blockedByDate: Record<string, Set<string>> = {};
   for (const slot of dbBlocked) {
-    const dateStr = slot.date.toISOString().slice(0, 10);
+    const dateStr = slot.date.toISOString().slice(0, 10); // UTC-midnight @db.Date → correct date
     if (!blockedByDate[dateStr]) blockedByDate[dateStr] = new Set();
-    blockedByDate[dateStr].add(slot.startTime);
+    const covered = workingSlotsCoveredBy(
+      toDecimalHour(slot.startTime),
+      toDecimalHour(slot.endTime)
+    );
+    for (const t of covered) blockedByDate[dateStr].add(t);
   }
 
-  // Optionally overlay Google Calendar busy slots
+  // Optionally overlay Google Calendar busy slots (interpreted in Israel time)
   const supplier = await prisma.supplier.findUnique({
     where: { id: supplierId },
     select: { googleRefreshToken: true },
@@ -80,8 +103,8 @@ async function computeAvailabilityForMonth(
 
   if (supplier?.googleRefreshToken) {
     try {
-      const startOfMonth = new Date(year, month - 1, 1, 0, 0, 0);
-      const endOfMonth = new Date(year, month, 1, 0, 0, 0);
+      const startOfMonth = new Date(Date.UTC(year, month - 1, 1));
+      const endOfMonth = new Date(Date.UTC(year, month, 1));
       const busySlots = await getSupplierBusySlots(
         supplierId,
         startOfMonth,
@@ -89,21 +112,17 @@ async function computeAvailabilityForMonth(
       );
 
       for (const busy of busySlots) {
-        const busyStart = new Date(busy.start);
-        const busyEnd = new Date(busy.end);
-        // Mark all working slots that overlap with this busy period
-        const dateStr = busyStart.toISOString().slice(0, 10);
+        // Convert the absolute busy instants to Israel wall-clock so the right
+        // hour is blocked regardless of the server timezone.
+        const sp = jerusalemParts(new Date(busy.start));
+        const ep = jerusalemParts(new Date(busy.end));
+        const dateStr = sp.date;
+        const startDec = sp.hour + sp.minute / 60;
+        // If the busy period crosses midnight, block to end of this day.
+        const endDec = ep.date === sp.date ? ep.hour + ep.minute / 60 : 24;
         if (!blockedByDate[dateStr]) blockedByDate[dateStr] = new Set();
-
-        for (const slotTime of ALL_WORKING_SLOTS) {
-          const [slotHour] = slotTime.split(":").map(Number);
-          const slotStart = new Date(`${dateStr}T${slotTime}:00`);
-          const slotEnd = new Date(slotStart.getTime() + SLOT_DURATION_HOURS * 60 * 60 * 1000);
-          // Overlap check: slot starts before busy ends AND slot ends after busy starts
-          if (slotStart < busyEnd && slotEnd > busyStart) {
-            blockedByDate[dateStr].add(slotTime);
-          }
-          void slotHour; // suppress unused warning
+        for (const t of workingSlotsCoveredBy(startDec, endDec)) {
+          blockedByDate[dateStr].add(t);
         }
       }
     } catch (err) {
@@ -114,11 +133,10 @@ async function computeAvailabilityForMonth(
 
   // Build result
   const days: AvailabilityDay[] = [];
-  const daysInMonth = lastDay.getDate();
+  const daysInMonth = lastDay.getUTCDate();
 
   for (let day = 1; day <= daysInMonth; day++) {
-    const date = new Date(year, month - 1, day);
-    const dateStr = date.toISOString().slice(0, 10);
+    const dateStr = utcDateKey(year, month, day);
     const blocked = blockedByDate[dateStr] ?? new Set();
 
     const slots: TimeSlot[] = ALL_WORKING_SLOTS.map((time) => ({
