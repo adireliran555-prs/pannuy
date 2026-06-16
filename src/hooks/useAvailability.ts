@@ -1,38 +1,39 @@
 import useSWR from "swr";
-import { getDaysInMonth } from "@/lib/utils";
 
 interface DayAvailability {
   date: string; // YYYY-MM-DD
   isBlocked: boolean;
-  slots: string[]; // HH:mm
+  slots: string[]; // HH:mm — available times only
 }
 
+interface ApiTimeSlot {
+  time: string;
+  available: boolean;
+}
+
+interface ApiAvailabilityDay {
+  date: string;
+  slots: ApiTimeSlot[];
+}
+
+// Fetch real availability from the API. `month` is 0-based (JS convention);
+// the endpoint expects 1-based, so we add 1.
 async function fetchAvailability(
   supplierId: string,
   year: number,
   month: number
 ): Promise<DayAvailability[]> {
-  await new Promise((r) => setTimeout(r, 200));
+  const res = await fetch(
+    `/api/suppliers/${supplierId}/availability?year=${year}&month=${month + 1}`
+  );
+  if (!res.ok) throw new Error("Failed to load availability");
+  const json = await res.json();
+  const days: ApiAvailabilityDay[] = json.data ?? [];
 
-  const daysInMonth = getDaysInMonth(year, month);
-  const result: DayAvailability[] = [];
-
-  for (let day = 1; day <= daysInMonth; day++) {
-    const date = new Date(year, month, day);
-    const dayOfWeek = date.getDay();
-    // Block Saturdays for now as mock
-    const isBlocked = dayOfWeek === 6 || Math.random() < 0.15;
-
-    result.push({
-      date: `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
-      isBlocked,
-      slots: isBlocked
-        ? []
-        : ["10:00", "11:00", "12:00", "14:00", "15:00", "16:00", "17:00"],
-    });
-  }
-
-  return result;
+  return days.map((d) => {
+    const available = d.slots.filter((s) => s.available).map((s) => s.time);
+    return { date: d.date, isBlocked: available.length === 0, slots: available };
+  });
 }
 
 export function useAvailability(

@@ -2,14 +2,79 @@
 
 import { use, useState } from "react";
 import { useRouter } from "next/navigation";
+import useSWR from "swr";
 import Image from "next/image";
 import { Video, Phone, Users, ChevronRight, CheckCircle } from "lucide-react";
-import { MOCK_SUPPLIERS } from "@/lib/mock-data";
 import Button from "@/components/ui/Button";
 import StepProgress from "@/components/ui/StepProgress";
+import Spinner from "@/components/ui/Spinner";
 import AvailabilityCalendar from "@/components/common/AvailabilityCalendar";
 import { formatHebrewDate, formatPrice } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+
+const CATEGORY_LABELS: Record<string, string> = {
+  PHOTOGRAPHER: "צלם סטילס",
+  VIDEOGRAPHER: "צלם וידיאו",
+  BRIDAL_SUITE: "חדרי כלה",
+  DJ: "תקליטן",
+  FLORIST: "עיצוב פרחוני",
+  CATERING: "קייטרינג ושפים",
+  VENUE: "אולם/גן אירועים",
+  HAIR_STYLIST: "מסרקת",
+  MAKEUP_ARTIST: "מאפרת",
+  PHOTO_BOOTH: "צלם מגנטים",
+  EVENT_PRODUCER: "מפיק/הושבה",
+};
+
+// UI meeting-type id → Prisma MeetingType enum
+const MEETING_TYPE_ENUM: Record<string, string> = {
+  video: "VIDEO",
+  phone: "PHONE",
+  "in-person": "IN_PERSON",
+};
+
+const PLACEHOLDER_PHOTO =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1' height='1'%3E%3C/svg%3E";
+
+interface BookSupplier {
+  id: string;
+  name: string;
+  category: string;
+  city?: string | null;
+  profilePhoto: string;
+  priceFrom: number | null;
+}
+
+const supplierFetcher = async (url: string): Promise<BookSupplier | null> => {
+  const res = await fetch(url);
+  if (!res.ok) return null;
+  const json = await res.json();
+  const s = json.data ?? json.supplier ?? json;
+  if (!s?.id) return null;
+  const photos: { cloudinaryUrl: string; type: string }[] = s.photos ?? [];
+  const profilePhoto =
+    photos.find((p) => p.type === "PROFILE")?.cloudinaryUrl ??
+    photos[0]?.cloudinaryUrl ??
+    PLACEHOLDER_PHOTO;
+  return {
+    id: s.id,
+    name: s.name,
+    category: s.category,
+    city: s.city,
+    profilePhoto,
+    priceFrom: s.basePriceFrom ?? null,
+  };
+};
+
+// "14:00" → "15:00"
+function addOneHour(time: string): string {
+  const [h, m] = time.split(":").map(Number);
+  return `${String((h + 1) % 24).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+function toDateOnly(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
 
 const STEPS = [
   { label: "בחרו מועד" },
@@ -58,8 +123,11 @@ export default function BookPage({ params }: PageProps) {
   const { supplierId } = use(params);
   const router = useRouter();
 
-  const supplier =
-    MOCK_SUPPLIERS.find((s) => s.id === supplierId) || MOCK_SUPPLIERS[0];
+  const { data: supplier, isLoading: supplierLoading } = useSWR(
+    `/api/suppliers/${supplierId}`,
+    supplierFetcher,
+    { revalidateOnFocus: false }
+  );
 
   const [step, setStep] = useState(1);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -68,6 +136,7 @@ export default function BookPage({ params }: PageProps) {
   const [notes, setNotes] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleDateTimeSelect = (date: Date | null, time: string | null) => {
     setSelectedDate(date);
@@ -75,16 +144,64 @@ export default function BookPage({ params }: PageProps) {
   };
 
   const handleConfirm = async () => {
+    if (!supplier || !selectedDate || !selectedTime || !meetingType) return;
     setIsLoading(true);
+    setError(null);
     try {
-      // In production: POST /api/meetings
-      await new Promise((r) => setTimeout(r, 1000));
+      const res = await fetch("/api/meetings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          supplierId: supplier.id,
+          date: toDateOnly(selectedDate),
+          startTime: selectedTime,
+          endTime: addOneHour(selectedTime),
+          meetingType: MEETING_TYPE_ENUM[meetingType] ?? "VIDEO",
+          notes: notes || undefined,
+        }),
+      });
+
+      if (res.status === 401) {
+        router.push("/start");
+        return;
+      }
+      if (res.status === 409) {
+        setError("המועד נתפס בינתיים. בחרו מועד אחר.");
+        setStep(1);
+        return;
+      }
+      if (!res.ok) {
+        setError("משהו השתבש. נסו שוב.");
+        return;
+      }
+
       setSuccess(true);
       setTimeout(() => router.push("/dashboard/meetings"), 2000);
+    } catch {
+      setError("בעיית תקשורת. בדקו את החיבור ונסו שוב.");
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (supplierLoading) {
+    return (
+      <div className="min-h-screen bg-surface flex items-center justify-center">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  if (!supplier) {
+    return (
+      <div className="min-h-screen bg-surface flex items-center justify-center px-4">
+        <div className="text-center space-y-3">
+          <p className="text-lg font-bold text-text-main">הספק לא נמצא</p>
+          <Button onClick={() => router.push("/search")}>חזרה לחיפוש</Button>
+        </div>
+      </div>
+    );
+  }
 
   if (success) {
     return (
@@ -97,7 +214,7 @@ export default function BookPage({ params }: PageProps) {
             הפגישה נקבעה! 🎉
           </h1>
           <p className="text-text-muted">
-            {supplier.name} תאשר את הפגישה בהקדם.
+            הבקשה נשלחה — נאשר לכם בהקדם.
           </p>
           <p className="text-sm text-text-muted animate-pulse">
             מעבירים לפגישות שלכם...
@@ -123,10 +240,15 @@ export default function BookPage({ params }: PageProps) {
           </div>
           <div>
             <p className="font-bold text-text-main">{supplier.name}</p>
-            <p className="text-sm text-text-muted">{supplier.city} · {supplier.category}</p>
-            <p className="text-sm font-semibold text-primary">
-              החל מ-{formatPrice(supplier.priceFrom)}
+            <p className="text-sm text-text-muted">
+              {supplier.city ? `${supplier.city} · ` : ""}
+              {CATEGORY_LABELS[supplier.category] ?? supplier.category}
             </p>
+            {supplier.priceFrom != null && (
+              <p className="text-sm font-semibold text-primary">
+                החל מ-{formatPrice(supplier.priceFrom)}
+              </p>
+            )}
           </div>
         </div>
 
@@ -255,7 +377,9 @@ export default function BookPage({ params }: PageProps) {
                   </div>
                   <div>
                     <p className="font-bold text-text-main">{supplier.name}</p>
-                    <p className="text-sm text-text-muted">{supplier.category}</p>
+                    <p className="text-sm text-text-muted">
+                      {CATEGORY_LABELS[supplier.category] ?? supplier.category}
+                    </p>
                   </div>
                 </div>
 
@@ -293,6 +417,12 @@ export default function BookPage({ params }: PageProps) {
                 <CheckCircle className="h-4 w-4 inline ml-2" />
                 הפגישה חינמית ואינה מחייבת בחירה בספק
               </div>
+
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">
+                  {error}
+                </div>
+              )}
 
               <div className="flex gap-3">
                 <Button

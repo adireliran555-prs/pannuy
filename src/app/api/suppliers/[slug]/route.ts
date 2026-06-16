@@ -17,8 +17,8 @@ export async function GET(
       return NextResponse.json(cached);
     }
 
-    const supplier = await prisma.supplier.findUnique({
-      where: { slug },
+    const supplier = await prisma.supplier.findFirst({
+      where: { OR: [{ slug }, { id: slug }] },
       select: {
         id: true,
         slug: true,

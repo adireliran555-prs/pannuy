@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
 import { getAvailabilityForMonth } from "@/lib/availability";
 
 export async function GET(
@@ -19,7 +20,19 @@ export async function GET(
       );
     }
 
-    const availability = await getAvailabilityForMonth(slug, year, month);
+    // The path segment may be a slug or a raw supplier id — resolve to the id.
+    const supplier = await prisma.supplier.findFirst({
+      where: { OR: [{ id: slug }, { slug }] },
+      select: { id: true },
+    });
+    if (!supplier) {
+      return NextResponse.json(
+        { success: false, error: "ספק לא נמצא" },
+        { status: 404 }
+      );
+    }
+
+    const availability = await getAvailabilityForMonth(supplier.id, year, month);
     return NextResponse.json({ success: true, data: availability });
   } catch (err) {
     console.error("[GET /api/suppliers/[slug]/availability]", err);
