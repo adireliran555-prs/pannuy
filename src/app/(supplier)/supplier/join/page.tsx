@@ -126,6 +126,13 @@ export default function SupplierJoinPage() {
         setImportMsg(json.error ?? "הייבוא נכשל, נסו כתובת אחרת");
         return;
       }
+      if (json.data?.category && JOIN_CATEGORIES.includes(json.data.category)) {
+        setSelectedCategory(json.data.category);
+      }
+      if (json.data?.bioHe) setBio(json.data.bioHe);
+      if (Array.isArray(json.data?.serviceAreas) && json.data.serviceAreas.length > 0) {
+        setSelectedAreas(json.data.serviceAreas.filter((area: string) => SERVICE_AREAS.includes(area)));
+      }
       const imgs: string[] = json.data?.images ?? [];
       setPhotos((prev) => {
         const merged = [...prev];
@@ -136,10 +143,15 @@ export default function SupplierJoinPage() {
         return merged;
       });
       const found = json.data?.name ? ` · נמצא: ${json.data.name}` : "";
+      const fields = [
+        json.data?.category ? "תחום" : null,
+        json.data?.bioHe ? "תיאור" : null,
+        json.data?.serviceAreas?.length ? "אזורי שירות" : null,
+      ].filter(Boolean);
       setImportMsg(
         imgs.length > 0
-          ? `נוספו ${imgs.length} תמונות מהאתר${found}`
-          : `לא נמצאו תמונות באתר${found}`
+          ? `נוספו ${imgs.length} תמונות${fields.length ? ` · מולאו ${fields.join(", ")}` : ""}${found}`
+          : `לא נמצאו תמונות חדשות${fields.length ? ` · מולאו ${fields.join(", ")}` : ""}${found}`
       );
     } catch {
       setImportMsg("הייבוא נכשל, נסו שוב");

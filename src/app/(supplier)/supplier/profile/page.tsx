@@ -9,6 +9,7 @@ import Input from "@/components/ui/Input";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ISRAELI_CITIES, cn } from "@/lib/utils";
 import { cloudinaryEnabled, uploadToCloudinary } from "@/lib/cloudinary";
+import { CATEGORY_LABELS } from "@/lib/categories";
 
 const SERVICE_AREAS = [
   "גוש דן", "תל אביב", "ירושלים", "חיפה",
@@ -30,6 +31,22 @@ interface PhotoState {
   url: string;
 }
 
+interface LandingImportData {
+  name?: string | null;
+  bioHe?: string | null;
+  email?: string | null;
+  category?: string | null;
+  serviceAreas?: string[];
+  basePriceFrom?: number | null;
+  basePriceTo?: number | null;
+  images?: string[];
+}
+
+interface ImportSummary {
+  fields: string[];
+  imageCount: number;
+}
+
 export default function SupplierProfilePage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"info" | "photos" | "packages">("info");
@@ -44,6 +61,7 @@ export default function SupplierProfilePage() {
 
   // Info tab state
   const [name, setName] = useState("");
+  const [category, setCategory] = useState("");
   const [city, setCity] = useState("");
   const [bio, setBio] = useState("");
   const [selectedAreas, setSelectedAreas] = useState<string[]>([]);
@@ -57,6 +75,7 @@ export default function SupplierProfilePage() {
   const [uploading, setUploading] = useState(false);
   const [importing, setImporting] = useState(false);
   const [photoMsg, setPhotoMsg] = useState<string | null>(null);
+  const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
 
   // Packages tab state
   const [packages, setPackages] = useState<PackageState[]>([]);
@@ -68,6 +87,7 @@ export default function SupplierProfilePage() {
         if (json.success && json.data) {
           const s = json.data;
           setName(s.name ?? "");
+          setCategory(s.category ?? "");
           setCity(s.city ?? "");
           setBio(s.bioHe ?? "");
           setSelectedAreas(s.serviceAreas ?? []);
@@ -117,6 +137,7 @@ export default function SupplierProfilePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: name || undefined,
+          category: category || undefined,
           bioHe: bio || undefined,
           city: city || undefined,
           serviceAreas: selectedAreas.length > 0 ? selectedAreas : undefined,
@@ -190,6 +211,7 @@ export default function SupplierProfilePage() {
     if (!importUrl.trim() || importing) return;
     setImporting(true);
     setPhotoMsg(null);
+    setImportSummary(null);
     try {
       const res = await fetch("/api/supplier/import-landing", {
         method: "POST",
@@ -202,11 +224,55 @@ export default function SupplierProfilePage() {
         return;
       }
 
-      if (json.data?.name) setName(json.data.name);
-      if (json.data?.bioHe) setBio(json.data.bioHe);
+      const imported = json.data as LandingImportData;
+      const fields: string[] = [];
+      const profilePatch: Record<string, string | number | string[]> = {};
+
+      if (imported.name) {
+        setName(imported.name);
+        profilePatch.name = imported.name;
+        fields.push("שם");
+      }
+      if (imported.bioHe) {
+        setBio(imported.bioHe);
+        profilePatch.bioHe = imported.bioHe;
+        fields.push("תיאור");
+      }
+      if (imported.category && CATEGORY_LABELS[imported.category]) {
+        setCategory(imported.category);
+        profilePatch.category = imported.category;
+        fields.push("תחום");
+      }
+      if (imported.serviceAreas && imported.serviceAreas.length > 0) {
+        setSelectedAreas(imported.serviceAreas);
+        profilePatch.serviceAreas = imported.serviceAreas;
+        fields.push("אזורי שירות");
+      }
+      if (imported.email) {
+        profilePatch.email = imported.email;
+        fields.push("מייל");
+      }
+      if (imported.basePriceFrom) {
+        setPriceFrom(String(imported.basePriceFrom));
+        profilePatch.basePriceFrom = imported.basePriceFrom;
+        fields.push("מחיר מינימלי");
+      }
+      if (imported.basePriceTo) {
+        setPriceTo(String(imported.basePriceTo));
+        profilePatch.basePriceTo = imported.basePriceTo;
+        fields.push("מחיר מקסימלי");
+      }
+
+      if (Object.keys(profilePatch).length > 0) {
+        await fetch("/api/supplier/profile", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(profilePatch),
+        });
+      }
 
       const existing = new Set(photos.map((p) => p.url));
-      const images = ((json.data?.images ?? []) as string[]).filter((url) => !existing.has(url));
+      const images = (imported.images ?? []).filter((url) => !existing.has(url));
       let saved = 0;
       for (const [idx, url] of images.entries()) {
         if (photos.length + saved >= 20) break;
@@ -214,7 +280,12 @@ export default function SupplierProfilePage() {
         saved += 1;
       }
       setImportUrl("");
-      setPhotoMsg(saved > 0 ? `נוספו ${saved} תמונות מהאתר` : "לא נמצאו תמונות חדשות באתר");
+      setImportSummary({ fields, imageCount: saved });
+      setPhotoMsg(
+        fields.length > 0 || saved > 0
+          ? `הפרופיל עודכן · ${saved} תמונות נוספו`
+          : "לא נמצאו פרטים חדשים באתר"
+      );
     } catch {
       setPhotoMsg("הייבוא נכשל, נסו שוב");
     } finally {
@@ -315,6 +386,20 @@ export default function SupplierProfilePage() {
         {activeTab === "info" && (
           <div className="bg-white rounded-2xl border border-border p-6 space-y-5">
             <Input label="שם מלא" value={name} onChange={(e) => setName(e.target.value)} />
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold text-text-main">תחום עיסוק</label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full rounded-xl border border-border px-4 py-3 text-base text-text-main focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="">בחרו תחום...</option>
+                {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+            </div>
 
             <div className="space-y-1.5">
               <label className="text-sm font-semibold text-text-main">עיר</label>
@@ -474,6 +559,16 @@ export default function SupplierProfilePage() {
 
             {photoMsg && (
               <p className="text-sm font-semibold text-primary-dark">{photoMsg}</p>
+            )}
+
+            {importSummary && (
+              <div className="rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800 space-y-1">
+                <p className="font-bold">ייבוא הושלם</p>
+                {importSummary.fields.length > 0 && (
+                  <p>עודכנו: {importSummary.fields.join(" · ")}</p>
+                )}
+                <p>תמונות חדשות: {importSummary.imageCount}</p>
+              </div>
             )}
 
             {photos.length > 0 ? (
