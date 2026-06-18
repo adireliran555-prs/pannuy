@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { Heart, MapPin, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatPrice } from "@/lib/utils";
@@ -69,12 +68,11 @@ export default function SupplierCard({
     >
       {/* Photo */}
       <div className="relative aspect-[3/2] overflow-hidden bg-primary-light">
-        <Image
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
           src={photo}
           alt={`${name} - ${category}`}
-          fill
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
 
         />
 

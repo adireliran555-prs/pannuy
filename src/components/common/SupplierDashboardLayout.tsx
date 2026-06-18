@@ -92,6 +92,28 @@ export default function SupplierDashboardLayout({
           </main>
         </div>
       </div>
+      <nav className="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-border shadow-[0_-8px_24px_rgba(15,23,42,0.08)]">
+        <div className="grid grid-cols-6 px-1 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
+          {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+            const isActive = pathname === href;
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={cn(
+                  "min-w-0 flex flex-col items-center gap-1 rounded-xl px-1 py-1.5 text-[10px] font-bold transition-all",
+                  isActive
+                    ? "bg-primary-light text-primary-dark"
+                    : "text-text-muted"
+                )}
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+                <span className="max-w-full truncate">{label}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
     </div>
   );
 }

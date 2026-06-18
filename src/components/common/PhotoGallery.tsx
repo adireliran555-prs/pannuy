@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { X, ChevronRight, ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -43,11 +42,10 @@ export default function PhotoGallery({
             className="masonry-item cursor-pointer group relative overflow-hidden rounded-xl"
             onClick={() => openLightbox(index)}
           >
-            <Image
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
               src={photo}
               alt={`${supplierName} - תמונה ${index + 1}`}
-              width={400}
-              height={300}
               className="w-full object-cover rounded-xl transition-transform duration-300 group-hover:scale-105"
 
             />
@@ -92,11 +90,10 @@ export default function PhotoGallery({
             className="relative max-w-[90vw] max-h-[85vh]"
             onClick={(e) => e.stopPropagation()}
           >
-            <Image
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
               src={photos[lightboxIndex]}
               alt={`${supplierName} - תמונה ${lightboxIndex + 1}`}
-              width={1200}
-              height={800}
               className="max-h-[85vh] w-auto object-contain rounded-lg"
 
             />

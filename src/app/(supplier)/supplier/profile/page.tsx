@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
-import { Plus, X, Check, CheckCircle, LogOut } from "lucide-react";
+import { Plus, X, Check, CheckCircle, LogOut, Upload } from "lucide-react";
 import SupplierDashboardLayout from "@/components/common/SupplierDashboardLayout";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ISRAELI_CITIES, cn } from "@/lib/utils";
+import { cloudinaryEnabled, uploadToCloudinary } from "@/lib/cloudinary";
 
 const SERVICE_AREAS = [
   "גוש דן", "תל אביב", "ירושלים", "חיפה",
@@ -23,6 +23,11 @@ interface PackageState {
   includes: string[];
   isPopular: boolean;
   includeInput: string;
+}
+
+interface PhotoState {
+  id: string;
+  url: string;
 }
 
 export default function SupplierProfilePage() {
@@ -45,8 +50,13 @@ export default function SupplierProfilePage() {
   const [priceFrom, setPriceFrom] = useState("");
   const [priceTo, setPriceTo] = useState("");
 
-  // Photos tab state (display only — upload requires Cloudinary)
-  const [photos, setPhotos] = useState<string[]>([]);
+  // Photos tab state
+  const [photos, setPhotos] = useState<PhotoState[]>([]);
+  const [photoUrl, setPhotoUrl] = useState("");
+  const [importUrl, setImportUrl] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [photoMsg, setPhotoMsg] = useState<string | null>(null);
 
   // Packages tab state
   const [packages, setPackages] = useState<PackageState[]>([]);
@@ -63,7 +73,12 @@ export default function SupplierProfilePage() {
           setSelectedAreas(s.serviceAreas ?? []);
           setPriceFrom(s.basePriceFrom?.toString() ?? "");
           setPriceTo(s.basePriceTo?.toString() ?? "");
-          setPhotos((s.photos ?? []).map((p: { cloudinaryUrl: string }) => p.cloudinaryUrl));
+          setPhotos(
+            (s.photos ?? []).map((p: { id: string; cloudinaryUrl: string }) => ({
+              id: p.id,
+              url: p.cloudinaryUrl,
+            }))
+          );
           setPackages(
             (s.packages ?? []).map((p: {
               id: string; nameHe: string; price: number; hours: number;
@@ -112,6 +127,98 @@ export default function SupplierProfilePage() {
       if (res.ok) showSuccess();
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const persistPhoto = async (url: string, publicId: string, sortOrder = photos.length) => {
+    const res = await fetch("/api/supplier/photos", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        url,
+        publicId,
+        type: sortOrder === 0 ? "COVER" : sortOrder === 1 ? "PROFILE" : "PORTFOLIO",
+        sortOrder,
+      }),
+    });
+    const json = await res.json();
+    if (!res.ok || !json.success) {
+      throw new Error(json.error ?? "שמירת התמונה נכשלה");
+    }
+    setPhotos((prev) => [...prev, { id: json.data.id, url: json.data.cloudinaryUrl }]);
+  };
+
+  const handleFileUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0 || uploading) return;
+    setUploading(true);
+    setPhotoMsg(null);
+    let uploaded = 0;
+    try {
+      for (const file of Array.from(files)) {
+        if (photos.length + uploaded >= 20) break;
+        const { url, publicId } = await uploadToCloudinary(file);
+        await persistPhoto(url, publicId, photos.length + uploaded);
+        uploaded += 1;
+      }
+      setPhotoMsg(uploaded > 0 ? `נוספו ${uploaded} תמונות` : "לא נוספו תמונות");
+    } catch {
+      setPhotoMsg("העלאת התמונה נכשלה, נסו שוב");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const addPhoto = async () => {
+    const url = photoUrl.trim();
+    if (!url || photos.length >= 20) return;
+    setPhotoMsg(null);
+    try {
+      await persistPhoto(url, `manual-${Date.now()}`);
+      setPhotoUrl("");
+      setPhotoMsg("התמונה נוספה");
+    } catch {
+      setPhotoMsg("שמירת התמונה נכשלה");
+    }
+  };
+
+  const removePhoto = async (photo: PhotoState) => {
+    setPhotos((prev) => prev.filter((p) => p.id !== photo.id));
+    await fetch(`/api/supplier/photos/${photo.id}`, { method: "DELETE" }).catch(() => {});
+  };
+
+  const handleImportLanding = async () => {
+    if (!importUrl.trim() || importing) return;
+    setImporting(true);
+    setPhotoMsg(null);
+    try {
+      const res = await fetch("/api/supplier/import-landing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: importUrl.trim() }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        setPhotoMsg(json.error ?? "הייבוא נכשל, נסו כתובת אחרת");
+        return;
+      }
+
+      if (json.data?.name) setName(json.data.name);
+      if (json.data?.bioHe) setBio(json.data.bioHe);
+
+      const existing = new Set(photos.map((p) => p.url));
+      const images = ((json.data?.images ?? []) as string[]).filter((url) => !existing.has(url));
+      let saved = 0;
+      for (const [idx, url] of images.entries()) {
+        if (photos.length + saved >= 20) break;
+        await persistPhoto(url, `import-${Date.now()}-${idx}`, photos.length + saved);
+        saved += 1;
+      }
+      setImportUrl("");
+      setPhotoMsg(saved > 0 ? `נוספו ${saved} תמונות מהאתר` : "לא נמצאו תמונות חדשות באתר");
+    } catch {
+      setPhotoMsg("הייבוא נכשל, נסו שוב");
+    } finally {
+      setImporting(false);
     }
   };
 
@@ -292,14 +399,101 @@ export default function SupplierProfilePage() {
         {/* ── Photos tab ── */}
         {activeTab === "photos" && (
           <div className="space-y-5">
-            <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
-              העלאת תמונות תהיה זמינה בקרוב. כרגע ניתן לראות את התמונות הקיימות בפרופיל.
+            {cloudinaryEnabled() && (
+              <label
+                className={cn(
+                  "flex flex-col items-center justify-center gap-2 border-2 border-dashed border-primary/40 rounded-2xl p-6 cursor-pointer hover:bg-primary-light/30 transition-colors",
+                  (uploading || photos.length >= 20) && "opacity-60 pointer-events-none"
+                )}
+              >
+                <Upload className="h-6 w-6 text-primary" />
+                <span className="text-sm font-bold text-text-main">
+                  {uploading ? "מעלה..." : "העלו תמונות מהמכשיר"}
+                </span>
+                <span className="text-xs text-text-muted">עד 20 תמונות · JPG/PNG</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  disabled={uploading || photos.length >= 20}
+                  onChange={(e) => handleFileUpload(e.target.files)}
+                />
+              </label>
+            )}
+
+            <div className="p-4 bg-primary-light/40 border border-primary/30 rounded-xl space-y-2">
+              <p className="text-sm font-bold text-text-main">
+                ייבוא מאתר או דף נחיתה
+              </p>
+              <p className="text-xs text-text-muted">
+                הדביקו קישור ונמשוך תמונות ופרטים מרכזיים לפרופיל.
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  value={importUrl}
+                  onChange={(e) => setImportUrl(e.target.value)}
+                  onKeyDown={(e) =>
+                    e.key === "Enter" && (e.preventDefault(), handleImportLanding())
+                  }
+                  placeholder="https://..."
+                  dir="ltr"
+                  className="flex-1 rounded-xl border border-border px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                />
+                <Button
+                  onClick={handleImportLanding}
+                  isLoading={importing}
+                  disabled={!importUrl.trim() || photos.length >= 20}
+                  size="sm"
+                >
+                  ייבאו
+                </Button>
+              </div>
             </div>
+
+            <div className="flex gap-2">
+              <input
+                type="url"
+                value={photoUrl}
+                onChange={(e) => setPhotoUrl(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addPhoto())}
+                placeholder="https://... (הוספת תמונה בודדת)"
+                dir="ltr"
+                className="flex-1 rounded-xl border border-border px-4 py-3 text-sm text-text-main focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+              />
+              <Button
+                onClick={addPhoto}
+                disabled={!photoUrl.trim() || photos.length >= 20}
+                size="sm"
+              >
+                <Plus className="h-4 w-4" />
+                הוסיפו
+              </Button>
+            </div>
+
+            {photoMsg && (
+              <p className="text-sm font-semibold text-primary-dark">{photoMsg}</p>
+            )}
+
             {photos.length > 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {photos.map((url, idx) => (
-                  <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden">
-                    <Image src={url} alt={`תמונה ${idx + 1}`} fill className="object-cover" />
+                {photos.map((photo, idx) => (
+                  <div key={photo.id} className="relative aspect-square rounded-2xl overflow-hidden group">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={photo.url}
+                      alt={`תמונה ${idx + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removePhoto(photo)}
+                      className="absolute top-2 left-2 w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                      aria-label="מחקו תמונה"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
                   </div>
                 ))}
               </div>

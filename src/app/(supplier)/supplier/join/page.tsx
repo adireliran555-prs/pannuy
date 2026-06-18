@@ -292,6 +292,19 @@ export default function SupplierJoinPage() {
         }
       }
 
+      for (const [idx, url] of photos.entries()) {
+        await fetch("/api/supplier/photos", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            url,
+            publicId: `join-${Date.now()}-${idx}`,
+            type: idx === 0 ? "COVER" : idx === 1 ? "PROFILE" : "PORTFOLIO",
+            sortOrder: idx,
+          }),
+        });
+      }
+
       router.push("/supplier/dashboard");
     } finally {
       setIsLoading(false);

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   MapPin,
@@ -147,7 +146,8 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 bg-primary-light">
-              <Image src={supplier.profilePhoto} alt={supplier.name} width={32} height={32} className="object-cover" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={supplier.profilePhoto} alt={supplier.name} className="w-full h-full object-cover" />
             </div>
             <span className="font-bold text-text-main text-sm truncate">{supplier.name}</span>
             <span className="text-xs font-semibold text-primary">מהטופ של ישראל</span>
@@ -158,12 +158,11 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
 
       {/* ── Cover photo ── */}
       <div className="relative h-64 sm:h-96 w-full overflow-hidden bg-gradient-to-br from-rose-100 to-amber-100">
-        <Image
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
           src={supplier.coverPhoto}
           alt={`${supplier.name} - תמונת כיסוי`}
-          fill
-          className="object-cover"
-          priority
+          className="w-full h-full object-cover"
 
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
@@ -205,7 +204,8 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="relative -mt-16 flex items-end gap-5 pb-4">
           <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-white shadow-xl flex-shrink-0 bg-primary-light">
-            <Image src={supplier.profilePhoto} alt={supplier.name} fill className="object-cover" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={supplier.profilePhoto} alt={supplier.name} className="w-full h-full object-cover" />
           </div>
           <div className="pb-2 flex-1">
             <h1 className="text-2xl sm:text-3xl font-black text-white [text-shadow:0_2px_8px_rgba(0,0,0,0.6)]">{supplier.name}</h1>
@@ -357,7 +357,8 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
               {/* Supplier summary */}
               <div className="flex items-center gap-3 pb-4 border-b border-border">
                 <div className="relative w-14 h-14 rounded-full overflow-hidden bg-primary-light flex-shrink-0">
-                  <Image src={supplier.profilePhoto} alt={supplier.name} fill className="object-cover" />
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={supplier.profilePhoto} alt={supplier.name} className="w-full h-full object-cover" />
                 </div>
                 <div>
                   <h3 className="font-bold text-text-main">{supplier.name}</h3>

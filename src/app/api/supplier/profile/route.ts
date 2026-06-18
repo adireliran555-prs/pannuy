@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireSupplierSession } from "@/lib/api-auth";
 import { delCache } from "@/lib/redis";
+import { Category } from "@prisma/client";
 
 export async function GET(request: NextRequest) {
   try {
@@ -63,7 +64,7 @@ export async function PATCH(request: NextRequest) {
     if (error) return error;
 
     const body = await request.json();
-    const { name, bioHe, city, serviceAreas, basePriceFrom, basePriceTo, email } =
+    const { name, bioHe, city, serviceAreas, basePriceFrom, basePriceTo, email, category } =
       body as {
         name?: string;
         bioHe?: string;
@@ -72,12 +73,19 @@ export async function PATCH(request: NextRequest) {
         basePriceFrom?: number;
         basePriceTo?: number;
         email?: string;
+        category?: string;
       };
+
+    const nextCategory =
+      category && Object.values(Category).includes(category as Category)
+        ? (category as Category)
+        : undefined;
 
     const updated = await prisma.supplier.update({
       where: { id: session.id },
       data: {
         ...(name !== undefined ? { name } : {}),
+        ...(nextCategory !== undefined ? { category: nextCategory } : {}),
         ...(bioHe !== undefined ? { bioHe } : {}),
         ...(city !== undefined ? { city } : {}),
         ...(serviceAreas !== undefined ? { serviceAreas } : {}),
