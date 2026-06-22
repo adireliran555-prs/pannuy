@@ -59,16 +59,31 @@ export function stripHtml(html: string): string {
   );
 }
 
-export function cleanBusinessName(title: string): string | null {
+export function cleanBusinessName(title: string, siteName?: string | null): string | null {
+  const cleanSite =
+    siteName &&
+    normalizeText(siteName).replace(/0\d{1,2}[-\s]?\d{7}/g, "").trim();
+  if (cleanSite && cleanSite.length >= 2 && cleanSite.length <= 40 && !/צרו קשר/i.test(cleanSite)) {
+    return cleanSite.slice(0, 80);
+  }
+
   const cleaned = normalizeText(title)
+    .replace(/0\d{1,2}[-\s]?\d{7}/g, "")
+    .replace(/צרו קשר/gi, "")
     .replace(/\s*-\s*דף הבית$/i, "")
-    .replace(/\s*-\s*הצעת מחיר.*$/i, "");
+    .replace(/\s*-\s*הצעת מחיר.*$/i, "")
+    .trim();
   const parts = cleaned
-    .split(/\s+[|–—]\s+|\s+-\s+/)
+    .split(/\s+[|–—]\s+|\s+-\s+|,/)
     .map((part) => part.trim())
     .filter(Boolean);
   const candidate =
-    parts.find((part) => !/הצעת מחיר|מחירון|price\s*list/i.test(part)) ?? parts[parts.length - 1] ?? cleaned;
+    parts.find(
+      (part) =>
+        part.length >= 2 &&
+        part.length <= 40 &&
+        !/הצעת מחיר|מחירון|price\s*list|צילומי תדמית|נדלן ועסקים/i.test(part)
+    ) ?? parts[0] ?? cleaned;
   return candidate ? candidate.slice(0, 80) : null;
 }
 
@@ -237,6 +252,9 @@ function isPortfolioImage(src: string): boolean {
   if (/sprite|logo|icon|favicon|placeholder|pixel|1x1|avatar|loading|spinner/i.test(src)) {
     return false;
   }
+  if (/youtube|ytimg|vimeo|wp-rocket|play-button|video-thumb|googleusercontent/i.test(src)) {
+    return false;
+  }
   if (/Asset-\d|\/logo|banner|header-bg/i.test(src)) return false;
   if (/\.svg(\?|$)/i.test(src)) return false;
 
@@ -292,6 +310,54 @@ export function extractImages(html: string, finalUrl: string, max = 30): string[
   return Array.from(images);
 }
 
+export function findPricingPageUrls(html: string, baseUrl: string): string[] {
+  const base = new URL(baseUrl);
+  const urls = new Set<string>();
+
+  for (const m of html.matchAll(/<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)) {
+    const href = m[1];
+    const label = stripHtml(m[2]);
+    if (/הצעת\s*מחיר|מחירון|חבילות|price\s*list|pricing/i.test(`${label} ${href}`)) {
+      try {
+        urls.add(new URL(href, base).toString());
+      } catch {
+        /* skip */
+      }
+    }
+  }
+
+  for (const m of html.matchAll(/href=["']([^"']*(?:הצעת-מחיר|price-list|pricing|מחיר)[^"']*)["']/gi)) {
+    try {
+      urls.add(new URL(m[1], base).toString());
+    } catch {
+      /* skip */
+    }
+  }
+
+  return Array.from(urls);
+}
+
+export function importRichnessScore(
+  parsed: Pick<
+    LandingImportResult,
+    "bioHe" | "basePriceFrom" | "packages" | "serviceAreas"
+  > & { rawImages: string[] }
+): number {
+  let score = 0;
+  score += parsed.rawImages.length;
+  score += parsed.packages.length * 12;
+  if (parsed.basePriceFrom) score += 8;
+  if ((parsed.bioHe?.length ?? 0) >= 200) score += 6;
+  score += parsed.serviceAreas.length;
+  return score;
+}
+
+export function isSparseImport(
+  parsed: Pick<LandingImportResult, "basePriceFrom" | "packages"> & { rawImages: string[] }
+): boolean {
+  return parsed.packages.length === 0 && parsed.rawImages.length < 3 && !parsed.basePriceFrom;
+}
+
 export function parseLandingPage(html: string, finalUrl: string): Omit<LandingImportResult, "images"> & {
   rawImages: string[];
 } {
@@ -319,7 +385,7 @@ export function parseLandingPage(html: string, finalUrl: string): Omit<LandingIm
 
   return {
     sourceUrl: finalUrl,
-    name: cleanBusinessName(pageTitle || siteName),
+    name: cleanBusinessName(pageTitle || siteName, siteName),
     bioHe: extractBio(html, description),
     phone: phoneMatch ? phoneMatch[0].replace(/^\+972/, "0").replace(/\D/g, "") : null,
     email: emailMatch?.[0] ?? null,

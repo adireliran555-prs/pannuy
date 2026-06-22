@@ -15,30 +15,75 @@ export interface MirroredImage {
   publicId: string;
 }
 
+async function uploadBlob(blob: Blob, publicIdPrefix?: string): Promise<MirroredImage | null> {
+  const form = new FormData();
+  form.append("file", blob, "import.jpg");
+  form.append("upload_preset", UPLOAD_PRESET!);
+  if (publicIdPrefix) {
+    form.append("public_id", `${publicIdPrefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`);
+  }
+
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+    method: "POST",
+    body: form,
+  });
+  if (!res.ok) return null;
+
+  const json = (await res.json()) as { secure_url?: string; public_id?: string };
+  if (!json.secure_url || !json.public_id) return null;
+  return { url: json.secure_url, publicId: json.public_id };
+}
+
 export async function mirrorImageToCloudinary(
   remoteUrl: string,
-  publicIdPrefix?: string
+  publicIdPrefix = "landing"
 ): Promise<MirroredImage | null> {
   if (!cloudinaryServerEnabled()) return null;
 
   try {
-    const form = new FormData();
-    form.append("file", remoteUrl);
-    form.append("upload_preset", UPLOAD_PRESET!);
-    if (publicIdPrefix) {
-      form.append("public_id", `${publicIdPrefix}-${Date.now()}`);
-    }
-
-    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
-      method: "POST",
-      body: form,
+    const origin = new URL(remoteUrl).origin;
+    const imgRes = await fetch(remoteUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; PannuyBot/1.0)",
+        Accept: "image/*",
+        Referer: `${origin}/`,
+      },
+      signal: AbortSignal.timeout(12_000),
     });
-    if (!res.ok) return null;
+    if (!imgRes.ok) return null;
 
-    const json = (await res.json()) as { secure_url?: string; public_id?: string };
-    if (!json.secure_url || !json.public_id) return null;
-    return { url: json.secure_url, publicId: json.public_id };
+    const contentType = imgRes.headers.get("content-type") ?? "";
+    if (!contentType.startsWith("image/")) return null;
+
+    const blob = await imgRes.blob();
+    if (blob.size < 4_000) return null;
+
+    return uploadBlob(blob, publicIdPrefix);
   } catch {
     return null;
   }
+}
+
+export async function mirrorImagesParallel(
+  urls: string[],
+  limit = 3
+): Promise<Array<{ url: string; publicId: string; sourceUrl: string }>> {
+  const results: Array<{ url: string; publicId: string; sourceUrl: string }> = [];
+  const queue = urls.slice(0, 15);
+
+  for (let i = 0; i < queue.length; i += limit) {
+    const batch = queue.slice(i, i + limit);
+    const mirrored = await Promise.all(
+      batch.map(async (sourceUrl) => {
+        const uploaded = await mirrorImageToCloudinary(sourceUrl);
+        if (uploaded) return { ...uploaded, sourceUrl };
+        return null;
+      })
+    );
+    for (const item of mirrored) {
+      if (item) results.push(item);
+    }
+  }
+
+  return results;
 }

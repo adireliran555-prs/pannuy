@@ -50,12 +50,21 @@ interface LandingImportData {
   images?: string[];
   imageUploads?: Array<{ url: string; publicId: string }>;
   packages?: LandingImportPackage[];
+  followedUrl?: string | null;
+  stats?: {
+    durationMs: number;
+    imagesFound: number;
+    imagesMirrored: number;
+    packagesFound: number;
+    followedPricingPage: boolean;
+  };
 }
 
 interface ImportSummary {
   fields: string[];
   imageCount: number;
   packageCount: number;
+  warning?: string;
 }
 
 export default function SupplierProfilePage() {
@@ -85,7 +94,8 @@ export default function SupplierProfilePage() {
   const [importUrl, setImportUrl] = useState("");
   const [uploading, setUploading] = useState(false);
   const [importing, setImporting] = useState(false);
-  const [photoMsg, setPhotoMsg] = useState<string | null>(null);
+  const [importStatus, setImportStatus] = useState<string | null>(null);
+  const [importMsg, setImportMsg] = useState<string | null>(null);
   const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
 
   // Packages tab state
@@ -183,7 +193,7 @@ export default function SupplierProfilePage() {
   const handleFileUpload = async (files: FileList | null) => {
     if (!files || files.length === 0 || uploading) return;
     setUploading(true);
-    setPhotoMsg(null);
+    setImportMsg(null);
     let uploaded = 0;
     try {
       for (const file of Array.from(files)) {
@@ -192,9 +202,9 @@ export default function SupplierProfilePage() {
         await persistPhoto(url, publicId, photos.length + uploaded);
         uploaded += 1;
       }
-      setPhotoMsg(uploaded > 0 ? `נוספו ${uploaded} תמונות` : "לא נוספו תמונות");
+      setImportMsg(uploaded > 0 ? `נוספו ${uploaded} תמונות` : "לא נוספו תמונות");
     } catch {
-      setPhotoMsg("העלאת התמונה נכשלה, נסו שוב");
+      setImportMsg("העלאת התמונה נכשלה, נסו שוב");
     } finally {
       setUploading(false);
     }
@@ -203,13 +213,13 @@ export default function SupplierProfilePage() {
   const addPhoto = async () => {
     const url = photoUrl.trim();
     if (!url || photos.length >= 20) return;
-    setPhotoMsg(null);
+    setImportMsg(null);
     try {
       await persistPhoto(url, `manual-${Date.now()}`);
       setPhotoUrl("");
-      setPhotoMsg("התמונה נוספה");
+      setImportMsg("התמונה נוספה");
     } catch {
-      setPhotoMsg("שמירת התמונה נכשלה");
+      setImportMsg("שמירת התמונה נכשלה");
     }
   };
 
@@ -221,8 +231,10 @@ export default function SupplierProfilePage() {
   const handleImportLanding = async () => {
     if (!importUrl.trim() || importing) return;
     setImporting(true);
-    setPhotoMsg(null);
+    setImportMsg(null);
     setImportSummary(null);
+    setImportStatus("סורקים את האתר ומחלצים פרטים...");
+    setActiveTab("info");
     try {
       const res = await fetch("/api/supplier/import-landing", {
         method: "POST",
@@ -231,13 +243,15 @@ export default function SupplierProfilePage() {
       });
       const json = await res.json();
       if (!res.ok || !json.success) {
-        setPhotoMsg(json.error ?? "הייבוא נכשל, נסו כתובת אחרת");
+        setImportMsg(json.error ?? "הייבוא נכשל, נסו כתובת אחרת");
+        setImportStatus(null);
         return;
       }
 
       const imported = json.data as LandingImportData;
+      setImportStatus("שומרים את הפרופיל, התמונות והחבילות...");
       const fields: string[] = [];
-      const profilePatch: Record<string, string | number | string[]> = {};
+      const profilePatch: Record<string, string | number | string[] | null> = {};
 
       if (imported.name) {
         setName(imported.name);
@@ -267,11 +281,17 @@ export default function SupplierProfilePage() {
         setPriceFrom(String(imported.basePriceFrom));
         profilePatch.basePriceFrom = imported.basePriceFrom;
         fields.push("מחיר מינימלי");
+      } else {
+        setPriceFrom("");
+        profilePatch.basePriceFrom = null;
       }
       if (imported.basePriceTo) {
         setPriceTo(String(imported.basePriceTo));
         profilePatch.basePriceTo = imported.basePriceTo;
         fields.push("מחיר מקסימלי");
+      } else {
+        setPriceTo("");
+        profilePatch.basePriceTo = null;
       }
 
       if (Object.keys(profilePatch).length > 0) {
@@ -282,69 +302,95 @@ export default function SupplierProfilePage() {
         });
       }
 
-      const existing = new Set(photos.map((p) => p.url));
+      for (const photo of photos) {
+        await fetch(`/api/supplier/photos/${photo.id}`, { method: "DELETE" }).catch(() => {});
+      }
+      setPhotos([]);
+
       const uploads =
         imported.imageUploads ??
         (imported.images ?? []).map((url, idx) => ({
           url,
           publicId: `import-${Date.now()}-${idx}`,
         }));
-      const toSave = uploads.filter((item) => !existing.has(item.url));
       let saved = 0;
-      for (const [idx, item] of toSave.entries()) {
-        if (photos.length + saved >= 20) break;
-        await persistPhoto(item.url, item.publicId, photos.length + saved);
+      for (const [idx, item] of uploads.entries()) {
+        if (saved >= 20) break;
+        await persistPhoto(item.url, item.publicId, saved);
         saved += 1;
+      }
+
+      for (const pkg of packages) {
+        if (!pkg.id) continue;
+        await fetch(`/api/supplier/packages/${pkg.id}`, { method: "DELETE" }).catch(() => {});
       }
 
       let packageCount = 0;
       const importedPackages = imported.packages ?? [];
-      if (importedPackages.length > 0) {
-        const existingNames = new Set(packages.map((p) => p.name.trim()));
-        const nextPackages = [...packages];
-        for (const pkg of importedPackages) {
-          if (nextPackages.length >= 3 || existingNames.has(pkg.nameHe.trim())) continue;
-          const res = await fetch("/api/supplier/packages", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              nameHe: pkg.nameHe,
-              price: pkg.price,
-              hours: pkg.hours,
-              includes: pkg.includes,
-              isPopular: pkg.isPopular,
-            }),
+      const nextPackages: PackageState[] = [];
+      for (const pkg of importedPackages.slice(0, 3)) {
+        const resPkg = await fetch("/api/supplier/packages", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            nameHe: pkg.nameHe,
+            price: pkg.price,
+            hours: pkg.hours,
+            includes: pkg.includes,
+            isPopular: pkg.isPopular,
+          }),
+        });
+        if (resPkg.ok) {
+          const pkgJson = await resPkg.json();
+          nextPackages.push({
+            id: pkgJson.data?.id,
+            name: pkg.nameHe,
+            price: pkg.price,
+            hours: pkg.hours ?? 0,
+            includes: pkg.includes ?? [],
+            isPopular: pkg.isPopular,
+            includeInput: "",
           });
-          if (res.ok) {
-            const json = await res.json();
-            nextPackages.push({
-              id: json.data?.id,
-              name: pkg.nameHe,
-              price: pkg.price,
-              hours: pkg.hours ?? 0,
-              includes: pkg.includes ?? [],
-              isPopular: pkg.isPopular,
-              includeInput: "",
-            });
-            existingNames.add(pkg.nameHe.trim());
-            packageCount += 1;
-          }
+          packageCount += 1;
         }
-        if (packageCount > 0) {
-          setPackages(nextPackages);
-          fields.push("חבילות");
-        }
+      }
+      if (packageCount > 0) {
+        setPackages(nextPackages);
+        fields.push("חבילות");
+      } else {
+        setPackages([]);
+      }
+
+      let warning: string | undefined;
+      const stats = imported.stats;
+      if (stats && stats.imagesFound > 0 && stats.imagesMirrored === 0) {
+        warning = "נמצאו תמונות באתר אבל ההעלאה נכשלה. נסו שוב או הוסיפו תמונות ידנית.";
+      } else if (
+        stats &&
+        stats.packagesFound === 0 &&
+        stats.imagesFound < 3 &&
+        !imported.basePriceFrom
+      ) {
+        warning =
+          "נמצא מעט מידע בדף הזה. להצעת מחיר מלאה הדביקו קישור ישיר לדף הצעת מחיר / מחירון.";
       }
 
       setImportUrl("");
-      setImportSummary({ fields, imageCount: saved, packageCount });
-      setPhotoMsg(
-        fields.length > 0 || saved > 0
-          ? `הפרופיל עודכן · ${saved} תמונות נוספו`
+      setImportSummary({ fields, imageCount: saved, packageCount, warning });
+      const seconds = stats ? Math.max(1, Math.round(stats.durationMs / 1000)) : null;
+      setImportMsg(
+        fields.length > 0 || saved > 0 || packageCount > 0
+          ? `הפרופיל עודכן · ${saved} תמונות · ${packageCount} חבילות${seconds ? ` · ${seconds} שניות` : ""}`
           : "לא נמצאו פרטים חדשים באתר"
       );
+      if (imported.followedUrl) {
+        setImportStatus(`נמצא דף מחירון: ${imported.followedUrl}`);
+      } else {
+        setImportStatus(null);
+      }
     } catch {
-      setPhotoMsg("הייבוא נכשל, נסו שוב");
+      setImportMsg("הייבוא נכשל, נסו שוב");
+      setImportStatus(null);
     } finally {
       setImporting(false);
     }
@@ -441,7 +487,59 @@ export default function SupplierProfilePage() {
 
         {/* ── Info tab ── */}
         {activeTab === "info" && (
-          <div className="bg-white rounded-2xl border border-border p-6 space-y-5">
+          <div className="space-y-5">
+            <div className="p-5 bg-primary-light/50 border-2 border-primary/30 rounded-2xl space-y-3">
+              <div>
+                <p className="text-base font-black text-text-main">ייבוא מדף נחיתה או אתר</p>
+                <p className="text-sm text-text-muted mt-1">
+                  הדביקו קישור ונמלא אוטומטית שם, תיאור, מחירים, תמונות וחבילות.
+                  לתוצאה מלאה השתמשו בקישור ישיר לדף הצעת מחיר.
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  value={importUrl}
+                  onChange={(e) => setImportUrl(e.target.value)}
+                  onKeyDown={(e) =>
+                    e.key === "Enter" && (e.preventDefault(), handleImportLanding())
+                  }
+                  placeholder="https://..."
+                  dir="ltr"
+                  disabled={importing}
+                  className="flex-1 rounded-xl border border-border px-4 py-3 text-sm text-text-main focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+                />
+                <Button
+                  onClick={handleImportLanding}
+                  isLoading={importing}
+                  disabled={!importUrl.trim()}
+                  size="sm"
+                >
+                  ייבאו
+                </Button>
+              </div>
+              {importStatus && (
+                <p className="text-sm font-semibold text-primary-dark">{importStatus}</p>
+              )}
+              {importMsg && (
+                <p className="text-sm font-semibold text-primary-dark">{importMsg}</p>
+              )}
+              {importSummary && (
+                <div className="rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800 space-y-1">
+                  <p className="font-bold">ייבוא הושלם</p>
+                  {importSummary.fields.length > 0 && (
+                    <p>עודכנו: {importSummary.fields.join(" · ")}</p>
+                  )}
+                  <p>תמונות: {importSummary.imageCount}</p>
+                  <p>חבילות: {importSummary.packageCount}</p>
+                  {importSummary.warning && (
+                    <p className="text-amber-700 font-semibold">{importSummary.warning}</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white rounded-2xl border border-border p-6 space-y-5">
             <Input label="שם מלא" value={name} onChange={(e) => setName(e.target.value)} />
 
             <div className="space-y-1.5">
@@ -535,6 +633,7 @@ export default function SupplierProfilePage() {
             <Button fullWidth size="lg" isLoading={isLoading} onClick={handleSaveInfo}>
               שמרו שינויים
             </Button>
+            </div>
           </div>
         )}
 
@@ -564,36 +663,6 @@ export default function SupplierProfilePage() {
               </label>
             )}
 
-            <div className="p-4 bg-primary-light/40 border border-primary/30 rounded-xl space-y-2">
-              <p className="text-sm font-bold text-text-main">
-                ייבוא מאתר או דף נחיתה
-              </p>
-              <p className="text-xs text-text-muted">
-                הדביקו קישור ונמשוך תמונות ופרטים מרכזיים לפרופיל.
-              </p>
-              <div className="flex gap-2">
-                <input
-                  type="url"
-                  value={importUrl}
-                  onChange={(e) => setImportUrl(e.target.value)}
-                  onKeyDown={(e) =>
-                    e.key === "Enter" && (e.preventDefault(), handleImportLanding())
-                  }
-                  placeholder="https://..."
-                  dir="ltr"
-                  className="flex-1 rounded-xl border border-border px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                />
-                <Button
-                  onClick={handleImportLanding}
-                  isLoading={importing}
-                  disabled={!importUrl.trim() || photos.length >= 20}
-                  size="sm"
-                >
-                  ייבאו
-                </Button>
-              </div>
-            </div>
-
             <div className="flex gap-2">
               <input
                 type="url"
@@ -614,21 +683,8 @@ export default function SupplierProfilePage() {
               </Button>
             </div>
 
-            {photoMsg && (
-              <p className="text-sm font-semibold text-primary-dark">{photoMsg}</p>
-            )}
-
-            {importSummary && (
-              <div className="rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800 space-y-1">
-                <p className="font-bold">ייבוא הושלם</p>
-                {importSummary.fields.length > 0 && (
-                  <p>עודכנו: {importSummary.fields.join(" · ")}</p>
-                )}
-                <p>תמונות חדשות: {importSummary.imageCount}</p>
-                {importSummary.packageCount > 0 && (
-                  <p>חבילות חדשות: {importSummary.packageCount}</p>
-                )}
-              </div>
+            {importMsg && activeTab === "photos" && (
+              <p className="text-sm font-semibold text-primary-dark">{importMsg}</p>
             )}
 
             {photos.length > 0 ? (
