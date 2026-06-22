@@ -31,6 +31,14 @@ interface PhotoState {
   url: string;
 }
 
+interface LandingImportPackage {
+  nameHe: string;
+  price: number;
+  hours?: number;
+  includes: string[];
+  isPopular: boolean;
+}
+
 interface LandingImportData {
   name?: string | null;
   bioHe?: string | null;
@@ -40,11 +48,14 @@ interface LandingImportData {
   basePriceFrom?: number | null;
   basePriceTo?: number | null;
   images?: string[];
+  imageUploads?: Array<{ url: string; publicId: string }>;
+  packages?: LandingImportPackage[];
 }
 
 interface ImportSummary {
   fields: string[];
   imageCount: number;
+  packageCount: number;
 }
 
 export default function SupplierProfilePage() {
@@ -272,15 +283,61 @@ export default function SupplierProfilePage() {
       }
 
       const existing = new Set(photos.map((p) => p.url));
-      const images = (imported.images ?? []).filter((url) => !existing.has(url));
+      const uploads =
+        imported.imageUploads ??
+        (imported.images ?? []).map((url, idx) => ({
+          url,
+          publicId: `import-${Date.now()}-${idx}`,
+        }));
+      const toSave = uploads.filter((item) => !existing.has(item.url));
       let saved = 0;
-      for (const [idx, url] of images.entries()) {
+      for (const [idx, item] of toSave.entries()) {
         if (photos.length + saved >= 20) break;
-        await persistPhoto(url, `import-${Date.now()}-${idx}`, photos.length + saved);
+        await persistPhoto(item.url, item.publicId, photos.length + saved);
         saved += 1;
       }
+
+      let packageCount = 0;
+      const importedPackages = imported.packages ?? [];
+      if (importedPackages.length > 0) {
+        const existingNames = new Set(packages.map((p) => p.name.trim()));
+        const nextPackages = [...packages];
+        for (const pkg of importedPackages) {
+          if (nextPackages.length >= 3 || existingNames.has(pkg.nameHe.trim())) continue;
+          const res = await fetch("/api/supplier/packages", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              nameHe: pkg.nameHe,
+              price: pkg.price,
+              hours: pkg.hours,
+              includes: pkg.includes,
+              isPopular: pkg.isPopular,
+            }),
+          });
+          if (res.ok) {
+            const json = await res.json();
+            nextPackages.push({
+              id: json.data?.id,
+              name: pkg.nameHe,
+              price: pkg.price,
+              hours: pkg.hours ?? 0,
+              includes: pkg.includes ?? [],
+              isPopular: pkg.isPopular,
+              includeInput: "",
+            });
+            existingNames.add(pkg.nameHe.trim());
+            packageCount += 1;
+          }
+        }
+        if (packageCount > 0) {
+          setPackages(nextPackages);
+          fields.push("חבילות");
+        }
+      }
+
       setImportUrl("");
-      setImportSummary({ fields, imageCount: saved });
+      setImportSummary({ fields, imageCount: saved, packageCount });
       setPhotoMsg(
         fields.length > 0 || saved > 0
           ? `הפרופיל עודכן · ${saved} תמונות נוספו`
@@ -568,6 +625,9 @@ export default function SupplierProfilePage() {
                   <p>עודכנו: {importSummary.fields.join(" · ")}</p>
                 )}
                 <p>תמונות חדשות: {importSummary.imageCount}</p>
+                {importSummary.packageCount > 0 && (
+                  <p>חבילות חדשות: {importSummary.packageCount}</p>
+                )}
               </div>
             )}
 
@@ -580,6 +640,8 @@ export default function SupplierProfilePage() {
                       src={photo.url}
                       alt={`תמונה ${idx + 1}`}
                       className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                      loading="lazy"
                     />
                     <button
                       type="button"

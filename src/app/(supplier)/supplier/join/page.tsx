@@ -133,6 +133,24 @@ export default function SupplierJoinPage() {
       if (Array.isArray(json.data?.serviceAreas) && json.data.serviceAreas.length > 0) {
         setSelectedAreas(json.data.serviceAreas.filter((area: string) => SERVICE_AREAS.includes(area)));
       }
+      if (Array.isArray(json.data?.packages) && json.data.packages.length > 0) {
+        setPackages((prev) => {
+          const next = [...prev];
+          for (const pkg of json.data.packages) {
+            if (next.length >= 3) break;
+            if (next.some((p) => p.name === pkg.nameHe)) continue;
+            next.push({
+              id: String(Date.now() + next.length),
+              name: pkg.nameHe,
+              price: String(pkg.price),
+              hours: pkg.hours ? String(pkg.hours) : "",
+              includes: pkg.includes ?? [],
+              isPopular: Boolean(pkg.isPopular),
+            });
+          }
+          return next;
+        });
+      }
       const imgs: string[] = json.data?.images ?? [];
       setPhotos((prev) => {
         const merged = [...prev];
@@ -147,6 +165,7 @@ export default function SupplierJoinPage() {
         json.data?.category ? "תחום" : null,
         json.data?.bioHe ? "תיאור" : null,
         json.data?.serviceAreas?.length ? "אזורי שירות" : null,
+        json.data?.packages?.length ? "חבילות" : null,
       ].filter(Boolean);
       setImportMsg(
         imgs.length > 0
