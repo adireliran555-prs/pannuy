@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { BRAND_NAME } from "@/lib/branding";
 
 type Size = "sm" | "md" | "lg";
 
-const SIZE_STYLES: Record<Size, { shared: string; rest: string }> = {
-  sm: { shared: "text-2xl", rest: "text-sm" },
-  md: { shared: "text-4xl", rest: "text-xl" },
-  lg: { shared: "text-5xl", rest: "text-2xl" },
+const SIZE_STYLES: Record<Size, string> = {
+  sm: "text-xl",
+  md: "text-2xl",
+  lg: "text-4xl",
 };
 
 interface TopEventsLogoProps {
@@ -15,39 +16,23 @@ interface TopEventsLogoProps {
   className?: string;
 }
 
-/**
- * Single shared T wordmark (LTR):
- *
- *     op      → Top
- * T           (shared)
- *     vents   → Events
- */
 export default function TopEventsLogo({
   href,
   size = "md",
   className,
 }: TopEventsLogoProps) {
-  const { shared, rest } = SIZE_STYLES[size];
-
   const mark = (
     <span
       dir="ltr"
       className={cn(
-        "inline-grid grid-cols-[auto_auto] grid-rows-[auto_auto_auto] items-center font-black leading-none tracking-tight select-none text-left gap-x-1",
+        "inline-flex items-baseline font-black tracking-tight leading-none select-none whitespace-nowrap",
+        SIZE_STYLES[size],
         className
       )}
-      aria-label="Top Events"
+      aria-label={BRAND_NAME}
     >
-      <span className={cn("col-start-2 row-start-1 text-text-main", rest)}>op</span>
-      <span
-        className={cn(
-          "col-start-1 row-start-1 row-span-3 text-primary self-center pe-0.5",
-          shared
-        )}
-      >
-        T
-      </span>
-      <span className={cn("col-start-2 row-start-3 text-text-main", rest)}>vents</span>
+      <span className="text-primary">Top</span>
+      <span className="text-text-main"> Eventer</span>
     </span>
   );
 

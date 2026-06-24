@@ -1,5 +1,5 @@
 /** User-facing product name (internal package/cookie names stay `pannuy`). */
-export const BRAND_NAME = "Top Events";
+export const BRAND_NAME = "Top Eventer";
 
 export const BRAND_CALENDAR_NAME = `${BRAND_NAME} — זמינות`;
 

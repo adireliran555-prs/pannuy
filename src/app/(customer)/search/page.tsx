@@ -58,7 +58,7 @@ export default async function SearchPage({ searchParams }: PageProps) {
   const data = await searchSuppliers({
     areas,
     date: params.date,
-    category,
+    category: category ?? Category.PHOTOGRAPHER,
     page,
   });
 

@@ -47,6 +47,7 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
 
   const areasParam = searchParams.get("areas") || "";
   const initialAreas = areasParam ? areasParam.split(",").filter(Boolean) : [];
+  const initialCategory = searchParams.get("category") || "PHOTOGRAPHER";
 
   const [filters, setFilters] = useState<Filters>({
     date: searchParams.get("date") || "",
@@ -54,12 +55,17 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
     sortBy: "relevance",
   });
   const [selectedAreas, setSelectedAreas] = useState<string[]>(initialAreas);
+  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [recentlyViewed, setRecentlyViewed] = useState<RecentView[]>([]);
   const [showFilterDrawer, setShowFilterDrawer] = useState(false);
   const [showAreaDropdown, setShowAreaDropdown] = useState(false);
   const [showPriceDropdown, setShowPriceDropdown] = useState(false);
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    setSelectedCategory(searchParams.get("category") || "PHOTOGRAPHER");
+  }, [searchParams]);
 
   useEffect(() => {
     setRecentlyViewed(readRecentlyViewed());
@@ -95,10 +101,20 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const handleCategoryChange = (categoryId: string) => {
+    setSelectedCategory(categoryId);
+    setPage(1);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("category", categoryId);
+    params.delete("page");
+    router.push(`/search?${params.toString()}`);
+  };
+
   const { suppliers, total, totalPages, areaFallback, isLoading } = useSuppliers(
     {
       areas: selectedAreas.length > 0 ? selectedAreas : undefined,
       date: filters.date || undefined,
+      category: selectedCategory,
       priceMax: filters.priceMax || undefined,
       sortBy: filters.sortBy,
       page,
@@ -132,29 +148,33 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
       <div className="sticky top-0 z-30 bg-white border-b border-border shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-3 pb-0 flex items-center gap-3 overflow-x-auto">
           {[
-            { id: "PHOTOGRAPHER", emoji: "📸", active: true },
-            { id: "VIDEOGRAPHER", emoji: "🎬", active: false },
-            { id: "DJ", emoji: "🎧", active: false },
-            { id: "CATERING", emoji: "🍽️", active: false },
-            { id: "VENUE", emoji: "🏛️", active: false },
-            { id: "HAIR_STYLIST", emoji: "💇", active: false },
-            { id: "MAKEUP_ARTIST", emoji: "💄", active: false },
-            { id: "PHOTO_BOOTH", emoji: "🖼️", active: false },
-            { id: "EVENT_PRODUCER", emoji: "🎪", active: false },
-          ].map(({ id, emoji, active }) => (
+            { id: "PHOTOGRAPHER", emoji: "📸", open: true },
+            { id: "VIDEOGRAPHER", emoji: "🎬", open: true },
+            { id: "DJ", emoji: "🎧", open: false },
+            { id: "CATERING", emoji: "🍽️", open: false },
+            { id: "VENUE", emoji: "🏛️", open: false },
+            { id: "HAIR_STYLIST", emoji: "💇", open: false },
+            { id: "MAKEUP_ARTIST", emoji: "💄", open: false },
+            { id: "PHOTO_BOOTH", emoji: "🖼️", open: false },
+            { id: "EVENT_PRODUCER", emoji: "🎪", open: false },
+          ].map(({ id, emoji, open }) => (
             <button
               key={id}
-              disabled={!active}
+              type="button"
+              disabled={!open}
+              onClick={() => open && handleCategoryChange(id)}
               className={cn(
                 "flex items-center gap-1.5 px-4 py-2 rounded-full border-2 text-sm font-semibold whitespace-nowrap mb-3 transition-colors",
-                active
+                selectedCategory === id && open
                   ? "border-primary bg-primary text-white"
-                  : "border-border text-text-muted cursor-not-allowed opacity-60"
+                  : open
+                    ? "border-border text-text-main hover:border-primary"
+                    : "border-border text-text-muted cursor-not-allowed opacity-60"
               )}
             >
               <span>{emoji}</span>
               {CATEGORY_LABELS[id]}
-              {!active && (
+              {!open && (
                 <span className="text-[10px] font-bold bg-gray-700 text-white px-1.5 py-0.5 rounded-full">
                   בקרוב
                 </span>
