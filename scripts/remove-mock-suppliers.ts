@@ -42,8 +42,29 @@ async function main() {
 
   const ids = mockSuppliers.map((s) => s.id);
 
+  const meetings = await prisma.meeting.findMany({
+    where: { supplierId: { in: ids } },
+    select: { id: true },
+  });
+  const meetingIds = meetings.map((m) => m.id);
+
+  if (meetingIds.length > 0) {
+    await prisma.affiliateEarning.deleteMany({
+      where: { meetingId: { in: meetingIds } },
+    });
+    await prisma.review.deleteMany({ where: { meetingId: { in: meetingIds } } });
+    await prisma.meeting.deleteMany({ where: { id: { in: meetingIds } } });
+  }
+
   await prisma.review.deleteMany({ where: { supplierId: { in: ids } } });
-  await prisma.meeting.deleteMany({ where: { supplierId: { in: ids } } });
+  await prisma.affiliateEarning.deleteMany({
+    where: {
+      OR: [
+        { referringSupplierId: { in: ids } },
+        { receivingSupplierId: { in: ids } },
+      ],
+    },
+  });
   await prisma.savedSupplier.deleteMany({ where: { supplierId: { in: ids } } });
   await prisma.availabilitySlot.deleteMany({ where: { supplierId: { in: ids } } });
   await prisma.supplierPackage.deleteMany({ where: { supplierId: { in: ids } } });
