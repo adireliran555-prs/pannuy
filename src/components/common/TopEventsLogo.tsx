@@ -3,10 +3,13 @@ import { cn } from "@/lib/utils";
 
 type Size = "sm" | "md" | "lg";
 
-const SIZE_STYLES: Record<Size, { t: string; line: string }> = {
-  sm: { t: "text-[1.35rem]", line: "text-sm" },
-  md: { t: "text-[2rem]", line: "text-xl" },
-  lg: { t: "text-[2.5rem]", line: "text-2xl" },
+const SIZE_STYLES: Record<
+  Size,
+  { shared: string; side: string; op: string; gap: string }
+> = {
+  sm: { shared: "text-[1.75rem]", side: "text-[0.65rem]", op: "text-[0.65rem]", gap: "gap-x-0" },
+  md: { shared: "text-[2.75rem]", side: "text-base", op: "text-sm", gap: "gap-x-0.5" },
+  lg: { shared: "text-[3.5rem]", side: "text-xl", op: "text-lg", gap: "gap-x-1" },
 };
 
 interface TopEventsLogoProps {
@@ -16,32 +19,65 @@ interface TopEventsLogoProps {
 }
 
 /**
- * LTR wordmark: shared T for Top / Events. Always `dir=ltr` so RTL pages don't flip it.
+ * Shared-T wordmark (always LTR):
+ *
+ *       op          ← "Top"
+ *   Even T s        ← "Events" (the big T is the crossbar letter)
  */
 export default function TopEventsLogo({
   href,
   size = "md",
   className,
 }: TopEventsLogoProps) {
-  const { t, line } = SIZE_STYLES[size];
+  const { shared, side, op, gap } = SIZE_STYLES[size];
 
   const mark = (
     <span
       dir="ltr"
       className={cn(
-        "inline-grid grid-cols-[auto_1fr] grid-rows-2 gap-x-0.5 font-black leading-[0.9] tracking-tight select-none text-left",
+        "inline-grid font-black leading-none tracking-tight select-none text-left",
+        "grid-cols-[auto_auto_auto] grid-rows-[auto_auto]",
+        gap,
         className
       )}
       aria-label="Top Events"
     >
+      {/* Top → shared T + op */}
       <span
-        className={cn("text-primary row-span-2 self-center pe-0.5", t)}
+        className={cn(
+          "col-start-2 row-start-1 justify-self-center text-text-main -mb-1",
+          op
+        )}
+      >
+        op
+      </span>
+
+      {/* Events → Even + shared T + s */}
+      <span
+        className={cn(
+          "col-start-1 row-start-2 self-end text-text-main",
+          side
+        )}
+      >
+        Even
+      </span>
+      <span
+        className={cn(
+          "col-start-2 row-start-2 text-primary justify-self-center -mt-2",
+          shared
+        )}
         aria-hidden
       >
         T
       </span>
-      <span className={cn("text-text-main", line)}>op</span>
-      <span className={cn("text-text-main -mt-0.5", line)}>Events</span>
+      <span
+        className={cn(
+          "col-start-3 row-start-2 self-end text-text-main",
+          side
+        )}
+      >
+        s
+      </span>
     </span>
   );
 
