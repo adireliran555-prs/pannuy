@@ -3,13 +3,10 @@ import { cn } from "@/lib/utils";
 
 type Size = "sm" | "md" | "lg";
 
-const SIZE_STYLES: Record<
-  Size,
-  { shared: string; side: string; op: string; gap: string }
-> = {
-  sm: { shared: "text-[1.75rem]", side: "text-[0.65rem]", op: "text-[0.65rem]", gap: "gap-x-0" },
-  md: { shared: "text-[2.75rem]", side: "text-base", op: "text-sm", gap: "gap-x-0.5" },
-  lg: { shared: "text-[3.5rem]", side: "text-xl", op: "text-lg", gap: "gap-x-1" },
+const SIZE_STYLES: Record<Size, { shared: string; rest: string }> = {
+  sm: { shared: "text-2xl", rest: "text-sm" },
+  md: { shared: "text-4xl", rest: "text-xl" },
+  lg: { shared: "text-5xl", rest: "text-2xl" },
 };
 
 interface TopEventsLogoProps {
@@ -19,65 +16,38 @@ interface TopEventsLogoProps {
 }
 
 /**
- * Shared-T wordmark (always LTR):
+ * Single shared T wordmark (LTR):
  *
- *       op          ← "Top"
- *   Even T s        ← "Events" (the big T is the crossbar letter)
+ *     op      → Top
+ * T           (shared)
+ *     vents   → Events
  */
 export default function TopEventsLogo({
   href,
   size = "md",
   className,
 }: TopEventsLogoProps) {
-  const { shared, side, op, gap } = SIZE_STYLES[size];
+  const { shared, rest } = SIZE_STYLES[size];
 
   const mark = (
     <span
       dir="ltr"
       className={cn(
-        "inline-grid font-black leading-none tracking-tight select-none text-left",
-        "grid-cols-[auto_auto_auto] grid-rows-[auto_auto]",
-        gap,
+        "inline-grid grid-cols-[auto_auto] grid-rows-[auto_auto_auto] items-center font-black leading-none tracking-tight select-none text-left gap-x-1",
         className
       )}
       aria-label="Top Events"
     >
-      {/* Top → shared T + op */}
+      <span className={cn("col-start-2 row-start-1 text-text-main", rest)}>op</span>
       <span
         className={cn(
-          "col-start-2 row-start-1 justify-self-center text-text-main -mb-1",
-          op
-        )}
-      >
-        op
-      </span>
-
-      {/* Events → Even + shared T + s */}
-      <span
-        className={cn(
-          "col-start-1 row-start-2 self-end text-text-main",
-          side
-        )}
-      >
-        Even
-      </span>
-      <span
-        className={cn(
-          "col-start-2 row-start-2 text-primary justify-self-center -mt-2",
+          "col-start-1 row-start-1 row-span-3 text-primary self-center pe-0.5",
           shared
         )}
-        aria-hidden
       >
         T
       </span>
-      <span
-        className={cn(
-          "col-start-3 row-start-2 self-end text-text-main",
-          side
-        )}
-      >
-        s
-      </span>
+      <span className={cn("col-start-2 row-start-3 text-text-main", rest)}>vents</span>
     </span>
   );
 

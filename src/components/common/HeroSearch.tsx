@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Calendar, MapPin, Search, ArrowLeft } from "lucide-react";
+import { setEventContext } from "@/lib/event-context";
+import { cn } from "@/lib/utils";
 
 const REGIONS = [
   { id: "מרכז", label: "מרכז" },
@@ -12,8 +14,6 @@ const REGIONS = [
   { id: "הדרום", label: "דרום" },
   { id: "השרון", label: "השרון" },
 ];
-
-import { setEventContext } from "@/lib/event-context";
 
 export default function HeroSearch() {
   const router = useRouter();
@@ -34,13 +34,21 @@ export default function HeroSearch() {
     router.push(`/search${params.toString() ? `?${params}` : ""}`);
   };
 
+  const fieldClass =
+    "w-full min-w-0 rounded-xl border-2 border-border bg-white text-sm font-semibold text-text-main hover:border-primary focus-within:border-primary focus:border-primary outline-none transition-colors";
+
   return (
-    <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-border p-3 sm:p-4 max-w-2xl mx-auto">
-      <div className="flex flex-col sm:flex-row items-stretch gap-2">
-        {/* Date — native input so iOS opens the system picker on tap */}
-        <label className="relative flex-1 flex items-center gap-2 px-4 py-3 rounded-xl border-2 border-border text-text-main hover:border-primary focus-within:border-primary transition-colors text-sm font-semibold cursor-pointer">
-          <Calendar className="h-4 w-4 text-primary flex-shrink-0" aria-hidden />
-          <span className="text-text-muted">תאריך החתונה</span>
+    <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-border p-3 sm:p-4 max-w-2xl mx-auto w-full">
+      <div className="flex flex-col gap-3">
+        {/* Date */}
+        <label
+          className={cn(
+            fieldClass,
+            "relative flex items-center gap-2 px-4 py-3 cursor-pointer"
+          )}
+        >
+          <Calendar className="h-4 w-4 text-primary shrink-0" aria-hidden />
+          <span className="text-text-muted shrink-0">תאריך החתונה</span>
           <input
             type="date"
             value={date}
@@ -50,24 +58,33 @@ export default function HeroSearch() {
             aria-label="תאריך החתונה"
           />
           {date && (
-            <span className="ms-auto text-text-main">
-              {new Date(date).toLocaleDateString("he-IL", { day: "numeric", month: "short", year: "numeric" })}
+            <span className="ms-auto text-text-main truncate">
+              {new Date(date).toLocaleDateString("he-IL", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              })}
             </span>
           )}
         </label>
 
         {/* Area */}
-        <div className="relative flex-1">
-          <MapPin className="absolute end-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary pointer-events-none" aria-hidden />
+        <div className="relative w-full min-w-0">
+          <MapPin
+            className="absolute end-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary pointer-events-none"
+            aria-hidden
+          />
           <select
             value={area}
             onChange={(e) => setArea(e.target.value)}
-            className="w-full appearance-none pe-9 ps-4 py-3 rounded-xl border-2 border-border text-text-main hover:border-primary focus:border-primary outline-none transition-colors text-sm font-semibold bg-white cursor-pointer"
+            className={cn(fieldClass, "appearance-none pe-10 ps-4 py-3 cursor-pointer")}
             aria-label="אזור"
           >
             <option value="">כל האזורים</option>
             {REGIONS.map((r) => (
-              <option key={r.id} value={r.id}>{r.label}</option>
+              <option key={r.id} value={r.id}>
+                {r.label}
+              </option>
             ))}
           </select>
         </div>
@@ -76,11 +93,11 @@ export default function HeroSearch() {
         <button
           type="button"
           onClick={submit}
-          className="inline-flex items-center justify-center gap-2 bg-primary text-white font-bold px-6 py-3 rounded-xl shadow-md hover:bg-primary-dark transition-colors text-sm"
+          className="w-full inline-flex items-center justify-center gap-2 bg-primary text-white font-bold px-6 py-3.5 rounded-xl shadow-md hover:bg-primary-dark transition-colors text-sm"
         >
-          <Search className="h-4 w-4" />
-          חפשו ספקים פנויים
-          <ArrowLeft className="h-4 w-4" />
+          <Search className="h-4 w-4 shrink-0" />
+          <span>חפשו ספקים פנויים</span>
+          <ArrowLeft className="h-4 w-4 shrink-0" />
         </button>
       </div>
     </div>
