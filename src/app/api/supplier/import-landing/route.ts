@@ -1,15 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSupplierSession } from "@/lib/api-auth";
 import { mirrorImagesParallel } from "@/lib/cloudinary-server";
-import {
-  findPricingPageUrls,
-  importRichnessScore,
-  isSparseImport,
-  parseLandingPage,
-} from "@/lib/landing-import";
-
-// Imports a supplier's existing website / landing page: fetches it server-side,
-// follows pricing links when needed, extracts profile data, mirrors photos to Cloudinary.
+import { resolveSiteImport } from "@/lib/landing-import";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -58,51 +50,6 @@ async function fetchHtml(url: string): Promise<{ html: string; finalUrl: string 
   }
 }
 
-async function resolveBestPage(startUrl: string): Promise<{
-  html: string;
-  finalUrl: string;
-  followedUrl: string | null;
-}> {
-  const initial = await fetchHtml(startUrl);
-  if (!initial) throw new Error("FETCH_FAILED");
-
-  let best = {
-    html: initial.html,
-    finalUrl: initial.finalUrl,
-    parsed: parseLandingPage(initial.html, initial.finalUrl),
-    followedUrl: null as string | null,
-  };
-
-  if (!isSparseImport(best.parsed)) {
-    return { html: best.html, finalUrl: best.finalUrl, followedUrl: null };
-  }
-
-  const candidates = findPricingPageUrls(initial.html, initial.finalUrl).filter(
-    (candidate) => candidate !== initial.finalUrl && candidate !== startUrl
-  );
-
-  for (const candidate of candidates.slice(0, 3)) {
-    const fetched = await fetchHtml(candidate);
-    if (!fetched) continue;
-    const parsed = parseLandingPage(fetched.html, fetched.finalUrl);
-    if (importRichnessScore(parsed) > importRichnessScore(best.parsed)) {
-      best = {
-        html: fetched.html,
-        finalUrl: fetched.finalUrl,
-        parsed,
-        followedUrl: fetched.finalUrl,
-      };
-    }
-    if (!isSparseImport(parsed)) break;
-  }
-
-  return {
-    html: best.html,
-    finalUrl: best.finalUrl,
-    followedUrl: best.followedUrl,
-  };
-}
-
 export async function POST(request: NextRequest) {
   const { error } = requireSupplierSession(request);
   if (error) return error;
@@ -119,17 +66,15 @@ export async function POST(request: NextRequest) {
   const startedAt = Date.now();
 
   try {
-    const { html, finalUrl, followedUrl } = await resolveBestPage(url.toString());
-    const parsed = parseLandingPage(html, finalUrl);
+    const { parsed, followedUrls } = await resolveSiteImport(url.toString(), fetchHtml);
     const mirrored = await mirrorImagesParallel(parsed.rawImages, 3);
-
     const durationMs = Date.now() - startedAt;
 
     return NextResponse.json({
       success: true,
       data: {
-        sourceUrl: finalUrl,
-        followedUrl,
+        sourceUrl: parsed.sourceUrl,
+        followedUrls,
         name: parsed.name,
         bioHe: parsed.bioHe,
         phone: parsed.phone,
@@ -138,15 +83,15 @@ export async function POST(request: NextRequest) {
         serviceAreas: parsed.serviceAreas,
         basePriceFrom: parsed.basePriceFrom,
         basePriceTo: parsed.basePriceTo,
-        packages: parsed.packages,
+        packages: parsed.packages.filter((p) => p.price > 0),
         images: mirrored.map((m) => m.url),
         imageUploads: mirrored.map(({ url: imageUrl, publicId }) => ({ url: imageUrl, publicId })),
         stats: {
           durationMs,
           imagesFound: parsed.rawImages.length,
           imagesMirrored: mirrored.length,
-          packagesFound: parsed.packages.length,
-          followedPricingPage: Boolean(followedUrl),
+          packagesFound: parsed.packages.filter((p) => p.price > 0).length,
+          pagesScanned: followedUrls.length + 1,
         },
       },
     });

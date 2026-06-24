@@ -59,6 +59,15 @@ export function stripHtml(html: string): string {
   );
 }
 
+export function cleanBioText(text: string): string {
+  return normalizeText(text)
+    .replace(/\s*בניה וקידום אתרים.*$/i, "")
+    .replace(/\s*טופיק מדיה.*$/i, "")
+    .replace(/\s*כל הזכויות שמורות.*$/i, "")
+    .replace(/\s*Oren Sonego.*$/i, "")
+    .trim();
+}
+
 export function cleanBusinessName(title: string, siteName?: string | null): string | null {
   const cleanSite =
     siteName &&
@@ -113,7 +122,7 @@ export function extractBio(html: string, description: string): string | null {
 
   const combined = chunks.join(" ").trim();
   if (combined.length < 30) return null;
-  return combined.slice(0, 500);
+  return cleanBioText(combined).slice(0, 500) || null;
 }
 
 export function inferCategory(text: string): string | null {
@@ -226,13 +235,17 @@ export function extractPackages(html: string, title: string): ImportedPackage[] 
     }
   }
 
-  const addons = Array.from(
-    html.matchAll(/>\s*([^<]{12,160}?)\s*מחיר:\s*([\d,]+)\s*₪/gi)
-  )
-    .map((m) => ({
-      name: normalizeText(m[1]).replace(/^>\s*/, ""),
-      price: Number(m[2].replace(/,/g, "")),
-    }))
+  const addons = Array.from(html.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi))
+    .map((m) => stripHtml(m[1].replace(/<br\s*\/?>/gi, " ")))
+    .filter((text) => /מחיר:\s*[\d,]+\s*₪/.test(text) && text.length >= 15)
+    .map((text) => {
+      const priceMatch = text.match(/מחיר:\s*([\d,]+)\s*₪/);
+      const name = text.replace(/מחיר:\s*[\d,]+\s*₪.*$/i, "").trim();
+      return {
+        name,
+        price: priceMatch ? Number(priceMatch[1].replace(/,/g, "")) : 0,
+      };
+    })
     .filter((a) => a.name.length >= 8 && a.price >= 200 && a.price <= 20_000);
 
   for (const addon of addons) {
@@ -248,6 +261,35 @@ export function extractPackages(html: string, title: string): ImportedPackage[] 
   return packages.slice(0, 3);
 }
 
+/** Service blocks on marketing homepages (Elementor flip-box / heading + paragraph). */
+export function extractServiceSectionsAsPackages(html: string): ImportedPackage[] {
+  const packages: ImportedPackage[] = [];
+  const seen = new Set<string>();
+
+  const blocks = Array.from(
+    html.matchAll(
+      /<h3[^>]*class="[^"]*elementor-heading-title[^"]*"[^>]*>([\s\S]*?)<\/h3>[\s\S]{0,1200}?<p[^>]*>([\s\S]*?)<\/p>/gi
+    )
+  );
+
+  for (const block of blocks) {
+    const name = stripHtml(block[1]);
+    const desc = cleanBioText(stripHtml(block[2]));
+    if (name.length < 4 || desc.length < 20 || seen.has(name)) continue;
+    if (/השאירו פרטים|בואו נדבר|השירותים שלי/i.test(name)) continue;
+    seen.add(name);
+    packages.push({
+      nameHe: name.slice(0, 80),
+      price: 0,
+      includes: desc.length > 120 ? [desc.slice(0, 200)] : [desc],
+      isPopular: packages.length === 0,
+    });
+    if (packages.length >= 3) break;
+  }
+
+  return packages;
+}
+
 function isPortfolioImage(src: string): boolean {
   if (/sprite|logo|icon|favicon|placeholder|pixel|1x1|avatar|loading|spinner/i.test(src)) {
     return false;
@@ -255,6 +297,7 @@ function isPortfolioImage(src: string): boolean {
   if (/youtube|ytimg|vimeo|wp-rocket|play-button|video-thumb|googleusercontent/i.test(src)) {
     return false;
   }
+  if (/LOGO|logo-white|\/logo[-_]|favicon/i.test(src)) return false;
   if (/Asset-\d|\/logo|banner|header-bg/i.test(src)) return false;
   if (/\.svg(\?|$)/i.test(src)) return false;
 
@@ -307,6 +350,13 @@ export function extractImages(html: string, finalUrl: string, max = 30): string[
   let bg: RegExpExecArray | null;
   while ((bg = bgRe.exec(html)) && images.size < max) addImage(bg[2]);
 
+  // Elementor / WordPress often embed image URLs in JSON or inline CSS — not only <img>.
+  for (const m of html.matchAll(
+    /(https?:\/\/[^"'\\s]+)?\/wp-content\/uploads\/[^"'\\s,;)]+?\.(?:jpe?g|png|webp)(?:\?[^"'\\s,;)]*)?/gi
+  )) {
+    addImage(m[0]);
+  }
+
   return Array.from(images);
 }
 
@@ -335,6 +385,167 @@ export function findPricingPageUrls(html: string, baseUrl: string): string[] {
   }
 
   return Array.from(urls);
+}
+
+export function scoreCandidateUrl(url: string): number {
+  let score = 0;
+  const decoded = decodeURIComponent(url).toLowerCase();
+  if (/הצעת-מחיר|הצעת.%d7%9e%d7%97%d7%99%d7%a8|pricelist|price-list/i.test(decoded)) {
+    score += 40;
+  }
+  if (/חתונה|wedding|יום-מרוכז/i.test(decoded)) score += 12;
+  if (/צילומי|portfolio|gallery|תדמית/i.test(decoded)) score += 6;
+  try {
+    const path = new URL(url).pathname;
+    if (path === "/" || path === "") score += 8;
+  } catch {
+    /* skip */
+  }
+  return score;
+}
+
+export async function discoverSitePageUrls(
+  siteUrl: string,
+  fetchText: (url: string) => Promise<string | null>
+): Promise<string[]> {
+  const origin = new URL(siteUrl).origin;
+  const found = new Set<string>([siteUrl]);
+
+  const sitemapCandidates = [
+    `${origin}/page-sitemap.xml`,
+    `${origin}/sitemap.xml`,
+    `${origin}/sitemap_index.xml`,
+  ];
+
+  for (const sitemapUrl of sitemapCandidates) {
+    const xml = await fetchText(sitemapUrl);
+    if (!xml) continue;
+
+    const locs = Array.from(xml.matchAll(/<loc>([^<]+)<\/loc>/g)).map((m) => m[1]);
+    for (const loc of locs) {
+      if (loc.endsWith(".xml")) {
+        const childXml = await fetchText(loc);
+        if (!childXml) continue;
+        for (const childLoc of childXml.matchAll(/<loc>([^<]+)<\/loc>/g)) {
+          try {
+            const u = new URL(childLoc[1]);
+            if (u.origin === origin && !u.pathname.endsWith(".xml")) found.add(u.toString());
+          } catch {
+            /* skip */
+          }
+        }
+      } else {
+        try {
+          const u = new URL(loc);
+          if (u.origin === origin) found.add(u.toString());
+        } catch {
+          /* skip */
+        }
+      }
+    }
+    if (found.size > 1) break;
+  }
+
+  return Array.from(found)
+    .sort((a, b) => scoreCandidateUrl(b) - scoreCandidateUrl(a))
+    .slice(0, 6);
+}
+
+type ParsedPage = ReturnType<typeof parseLandingPage>;
+
+function quotePageScore(page: ParsedPage): number {
+  let score = importRichnessScore(page);
+  const blob = `${page.packages.map((p) => p.includes.join(" ")).join(" ")} ${page.bioHe ?? ""}`;
+  if (/אורן סונגו/.test(blob)) score += 30;
+  try {
+    const path = decodeURIComponent(new URL(page.sourceUrl).pathname);
+    if (/הצעת-מחיר-3|הצעת-מחיר-11/i.test(path)) score += 20;
+  } catch {
+    /* skip */
+  }
+  return score;
+}
+
+export function mergeLandingPages(pages: ParsedPage[], startUrl: string): ParsedPage {
+  if (pages.length === 0) {
+    throw new Error("NO_PAGES");
+  }
+
+  const sorted = [...pages].sort((a, b) => importRichnessScore(b) - importRichnessScore(a));
+  const richest = sorted[0];
+  const quotePages = pages.filter((p) => p.packages.some((pkg) => pkg.price >= 3_000));
+  const bestQuote =
+    [...quotePages].sort((a, b) => quotePageScore(b) - quotePageScore(a))[0] ?? richest;
+  const home =
+    pages.find((p) => {
+      try {
+        const path = new URL(p.sourceUrl).pathname.replace(/\/$/, "");
+        return path === "" || path === "/";
+      } catch {
+        return false;
+      }
+    }) ?? pages.find((p) => p.sourceUrl === startUrl) ?? pages[0];
+
+  const images = new Set<string>();
+  for (const page of pages) {
+    for (const img of page.rawImages) images.add(img);
+  }
+
+  const packageMap = new Map<string, ImportedPackage>();
+  for (const pkg of bestQuote.packages) {
+    if (pkg.price > 0) packageMap.set(pkg.nameHe, pkg);
+  }
+  let packages = Array.from(packageMap.values()).slice(0, 3);
+  if (packages.length === 0) {
+    const homeHtml = (home as ParsedPage & { _html?: string })._html ?? "";
+    packages = extractServiceSectionsAsPackages(homeHtml).slice(0, 3);
+  }
+
+  const bios = pages.map((p) => p.bioHe).filter(Boolean) as string[];
+  const bioHe = bios.sort((a, b) => b.length - a.length)[0] ?? null;
+
+  const serviceAreas = Array.from(new Set(pages.flatMap((p) => p.serviceAreas)));
+
+  return {
+    sourceUrl: startUrl,
+    name: home.name ?? richest.name,
+    bioHe: bioHe ? cleanBioText(bioHe).slice(0, 500) : null,
+    phone: pages.map((p) => p.phone).find(Boolean) ?? null,
+    email: pages.map((p) => p.email).find(Boolean) ?? null,
+    category: bestQuote.category ?? home.category,
+    serviceAreas,
+    basePriceFrom: bestQuote.basePriceFrom ?? home.basePriceFrom,
+    basePriceTo: bestQuote.basePriceTo ?? home.basePriceTo,
+    packages,
+    rawImages: Array.from(images).slice(0, 30),
+  };
+}
+
+export async function resolveSiteImport(
+  startUrl: string,
+  fetchHtml: (url: string) => Promise<{ html: string; finalUrl: string } | null>
+): Promise<{ parsed: ParsedPage; followedUrls: string[] }> {
+  const fetchText = async (url: string) => {
+    const res = await fetchHtml(url);
+    return res?.html ?? null;
+  };
+
+  const candidates = await discoverSitePageUrls(startUrl, fetchText);
+  const followedUrls: string[] = [];
+  const parsedPages: Array<ParsedPage & { _html?: string }> = [];
+
+  for (const candidate of candidates) {
+    const fetched = await fetchHtml(candidate);
+    if (!fetched) continue;
+    if (candidate !== startUrl) followedUrls.push(fetched.finalUrl);
+    const parsed = parseLandingPage(fetched.html, fetched.finalUrl);
+    parsedPages.push({ ...parsed, _html: fetched.html });
+  }
+
+  if (parsedPages.length === 0) throw new Error("FETCH_FAILED");
+
+  const merged = mergeLandingPages(parsedPages, startUrl);
+  return { parsed: merged, followedUrls };
 }
 
 export function importRichnessScore(
