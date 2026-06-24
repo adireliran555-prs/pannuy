@@ -11,6 +11,12 @@ import { SupplierCardSkeleton } from "@/components/ui/Skeleton";
 import EmptyState from "@/components/ui/EmptyState";
 import Button from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
+import { setEventContext } from "@/lib/event-context";
+import {
+  readRecentlyViewed,
+  RECENTLY_VIEWED_KEY,
+  type RecentView,
+} from "@/lib/recently-viewed";
 
 interface InitialData {
   suppliers: NormalizedSupplier[];
@@ -28,8 +34,6 @@ const REGIONS = [
   { id: "הדרום", label: "דרום", emoji: "🌵" },
   { id: "השרון", label: "השרון", emoji: "🌊" },
 ];
-
-const RECENTLY_VIEWED_KEY = "pannuy_recently_viewed";
 
 interface Filters {
   date: string;
@@ -50,7 +54,7 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
     sortBy: "relevance",
   });
   const [selectedAreas, setSelectedAreas] = useState<string[]>(initialAreas);
-  const [recentlyViewed, setRecentlyViewed] = useState<string[]>([]);
+  const [recentlyViewed, setRecentlyViewed] = useState<RecentView[]>([]);
   const [showFilterDrawer, setShowFilterDrawer] = useState(false);
   const [showAreaDropdown, setShowAreaDropdown] = useState(false);
   const [showPriceDropdown, setShowPriceDropdown] = useState(false);
@@ -58,9 +62,19 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
   const [page, setPage] = useState(1);
 
   useEffect(() => {
-    const stored: string[] = JSON.parse(localStorage.getItem(RECENTLY_VIEWED_KEY) ?? "[]");
-    setRecentlyViewed(stored);
-  }, []);
+    setRecentlyViewed(readRecentlyViewed());
+    const date = searchParams.get("date") || "";
+    const areas = (searchParams.get("areas") || "").split(",").filter(Boolean);
+    if (date || areas.length > 0) {
+      setEventContext({ date, areas });
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (filters.date || selectedAreas.length > 0) {
+      setEventContext({ date: filters.date, areas: selectedAreas });
+    }
+  }, [filters.date, selectedAreas]);
 
   const filterBarRef = useRef<HTMLDivElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
@@ -347,13 +361,13 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
             <button onClick={() => { localStorage.removeItem(RECENTLY_VIEWED_KEY); setRecentlyViewed([]); }} className="text-xs text-text-muted hover:text-text-main transition-colors">נקו</button>
           </div>
           <div className="flex gap-3 overflow-x-auto pb-2">
-            {recentlyViewed.map((slug) => (
+            {recentlyViewed.map(({ slug, name }) => (
               <Link
                 key={slug}
                 href={`/suppliers/${slug}`}
                 className="flex-shrink-0 text-xs font-medium text-primary bg-primary-light border border-primary/20 px-3 py-1.5 rounded-full hover:bg-primary hover:text-white transition-colors"
               >
-                {slug.replace(/-/g, " ")}
+                {name}
               </Link>
             ))}
           </div>

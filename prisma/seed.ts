@@ -14,7 +14,8 @@ const adapter = new PrismaPg({
 });
 const prisma = new PrismaClient({ adapter } as ConstructorParameters<typeof PrismaClient>[0]);
 
-const SUPPLIERS = [
+// Demo supplier templates kept for reference — not seeded by default.
+const SUPPLIERS_TEMPLATE = [
   {
     name: "דנה כהן",
     phone: "0521234001",
@@ -372,6 +373,8 @@ const SUPPLIERS = [
     ],
   },
 ];
+
+const SUPPLIERS: typeof SUPPLIERS_TEMPLATE = [];
 
 const REVIEW_TEXTS = [
   "דנה הייתה פשוט מדהימה! התמונות יצאו כמו חלום. כל רגע תועד בצורה המושלמת ביותר. ממש המלצה חמה!",

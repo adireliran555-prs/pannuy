@@ -4,8 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   MapPin,
-  Clock,
-  MessageSquare,
   Share2,
   Heart,
   CheckCircle,
@@ -24,6 +22,9 @@ import { formatPrice, cn } from "@/lib/utils";
 import { CATEGORY_LABELS_SINGULAR } from "@/lib/categories";
 import { BRAND_NAME } from "@/lib/branding";
 import type { NormalizedSupplier } from "@/lib/supplier";
+import { pushRecentlyViewed } from "@/lib/recently-viewed";
+import { EVENT_CONTEXT_CHANGED, getEventContext } from "@/lib/event-context";
+import { withReturnTo } from "@/lib/return-to";
 
 const MARKET_PRICE_RANGES: Record<string, { min: number; max: number; avg: number }> = {
   PHOTOGRAPHER: { min: 3000, max: 15000, avg: 8500 },
@@ -34,9 +35,6 @@ const MARKET_PRICE_RANGES: Record<string, { min: number; max: number; avg: numbe
   CATERING: { min: 150, max: 500, avg: 280 },
 };
 
-const RECENTLY_VIEWED_KEY = "pannuy_recently_viewed";
-const MAX_RECENTLY_VIEWED = 6;
-
 export default function SupplierProfileClient({ supplier }: { supplier: NormalizedSupplier }) {
   const router = useRouter();
   const [bioExpanded, setBioExpanded] = useState(false);
@@ -44,12 +42,47 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
   const [savePending, setSavePending] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
   const [showStickyBar, setShowStickyBar] = useState(false);
+  const [dateAvailability, setDateAvailability] = useState<boolean | null>(null);
+  const [eventDate, setEventDate] = useState<string | null>(null);
+
+  const refreshEventDate = () => {
+    setEventDate(getEventContext()?.date || null);
+  };
+
+  useEffect(() => {
+    refreshEventDate();
+    const onCtx = () => refreshEventDate();
+    window.addEventListener(EVENT_CONTEXT_CHANGED, onCtx);
+    return () => window.removeEventListener(EVENT_CONTEXT_CHANGED, onCtx);
+  }, []);
+
+  useEffect(() => {
+    if (!eventDate) {
+      setDateAvailability(null);
+      return;
+    }
+    const [y, m] = eventDate.split("-").map(Number);
+    fetch(`/api/suppliers/${supplier.slug}/availability?year=${y}&month=${m}`)
+      .then((r) => r.json())
+      .then((json) => {
+        const day = (json.data ?? []).find(
+          (d: { date: string }) => d.date === eventDate
+        );
+        if (!day) {
+          setDateAvailability(null);
+          return;
+        }
+        const hasOpen = (day.slots ?? []).some(
+          (s: { available: boolean }) => s.available
+        );
+        setDateAvailability(hasOpen);
+      })
+      .catch(() => setDateAvailability(null));
+  }, [eventDate, supplier.slug]);
 
   // Track recently viewed + record a profile view (best-effort, deduped per session per supplier)
   useEffect(() => {
-    const prev: string[] = JSON.parse(localStorage.getItem(RECENTLY_VIEWED_KEY) ?? "[]");
-    const next = [supplier.slug, ...prev.filter((s) => s !== supplier.slug)].slice(0, MAX_RECENTLY_VIEWED);
-    localStorage.setItem(RECENTLY_VIEWED_KEY, JSON.stringify(next));
+    pushRecentlyViewed({ slug: supplier.slug, name: supplier.name });
 
     const SESSION_KEY = "pannuy_viewed_suppliers_session";
     const viewed: string[] = JSON.parse(sessionStorage.getItem(SESSION_KEY) ?? "[]");
@@ -153,7 +186,7 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
             <span className="font-bold text-text-main text-sm truncate">{supplier.name}</span>
             <span className="text-xs font-semibold text-primary">מהטופ של ישראל</span>
           </div>
-          <Button size="sm" onClick={() => router.push(`/book/${supplier.id}`)}>קבעו פגישה</Button>
+          <Button size="sm" onClick={() => router.push(withReturnTo(`/book/${supplier.id}`, `/suppliers/${supplier.slug}`))}>קבעו פגישה</Button>
         </div>
       </div>
 
@@ -227,14 +260,6 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
             {supplier.city}
           </div>
           <span className="text-sm font-semibold text-primary">מהטופ של ישראל</span>
-          <div className="flex items-center gap-1 text-text-muted text-sm">
-            <Clock className="h-3.5 w-3.5" />
-            מגיבים {supplier.responseTime}
-          </div>
-          <div className="flex items-center gap-1 text-text-muted text-sm">
-            <MessageSquare className="h-3.5 w-3.5" />
-            {supplier.responseRate}% מענה
-          </div>
         </div>
 
         {/* Trust signals */}
@@ -248,10 +273,6 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
           <span className="text-xs font-semibold text-primary flex items-center gap-1">
             <Sparkles className="h-3.5 w-3.5" />
             מהטופ של ישראל
-          </span>
-          <span className="text-xs font-semibold text-green-700 flex items-center gap-1">
-            <CheckCircle className="h-3.5 w-3.5" />
-            מגיבים בדרך כלל תוך {supplier.responseTime}
           </span>
         </div>
       </div>
@@ -308,7 +329,7 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
                     hours={pkg.hours}
                     includes={pkg.includes}
                     isPopular={pkg.isPopular}
-                    onSelect={() => router.push(`/book/${supplier.id}`)}
+                    onSelect={() => router.push(withReturnTo(`/book/${supplier.id}`, `/suppliers/${supplier.slug}`))}
                   />
                 ))}
               </div>
@@ -385,28 +406,33 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
                 )}
               </div>
 
-              {/* Response stats */}
-              <div className="flex gap-4 text-sm">
-                <div className="flex-1 text-center p-3 bg-surface rounded-xl">
-                  <p className="font-black text-text-main">{supplier.responseTime}</p>
-                  <p className="text-text-muted text-xs mt-0.5">זמן תגובה</p>
-                </div>
-                <div className="flex-1 text-center p-3 bg-surface rounded-xl">
-                  <p className="font-black text-text-main">{supplier.responseRate}%</p>
-                  <p className="text-text-muted text-xs mt-0.5">מענה</p>
-                </div>
-              </div>
-
               {/* Availability indicator */}
-              <div className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold ${
-                supplier.isAvailable ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
-              }`}>
-                <CheckCircle className="h-4 w-4" />
-                {supplier.isAvailable ? "פנוי לתאריך שלכם ✓" : "לא פנוי לתאריך שלכם"}
-              </div>
+              {eventDate && dateAvailability !== null && (
+                <div
+                  className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold ${
+                    dateAvailability ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
+                  }`}
+                >
+                  <CheckCircle className="h-4 w-4" />
+                  {dateAvailability
+                    ? "פנוי לתאריך שלכם ✓"
+                    : "לא פנוי לתאריך שלכם"}
+                </div>
+              )}
+              {!eventDate && (
+                <p className="text-xs text-text-muted text-center bg-surface rounded-xl px-3 py-2">
+                  בחרו תאריך אירוע בסרגל למעלה כדי לראות זמינות
+                </p>
+              )}
 
               {/* CTA */}
-              <Button size="lg" fullWidth onClick={() => router.push(`/book/${supplier.id}`)}>
+              <Button
+                size="lg"
+                fullWidth
+                onClick={() =>
+                  router.push(withReturnTo(`/book/${supplier.id}`, `/suppliers/${supplier.slug}`))
+                }
+              >
                 קבעו פגישה
               </Button>
 
@@ -452,7 +478,13 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
           <Phone className="h-4 w-4" />
           WhatsApp
         </button>
-        <Button size="lg" fullWidth onClick={() => router.push(`/book/${supplier.id}`)}>
+        <Button
+          size="lg"
+          fullWidth
+          onClick={() =>
+            router.push(withReturnTo(`/book/${supplier.id}`, `/suppliers/${supplier.slug}`))
+          }
+        >
           קבעו פגישה · {formatPrice(supplier.priceFrom)}+
         </Button>
       </div>

@@ -13,6 +13,8 @@ const REGIONS = [
   { id: "השרון", label: "השרון" },
 ];
 
+import { setEventContext } from "@/lib/event-context";
+
 export default function HeroSearch() {
   const router = useRouter();
   const [date, setDate] = useState("");
@@ -23,6 +25,12 @@ export default function HeroSearch() {
     const params = new URLSearchParams();
     if (date) params.set("date", date);
     if (area) params.set("areas", area);
+    if (date || area) {
+      setEventContext({
+        date,
+        areas: area ? [area] : [],
+      });
+    }
     router.push(`/search${params.toString() ? `?${params}` : ""}`);
   };
 

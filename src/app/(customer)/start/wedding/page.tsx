@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -11,6 +10,8 @@ import Button from "@/components/ui/Button";
 import StepProgress from "@/components/ui/StepProgress";
 import { cn } from "@/lib/utils";
 import TopEventsLogo from "@/components/common/TopEventsLogo";
+import { returnToFromSearch, sanitizeReturnTo } from "@/lib/return-to";
+import { setEventContext } from "@/lib/event-context";
 
 const EVENT_TYPES = [
   { id: "wedding", label: "חתונה", emoji: "💍" },
@@ -41,7 +42,17 @@ const STEPS = [
 ];
 
 export default function WeddingPage() {
+  return (
+    <Suspense>
+      <WeddingPageContent />
+    </Suspense>
+  );
+}
+
+function WeddingPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnTo = returnToFromSearch(searchParams.toString());
   const [isLoading, setIsLoading] = useState(false);
   const [selectedAreas, setSelectedAreas] = useState<string[]>([]);
   const [areasError, setAreasError] = useState("");
@@ -75,9 +86,19 @@ export default function WeddingPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           weddingDate: data.eventDate,
-          weddingArea: selectedAreas[0],
+          weddingArea: selectedAreas.join(","),
         }),
       });
+      setEventContext({
+        date: data.eventDate,
+        areas: selectedAreas,
+        eventType: selectedEventType,
+      });
+      const safeReturn = sanitizeReturnTo(returnTo);
+      if (safeReturn) {
+        router.push(safeReturn);
+        return;
+      }
       const params = new URLSearchParams({ date: data.eventDate, areas: selectedAreas.join(",") });
       router.push(`/search?${params.toString()}`);
     } finally {

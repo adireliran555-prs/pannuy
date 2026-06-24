@@ -3,10 +3,10 @@ import { cn } from "@/lib/utils";
 
 type Size = "sm" | "md" | "lg";
 
-const SIZE_STYLES: Record<Size, { t: string; rest: string }> = {
-  sm: { t: "text-xl", rest: "text-base" },
-  md: { t: "text-3xl", rest: "text-2xl" },
-  lg: { t: "text-4xl", rest: "text-3xl" },
+const SIZE_STYLES: Record<Size, { t: string; line: string }> = {
+  sm: { t: "text-[1.35rem]", line: "text-sm" },
+  md: { t: "text-[2rem]", line: "text-xl" },
+  lg: { t: "text-[2.5rem]", line: "text-2xl" },
 };
 
 interface TopEventsLogoProps {
@@ -16,28 +16,32 @@ interface TopEventsLogoProps {
 }
 
 /**
- * Wordmark where a single “T” serves both lines — Top / Events.
+ * LTR wordmark: shared T for Top / Events. Always `dir=ltr` so RTL pages don't flip it.
  */
 export default function TopEventsLogo({
   href,
   size = "md",
   className,
 }: TopEventsLogoProps) {
-  const { t, rest } = SIZE_STYLES[size];
+  const { t, line } = SIZE_STYLES[size];
 
   const mark = (
     <span
+      dir="ltr"
       className={cn(
-        "inline-flex items-stretch font-black leading-none tracking-tight select-none",
+        "inline-grid grid-cols-[auto_1fr] grid-rows-2 gap-x-0.5 font-black leading-[0.9] tracking-tight select-none text-left",
         className
       )}
       aria-label="Top Events"
     >
-      <span className={cn("text-primary self-center pe-px", t)}>T</span>
-      <span className={cn("flex flex-col justify-center text-text-main", rest)}>
-        <span>op</span>
-        <span className="-mt-0.5">Events</span>
+      <span
+        className={cn("text-primary row-span-2 self-center pe-0.5", t)}
+        aria-hidden
+      >
+        T
       </span>
+      <span className={cn("text-text-main", line)}>op</span>
+      <span className={cn("text-text-main -mt-0.5", line)}>Events</span>
     </span>
   );
 

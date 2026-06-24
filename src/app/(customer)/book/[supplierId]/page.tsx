@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import useSWR from "swr";
 import Image from "next/image";
@@ -11,6 +11,7 @@ import Spinner from "@/components/ui/Spinner";
 import AvailabilityCalendar from "@/components/common/AvailabilityCalendar";
 import { formatHebrewDate, formatPrice } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { withReturnTo } from "@/lib/return-to";
 
 const CATEGORY_LABELS: Record<string, string> = {
   PHOTOGRAPHER: "צלם סטילס",
@@ -137,6 +138,22 @@ export default function BookPage({ params }: PageProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((json) => {
+        if (!json.success) {
+          router.replace(
+            withReturnTo("/start", `/book/${supplierId}`)
+          );
+          return;
+        }
+        setAuthChecked(true);
+      })
+      .catch(() => setAuthChecked(true));
+  }, [router, supplierId]);
 
   const handleDateTimeSelect = (date: Date | null, time: string | null) => {
     setSelectedDate(date);
@@ -162,7 +179,7 @@ export default function BookPage({ params }: PageProps) {
       });
 
       if (res.status === 401) {
-        router.push("/start");
+        router.push(withReturnTo("/start", `/book/${supplierId}`));
         return;
       }
       if (res.status === 409) {
@@ -184,7 +201,7 @@ export default function BookPage({ params }: PageProps) {
     }
   };
 
-  if (supplierLoading) {
+  if (supplierLoading || !authChecked) {
     return (
       <div className="min-h-screen bg-surface flex items-center justify-center">
         <Spinner size="lg" />

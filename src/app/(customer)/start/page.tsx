@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -12,6 +13,7 @@ import OtpInput from "@/components/ui/OtpInput";
 import StepProgress from "@/components/ui/StepProgress";
 import { validateIsraeliPhone } from "@/lib/utils";
 import TopEventsLogo from "@/components/common/TopEventsLogo";
+import { returnToFromSearch, sanitizeReturnTo, withReturnTo } from "@/lib/return-to";
 
 const schema = z.object({
   name: z.string().min(2, "שם חייב להכיל לפחות 2 תווים"),
@@ -29,6 +31,16 @@ const STEPS = [
 ];
 
 export default function StartPage() {
+  return (
+    <Suspense>
+      <StartPageContent />
+    </Suspense>
+  );
+}
+
+function StartPageContent() {
+  const searchParams = useSearchParams();
+  const returnTo = returnToFromSearch(searchParams.toString());
   const [stage, setStage] = useState<"form" | "otp">("form");
   const [otp, setOtp] = useState("");
   const [otpError, setOtpError] = useState("");
@@ -98,11 +110,16 @@ export default function StartPage() {
           return;
         }
         const user = json.user;
-        // Hard navigation so the session cookie is sent and middleware
-        // re-evaluates server-side (router.push can reuse a pre-auth prefetch).
-        window.location.href = user?.weddingDate
-          ? "/dashboard/meetings"
-          : "/start/wedding";
+        const safeReturn = sanitizeReturnTo(returnTo);
+        if (!user?.weddingDate) {
+          window.location.href = withReturnTo("/start/wedding", safeReturn);
+          return;
+        }
+        if (safeReturn) {
+          window.location.href = safeReturn;
+          return;
+        }
+        window.location.href = "/dashboard/meetings";
       } catch {
         setOtpError("שגיאת תקשורת. נסו שוב.");
         setOtp("");
