@@ -2,24 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { generateOtp, hashOtp } from "@/lib/auth";
 import { sendOtp, devOtpEchoEnabled } from "@/lib/sms";
+import { normalizeIsraeliPhone } from "@/lib/utils";
 
 const OTP_EXPIRES_MINUTES = parseInt(
   process.env.OTP_EXPIRES_MINUTES ?? "5",
   10
 );
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
-const RATE_LIMIT_MAX = 3;
-
-function isValidIsraeliPhone(phone: string): boolean {
-  return /^05\d{8}$/.test(phone);
-}
+const RATE_LIMIT_MAX = 5;
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { phone } = body as { phone?: string };
+    const phone = normalizeIsraeliPhone(String(body.phone ?? ""));
 
-    if (!phone || !isValidIsraeliPhone(phone)) {
+    if (!phone) {
       return NextResponse.json(
         { success: false, error: "מספר טלפון לא תקין" },
         { status: 400 }

@@ -58,9 +58,16 @@ export function formatPhone(phone: string): string {
   return phone;
 }
 
+/** Normalize Israeli mobile to 05XXXXXXXX (handles +972, dashes, spaces). */
+export function normalizeIsraeliPhone(phone: string): string | null {
+  let digits = phone.replace(/\D/g, "");
+  if (digits.startsWith("972")) digits = `0${digits.slice(3)}`;
+  if (digits.length === 9 && digits.startsWith("5")) digits = `0${digits}`;
+  return /^05\d{8}$/.test(digits) ? digits : null;
+}
+
 export function validateIsraeliPhone(phone: string): boolean {
-  const cleaned = phone.replace(/[-\s]/g, "");
-  return /^05\d{8}$/.test(cleaned);
+  return normalizeIsraeliPhone(phone) !== null;
 }
 
 export const ISRAELI_CITIES = [

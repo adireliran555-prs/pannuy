@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import slugify from "slugify";
 import prisma from "@/lib/prisma";
 import { verifyOtp, signSupplierToken } from "@/lib/auth";
+import { normalizeIsraeliPhone } from "@/lib/utils";
 import { SupplierSession } from "@/types";
 
 const SESSION_COOKIE_MAX_AGE = 7 * 24 * 60 * 60;
@@ -16,8 +17,8 @@ function generateSlug(name: string, phone: string): string {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { phone, otp, name, email } = body as {
-      phone?: string;
+    const phone = normalizeIsraeliPhone(String(body.phone ?? ""));
+    const { otp, name, email } = body as {
       otp?: string;
       name?: string;
       email?: string;

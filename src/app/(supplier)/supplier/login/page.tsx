@@ -8,7 +8,7 @@ import { z } from "zod";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import OtpInput from "@/components/ui/OtpInput";
-import { validateIsraeliPhone } from "@/lib/utils";
+import { normalizeIsraeliPhone, validateIsraeliPhone } from "@/lib/utils";
 
 const schema = z.object({
   phone: z
@@ -17,6 +17,33 @@ const schema = z.object({
 });
 
 type FormData = z.infer<typeof schema>;
+
+async function postJson<T>(url: string, body: unknown, timeoutMs = 20_000): Promise<T> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+    const json = (await res.json().catch(() => ({}))) as T & { error?: string };
+    if (!res.ok) {
+      throw new Error(json.error ?? "שגיאה בשרת");
+    }
+    return json;
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new Error("הבקשה ארכה יותר מדי. בדקו חיבור לאינטרנט ונסו שוב.");
+    }
+    if (err instanceof Error) throw err;
+    throw new Error("שגיאת תקשורת. נסו שוב.");
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 export default function SupplierLoginPage() {
   const [stage, setStage] = useState<"form" | "otp">("form");
@@ -37,6 +64,15 @@ export default function SupplierLoginPage() {
   } = useForm<FormData>({ resolver: zodResolver(schema) });
 
   useEffect(() => {
+    fetch("/api/supplier/auth/me", { credentials: "include" })
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success) window.location.href = "/supplier/dashboard";
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
     if (resendCooldown <= 0) return;
     const t = setInterval(() => {
       setResendCooldown((c) => (c <= 1 ? 0 : c - 1));
@@ -44,89 +80,63 @@ export default function SupplierLoginPage() {
     return () => clearInterval(t);
   }, [resendCooldown]);
 
-  const resendOtp = async () => {
-    if (resendCooldown > 0) return;
-    setOtp("");
-    setOtpError("");
-    setOtpKey((k) => k + 1);
+  const sendCode = async (rawPhone: string) => {
+    const normalized = normalizeIsraeliPhone(rawPhone);
+    if (!normalized) {
+      setOtpError("מספר טלפון לא תקין");
+      return;
+    }
+
     setIsLoading(true);
+    setOtpError("");
     try {
-      await fetch("/api/supplier/auth/send-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone }),
-      });
+      const json = await postJson<{ success: boolean; devOtp?: string }>(
+        "/api/supplier/auth/send-otp",
+        { phone: normalized }
+      );
+      setPhone(normalized);
+      setStage("otp");
+      setOtp("");
+      setOtpKey((k) => k + 1);
       setResendCooldown(RESEND_COOLDOWN);
+      setDevOtp(json.devOtp ?? null);
+    } catch (err) {
+      setOtpError(err instanceof Error ? err.message : "שגיאה בשליחת קוד");
     } finally {
       setIsLoading(false);
     }
   };
 
   const onSubmit = async (data: FormData) => {
-    setIsLoading(true);
-    try {
-      const res = await fetch("/api/supplier/auth/send-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: data.phone }),
-      });
-      const json = await res.json();
-      if (!res.ok) {
-        setOtpError(json.error ?? "שגיאה בשליחת קוד");
-        return;
-      }
-      setPhone(data.phone);
-      setStage("otp");
-      setResendCooldown(RESEND_COOLDOWN);
-      if (json.devOtp) setDevOtp(json.devOtp);
-    } finally {
-      setIsLoading(false);
-    }
+    await sendCode(data.phone);
   };
 
   const handleOtpChange = async (value: string) => {
     setOtp(value);
     setOtpError("");
-    if (value.length === 6) {
-      setIsLoading(true);
-      try {
-        const res = await fetch("/api/supplier/auth/verify-otp", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ phone, otp: value }),
-        });
-        const json = await res.json();
-        if (!res.ok) {
-          setOtpError(json.error ?? "קוד שגוי");
-          setOtp("");
-          setOtpKey((k) => k + 1);
-          return;
-        }
-        // Hard navigation so the freshly-set session cookie is sent and
-        // middleware re-evaluates server-side (router.push can reuse a
-        // pre-auth prefetch and bounce back to login).
-        window.location.href = "/supplier/dashboard";
-      } catch {
-        setOtpError("שגיאת תקשורת. נסו שוב.");
-        setOtp("");
-        setOtpKey((k) => k + 1);
-      } finally {
-        setIsLoading(false);
-      }
+    if (value.length !== 6) return;
+
+    setIsLoading(true);
+    try {
+      await postJson("/api/supplier/auth/verify-otp", { phone, otp: value });
+      window.location.href = "/supplier/dashboard";
+    } catch (err) {
+      setOtpError(err instanceof Error ? err.message : "קוד שגוי");
+      setOtp("");
+      setOtpKey((k) => k + 1);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-rose-50 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
-        {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="text-4xl font-black text-primary">
             פנוי
           </Link>
-          <p className="text-text-muted text-sm mt-1">
-            פאנל ספקים
-          </p>
+          <p className="text-text-muted text-sm mt-1">פאנל ספקים</p>
         </div>
 
         <div className="bg-white rounded-3xl shadow-xl p-8 space-y-6">
@@ -146,6 +156,8 @@ export default function SupplierLoginPage() {
                   label="מספר טלפון"
                   placeholder="05X-XXXXXXX"
                   type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
                   ltr
                   helperText="ישלח קוד אימות ב-SMS"
                   error={errors.phone?.message ?? otpError}
@@ -167,11 +179,9 @@ export default function SupplierLoginPage() {
           ) : (
             <>
               <div>
-                <h1 className="text-2xl font-black text-text-main">
-                  אימות 📱
-                </h1>
+                <h1 className="text-2xl font-black text-text-main">אימות 📱</h1>
                 <p className="text-text-muted text-sm mt-1">
-                  שלחנו קוד אימות למספר{" "}
+                  הזינו את קוד האימות שנשלח ל־
                   <span dir="ltr" className="font-semibold text-text-main">
                     {phone}
                   </span>
@@ -180,9 +190,12 @@ export default function SupplierLoginPage() {
 
               <div className="flex flex-col items-center gap-4 py-4">
                 {devOtp && (
-                  <div className="w-full text-center bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 text-sm text-amber-800">
-                    מצב פיתוח · קוד אימות:{" "}
-                    <span dir="ltr" className="font-black tracking-widest">{devOtp}</span>
+                  <div className="w-full text-center bg-amber-50 border-2 border-amber-300 rounded-xl px-4 py-3 text-sm text-amber-900 space-y-1">
+                    <p className="font-bold">קוד אימות (ללא SMS כרגע)</p>
+                    <p dir="ltr" className="font-black tracking-[0.3em] text-2xl">
+                      {devOtp}
+                    </p>
+                    <p className="text-xs">העתיקו את הקוד לשדות למטה</p>
                   </div>
                 )}
                 <OtpInput
@@ -194,9 +207,7 @@ export default function SupplierLoginPage() {
                   autoFocus
                 />
                 {isLoading && (
-                  <p className="text-sm text-text-muted animate-pulse">
-                    מאמת...
-                  </p>
+                  <p className="text-sm text-text-muted animate-pulse">מאמת...</p>
                 )}
               </div>
 
@@ -205,7 +216,7 @@ export default function SupplierLoginPage() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={resendOtp}
+                  onClick={() => sendCode(phone)}
                   isLoading={isLoading}
                   disabled={isLoading || resendCooldown > 0}
                 >
@@ -222,7 +233,9 @@ export default function SupplierLoginPage() {
                 onClick={() => {
                   setStage("form");
                   setOtp("");
+                  setDevOtp(null);
                   setResendCooldown(0);
+                  setOtpError("");
                 }}
               >
                 שנו מספר טלפון
@@ -231,7 +244,6 @@ export default function SupplierLoginPage() {
           )}
         </div>
 
-        {/* Back to customer */}
         <p className="text-center text-xs text-text-muted mt-6">
           אתם זוג?{" "}
           <Link href="/start" className="text-primary font-semibold">

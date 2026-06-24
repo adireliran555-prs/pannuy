@@ -20,7 +20,9 @@ export function smsConfigured(): boolean {
  * auto-disabled the moment Telnyx is configured. NEVER active with real SMS.
  */
 export function devOtpEchoEnabled(): boolean {
-  return process.env.DEV_OTP_ECHO === "true" && !smsConfigured();
+  // When SMS isn't wired up, show the code in the UI so login still works.
+  // Never echo once real Telnyx delivery is configured.
+  return !smsConfigured();
 }
 
 export async function sendOtp(phone: string, otp: string): Promise<boolean> {
