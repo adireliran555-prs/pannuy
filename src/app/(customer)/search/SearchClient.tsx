@@ -10,6 +10,7 @@ import SupplierCard from "@/components/common/SupplierCard";
 import { SupplierCardSkeleton } from "@/components/ui/Skeleton";
 import EmptyState from "@/components/ui/EmptyState";
 import Button from "@/components/ui/Button";
+import DatePickerField from "@/components/ui/DatePickerField";
 import { cn } from "@/lib/utils";
 import { setEventContext } from "@/lib/event-context";
 import {
@@ -83,7 +84,6 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
   }, [filters.date, selectedAreas]);
 
   const filterBarRef = useRef<HTMLDivElement>(null);
-  const dateInputRef = useRef<HTMLInputElement>(null);
 
   const closeAllDropdowns = () => {
     setShowAreaDropdown(false);
@@ -278,31 +278,14 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
             </div>
 
             {/* Date */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => dateInputRef.current?.showPicker()}
-                className={cn(
-                  "flex items-center gap-2 px-4 py-2.5 rounded-full border-2 text-sm font-semibold transition-colors whitespace-nowrap cursor-pointer",
-                  filters.date
-                    ? "border-primary bg-primary text-white"
-                    : "border-border text-text-main hover:border-primary"
-                )}
-              >
-                {filters.date ? `📅 ${new Date(filters.date).toLocaleDateString("he-IL", { day: "numeric", month: "short" })}` : "📅 תאריך החתונה"}
-                {filters.date && (
-                  <X className="h-3.5 w-3.5" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setFilters((f) => ({ ...f, date: "" })); }} />
-                )}
-              </button>
-              <input
-                ref={dateInputRef}
-                type="date"
-                value={filters.date}
-                min={new Date().toISOString().split("T")[0]}
-                onChange={(e) => setFilters((f) => ({ ...f, date: e.target.value }))}
-                className="absolute opacity-0 pointer-events-none w-0 h-0"
-              />
-            </div>
+            <DatePickerField
+              variant="chip"
+              clearable
+              value={filters.date}
+              onChange={(date) => setFilters((f) => ({ ...f, date }))}
+              placeholder="תאריך החתונה"
+              modalTitle="מתי האירוע?"
+            />
 
             {/* Price */}
             <div className="relative">

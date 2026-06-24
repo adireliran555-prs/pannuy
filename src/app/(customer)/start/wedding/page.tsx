@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useRef, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { MapPin, CalendarDays, Check, Sparkles } from "lucide-react";
 import Button from "@/components/ui/Button";
+import DatePickerField from "@/components/ui/DatePickerField";
 import StepProgress from "@/components/ui/StepProgress";
 import { cn } from "@/lib/utils";
 import TopEventsLogo from "@/components/common/TopEventsLogo";
@@ -49,21 +50,10 @@ export default function WeddingPage() {
   );
 }
 
-function formatEventDate(date: string): string {
-  const [y, m, d] = date.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString("he-IL", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
-
 function WeddingPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnTo = returnToFromSearch(searchParams.toString());
-  const dateInputRef = useRef<HTMLInputElement>(null);
-  const today = new Date().toISOString().split("T")[0];
   const [isLoading, setIsLoading] = useState(false);
   const [selectedAreas, setSelectedAreas] = useState<string[]>([]);
   const [areasError, setAreasError] = useState("");
@@ -80,16 +70,6 @@ function WeddingPageContent() {
   });
 
   const eventDate = watch("eventDate");
-
-  const openDatePicker = () => {
-    const input = dateInputRef.current;
-    if (!input) return;
-    try {
-      input.showPicker();
-    } catch {
-      input.click();
-    }
-  };
 
   const toggleArea = (id: string) => {
     setSelectedAreas((prev) =>
@@ -194,40 +174,13 @@ function WeddingPageContent() {
                 <CalendarDays className="h-4 w-4 text-primary" />
                 תאריך {selectedEventLabel}
               </label>
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={openDatePicker}
-                  className={cn(
-                    "w-full rounded-xl border px-4 py-3 text-base text-start flex items-center gap-2 transition-all duration-200 bg-white hover:border-primary",
-                    errors.eventDate ? "border-red-400" : "border-border focus:border-primary"
-                  )}
-                >
-                  <CalendarDays className="h-4 w-4 text-primary shrink-0" aria-hidden />
-                  <span className={eventDate ? "text-text-main" : "text-text-muted"}>
-                    {eventDate
-                      ? formatEventDate(eventDate)
-                      : `בחרו תאריך ${selectedEventLabel}`}
-                  </span>
-                </button>
-                <input
-                  ref={dateInputRef}
-                  type="date"
-                  min={today}
-                  value={eventDate}
-                  onChange={(e) =>
-                    setValue("eventDate", e.target.value, { shouldValidate: true })
-                  }
-                  className="absolute opacity-0 pointer-events-none w-0 h-0"
-                  tabIndex={-1}
-                  aria-hidden
-                />
-              </div>
-              {errors.eventDate && (
-                <p className="text-sm text-red-500 font-medium">
-                  {errors.eventDate.message}
-                </p>
-              )}
+              <DatePickerField
+                value={eventDate}
+                onChange={(date) => setValue("eventDate", date, { shouldValidate: true })}
+                placeholder={`בחרו תאריך ${selectedEventLabel}`}
+                modalTitle={`מתי ${selectedEventLabel}?`}
+                error={errors.eventDate?.message}
+              />
             </div>
 
             {/* Region multi-select */}

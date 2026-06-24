@@ -13,6 +13,10 @@ interface CalendarPickerProps {
   className?: string;
 }
 
+function startOfDay(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
 export default function CalendarPicker({
   selectedDate,
   onDaySelect,
@@ -20,9 +24,11 @@ export default function CalendarPicker({
   minDate,
   className,
 }: CalendarPickerProps) {
-  const today = new Date();
-  const [viewYear, setViewYear] = useState(today.getFullYear());
-  const [viewMonth, setViewMonth] = useState(today.getMonth());
+  const today = startOfDay(new Date());
+  const initial = selectedDate ?? today;
+  const [viewYear, setViewYear] = useState(initial.getFullYear());
+  const [viewMonth, setViewMonth] = useState(initial.getMonth());
+  const minDay = minDate ? startOfDay(minDate) : null;
 
   const daysInMonth = getDaysInMonth(viewYear, viewMonth);
   // getFirstDayOfMonth returns 0=Sun, but Hebrew week starts Sunday, so offset is direct
@@ -66,12 +72,17 @@ export default function CalendarPicker({
   const isBlocked = (day: number) => {
     const key = formatDateKey(viewYear, viewMonth, day);
     if (blockedDates.has(key)) return true;
-    if (minDate) {
+    if (minDay) {
       const date = new Date(viewYear, viewMonth, day);
-      return date < minDate;
+      return date < minDay;
     }
     return false;
   };
+
+  const canGoPrev =
+    !minDay ||
+    viewYear > minDay.getFullYear() ||
+    (viewYear === minDay.getFullYear() && viewMonth > minDay.getMonth());
 
   // Build calendar grid
   const calendarDays: (number | null)[] = [];
@@ -86,20 +97,21 @@ export default function CalendarPicker({
         <button
           onClick={prevMonth}
           type="button"
-          className="p-2 rounded-full hover:bg-gray-100 transition-colors text-text-muted"
+          disabled={!canGoPrev}
+          className="p-2 rounded-full hover:bg-primary-light transition-colors text-text-muted disabled:opacity-30 disabled:pointer-events-none"
           aria-label="חודש קודם"
         >
           <ChevronRight className="h-5 w-5" />
         </button>
 
-        <span className="font-bold text-text-main text-base">
+        <span className="font-black text-text-main text-base">
           {HEBREW_MONTHS[viewMonth]} {viewYear}
         </span>
 
         <button
           onClick={nextMonth}
           type="button"
-          className="p-2 rounded-full hover:bg-gray-100 transition-colors text-text-muted"
+          className="p-2 rounded-full hover:bg-primary-light transition-colors text-text-muted"
           aria-label="חודש הבא"
         >
           <ChevronLeft className="h-5 w-5" />

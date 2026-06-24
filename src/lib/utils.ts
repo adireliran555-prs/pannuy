@@ -127,3 +127,26 @@ export function getFirstDayOfMonth(year: number, month: number): number {
   // Returns 0=Sunday which maps to our Hebrew calendar
   return new Date(year, month, 1).getDay();
 }
+
+/** Parse YYYY-MM-DD without timezone shift. */
+export function parseIsoDate(iso: string): Date {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+export function toIsoDate(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+export function formatIsoDateHebrew(iso: string): string {
+  if (!iso) return "";
+  return formatHebrewDate(parseIsoDate(iso));
+}
+
+export function formatIsoDateShort(iso: string): string {
+  if (!iso) return "";
+  return new Intl.DateTimeFormat("he-IL", {
+    day: "numeric",
+    month: "short",
+  }).format(parseIsoDate(iso));
+}

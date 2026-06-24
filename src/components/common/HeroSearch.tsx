@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
-import { Calendar, MapPin, Search, ArrowLeft } from "lucide-react";
+import { useState } from "react";
+import { MapPin, Search, ArrowLeft } from "lucide-react";
+import DatePickerField from "@/components/ui/DatePickerField";
 import { setEventContext } from "@/lib/event-context";
 import { cn } from "@/lib/utils";
 
@@ -17,20 +18,8 @@ const REGIONS = [
 
 export default function HeroSearch() {
   const router = useRouter();
-  const dateInputRef = useRef<HTMLInputElement>(null);
   const [date, setDate] = useState("");
   const [area, setArea] = useState("");
-  const today = new Date().toISOString().split("T")[0];
-
-  const openDatePicker = () => {
-    const input = dateInputRef.current;
-    if (!input) return;
-    try {
-      input.showPicker();
-    } catch {
-      input.click();
-    }
-  };
 
   const submit = () => {
     const params = new URLSearchParams();
@@ -51,38 +40,12 @@ export default function HeroSearch() {
   return (
     <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-border p-3 sm:p-4 max-w-2xl mx-auto w-full">
       <div className="flex flex-col gap-3">
-        {/* Date */}
-        <div className="relative w-full min-w-0">
-          <button
-            type="button"
-            onClick={openDatePicker}
-            className={cn(
-              fieldClass,
-              "flex items-center gap-2 px-4 py-3 cursor-pointer text-start"
-            )}
-          >
-            <Calendar className="h-4 w-4 text-primary shrink-0" aria-hidden />
-            <span className={cn("flex-1 truncate", date ? "text-text-main" : "text-text-muted")}>
-              {date
-                ? new Date(date).toLocaleDateString("he-IL", {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                  })
-                : "תאריך החתונה"}
-            </span>
-          </button>
-          <input
-            ref={dateInputRef}
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            min={today}
-            className="absolute opacity-0 pointer-events-none w-0 h-0"
-            aria-label="תאריך החתונה"
-            tabIndex={-1}
-          />
-        </div>
+        <DatePickerField
+          value={date}
+          onChange={setDate}
+          placeholder="תאריך החתונה"
+          modalTitle="מתי החתונה?"
+        />
 
         {/* Area */}
         <div className="relative w-full min-w-0">

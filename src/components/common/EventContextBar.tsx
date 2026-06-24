@@ -9,7 +9,8 @@ import {
   setEventContext,
   type EventContext,
 } from "@/lib/event-context";
-import { cn } from "@/lib/utils";
+import CalendarPicker from "@/components/common/CalendarPicker";
+import { cn, parseIsoDate, toIsoDate } from "@/lib/utils";
 
 const REGIONS = [
   "מרכז",
@@ -156,13 +157,14 @@ export default function EventContextBar() {
 
             <div className="space-y-1.5">
               <label className="text-sm font-semibold text-text-main">תאריך</label>
-              <input
-                type="date"
-                value={draftDate}
-                min={new Date().toISOString().split("T")[0]}
-                onChange={(e) => setDraftDate(e.target.value)}
-                className="w-full rounded-xl border border-border px-4 py-3 text-base"
-              />
+              <div className="bg-surface rounded-2xl p-3">
+                <CalendarPicker
+                  key={draftDate || "empty"}
+                  selectedDate={draftDate ? parseIsoDate(draftDate) : null}
+                  onDaySelect={(date) => setDraftDate(toIsoDate(date))}
+                  minDate={new Date()}
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
