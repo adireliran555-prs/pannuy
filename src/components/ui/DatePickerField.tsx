@@ -104,7 +104,7 @@ export default function DatePickerField({
         )}
       >
         <CalendarDays className="h-4 w-4 text-primary shrink-0" aria-hidden />
-        <span className={cn("flex-1 truncate", value ? "text-text-main" : "text-text-muted")}>
+        <span className="flex-1 truncate text-text-main">
           {displayLabel}
         </span>
       </button>
