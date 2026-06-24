@@ -468,6 +468,59 @@ export default function SupplierProfilePage() {
           </div>
         )}
 
+        {/* Landing import — first step in profile setup (מידע כללי) */}
+        <div className="p-5 bg-primary-light/50 border-2 border-primary/30 rounded-2xl space-y-3">
+          <div>
+            <span className="inline-block text-xs font-bold text-primary mb-1">מידע כללי</span>
+            <p className="text-base font-black text-text-main">ייבוא מדף נחיתה או אתר</p>
+            <p className="text-sm text-text-muted mt-1">
+              הדביקו קישור ונמלא אוטומטית שם, תיאור, מחירים, תמונות וחבילות.
+              לתוצאה מלאה השתמשו בקישור ישיר לדף הצעת מחיר.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="url"
+              value={importUrl}
+              onChange={(e) => setImportUrl(e.target.value)}
+              onKeyDown={(e) =>
+                e.key === "Enter" && (e.preventDefault(), handleImportLanding())
+              }
+              placeholder="https://..."
+              dir="ltr"
+              disabled={importing}
+              className="flex-1 rounded-xl border border-border px-4 py-3 text-sm text-text-main focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+            />
+            <Button
+              onClick={handleImportLanding}
+              isLoading={importing}
+              disabled={!importUrl.trim()}
+              size="sm"
+            >
+              ייבאו
+            </Button>
+          </div>
+          {importStatus && (
+            <p className="text-sm font-semibold text-primary-dark">{importStatus}</p>
+          )}
+          {importMsg && (
+            <p className="text-sm font-semibold text-primary-dark">{importMsg}</p>
+          )}
+          {importSummary && (
+            <div className="rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800 space-y-1">
+              <p className="font-bold">ייבוא הושלם</p>
+              {importSummary.fields.length > 0 && (
+                <p>עודכנו: {importSummary.fields.join(" · ")}</p>
+              )}
+              <p>תמונות: {importSummary.imageCount}</p>
+              <p>חבילות: {importSummary.packageCount}</p>
+              {importSummary.warning && (
+                <p className="text-amber-700 font-semibold">{importSummary.warning}</p>
+              )}
+            </div>
+          )}
+        </div>
+
         <div className="flex gap-1 bg-gray-100 rounded-2xl p-1">
           {tabs.map(({ id, label }) => (
             <button
@@ -487,59 +540,7 @@ export default function SupplierProfilePage() {
 
         {/* ── Info tab ── */}
         {activeTab === "info" && (
-          <div className="space-y-5">
-            <div className="p-5 bg-primary-light/50 border-2 border-primary/30 rounded-2xl space-y-3">
-              <div>
-                <p className="text-base font-black text-text-main">ייבוא מדף נחיתה או אתר</p>
-                <p className="text-sm text-text-muted mt-1">
-                  הדביקו קישור ונמלא אוטומטית שם, תיאור, מחירים, תמונות וחבילות.
-                  לתוצאה מלאה השתמשו בקישור ישיר לדף הצעת מחיר.
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <input
-                  type="url"
-                  value={importUrl}
-                  onChange={(e) => setImportUrl(e.target.value)}
-                  onKeyDown={(e) =>
-                    e.key === "Enter" && (e.preventDefault(), handleImportLanding())
-                  }
-                  placeholder="https://..."
-                  dir="ltr"
-                  disabled={importing}
-                  className="flex-1 rounded-xl border border-border px-4 py-3 text-sm text-text-main focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
-                />
-                <Button
-                  onClick={handleImportLanding}
-                  isLoading={importing}
-                  disabled={!importUrl.trim()}
-                  size="sm"
-                >
-                  ייבאו
-                </Button>
-              </div>
-              {importStatus && (
-                <p className="text-sm font-semibold text-primary-dark">{importStatus}</p>
-              )}
-              {importMsg && (
-                <p className="text-sm font-semibold text-primary-dark">{importMsg}</p>
-              )}
-              {importSummary && (
-                <div className="rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800 space-y-1">
-                  <p className="font-bold">ייבוא הושלם</p>
-                  {importSummary.fields.length > 0 && (
-                    <p>עודכנו: {importSummary.fields.join(" · ")}</p>
-                  )}
-                  <p>תמונות: {importSummary.imageCount}</p>
-                  <p>חבילות: {importSummary.packageCount}</p>
-                  {importSummary.warning && (
-                    <p className="text-amber-700 font-semibold">{importSummary.warning}</p>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="bg-white rounded-2xl border border-border p-6 space-y-5">
+          <div className="bg-white rounded-2xl border border-border p-6 space-y-5">
             <Input label="שם מלא" value={name} onChange={(e) => setName(e.target.value)} />
 
             <div className="space-y-1.5">
@@ -633,7 +634,6 @@ export default function SupplierProfilePage() {
             <Button fullWidth size="lg" isLoading={isLoading} onClick={handleSaveInfo}>
               שמרו שינויים
             </Button>
-            </div>
           </div>
         )}
 
@@ -682,10 +682,6 @@ export default function SupplierProfilePage() {
                 הוסיפו
               </Button>
             </div>
-
-            {importMsg && activeTab === "photos" && (
-              <p className="text-sm font-semibold text-primary-dark">{importMsg}</p>
-            )}
 
             {photos.length > 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
