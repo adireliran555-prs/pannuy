@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
 import { verifyToken } from "@/lib/auth";
 
 // Public endpoint (lightweight). Returns whether the current cookies indicate
@@ -21,18 +22,38 @@ export async function GET(request: NextRequest) {
   const supplierPayload = supplierToken ? verifyToken(supplierToken) : null;
 
   if (customerPayload?.type === "customer") {
+    const customer = await prisma.user.findUnique({
+      where: { id: customerPayload.id },
+      select: { name: true },
+    });
+    if (!customer) {
+      const res = NextResponse.json({ impersonating: false, redirect: "/admin" });
+      res.cookies.delete("pannuy_session");
+      return res;
+    }
     return NextResponse.json({
       impersonating: true,
       kind: "customer" as const,
-      label: customerPayload.name,
+      label: customer.name,
     });
   }
+
   if (supplierPayload?.type === "supplier") {
+    const supplier = await prisma.supplier.findUnique({
+      where: { id: supplierPayload.id },
+      select: { name: true },
+    });
+    if (!supplier) {
+      const res = NextResponse.json({ impersonating: false, redirect: "/admin" });
+      res.cookies.delete("pannuy_supplier_session");
+      return res;
+    }
     return NextResponse.json({
       impersonating: true,
       kind: "supplier" as const,
-      label: supplierPayload.name,
+      label: supplier.name,
     });
   }
+
   return NextResponse.json({ impersonating: false });
 }

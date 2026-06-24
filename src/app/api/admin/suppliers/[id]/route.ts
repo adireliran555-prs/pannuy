@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { requireAdminSession } from "@/lib/api-auth";
+import { requireAdminSession, getSupplierSession } from "@/lib/api-auth";
 import { deleteSupplierPermanently, SupplierNotFoundError } from "@/lib/delete-supplier";
 
 export async function DELETE(
@@ -11,10 +11,15 @@ export async function DELETE(
   if (error) return error;
 
   const { id } = await params;
+  const impersonatedSupplier = getSupplierSession(request);
 
   try {
     const { slug } = await deleteSupplierPermanently(id);
-    return NextResponse.json({ success: true, slug });
+    const res = NextResponse.json({ success: true, slug });
+    if (impersonatedSupplier?.id === id) {
+      res.cookies.delete("pannuy_supplier_session");
+    }
+    return res;
   } catch (err) {
     if (err instanceof SupplierNotFoundError) {
       return NextResponse.json({ success: false, error: "ספק לא נמצא" }, { status: 404 });

@@ -7,6 +7,7 @@ interface Status {
   impersonating: boolean;
   kind?: "customer" | "supplier";
   label?: string;
+  redirect?: string;
 }
 
 export default function ImpersonationBanner() {
@@ -16,7 +17,12 @@ export default function ImpersonationBanner() {
   useEffect(() => {
     fetch("/api/impersonation-status", { cache: "no-store" })
       .then((r) => r.json())
-      .then((s: Status) => setStatus(s))
+      .then((s: Status) => {
+        setStatus(s);
+        if (!s.impersonating && s.redirect) {
+          window.location.href = s.redirect;
+        }
+      })
       .catch(() => setStatus({ impersonating: false }));
   }, []);
 
