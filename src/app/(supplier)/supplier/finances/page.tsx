@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { formatHebrewDate } from "@/lib/utils";
 import { CATEGORY_LABELS_SINGULAR } from "@/lib/categories";
 import { cn } from "@/lib/utils";
+import { BRAND_NAME } from "@/lib/branding";
 
 type TransactionType = "EARNED" | "COMMISSION";
 type TransactionStatus = string;
@@ -415,7 +416,7 @@ function ReferralsTab({
       <div className="bg-white rounded-2xl border border-border p-6 space-y-2">
         <h2 className="font-bold text-text-main text-lg">מערכת השותפים שלכם 🔗</h2>
         <p className="text-text-muted text-sm leading-relaxed">
-          כששלחתם ללקוח את הלינק האישי שלכם והוא סגר ספק אחר דרך פנוי — מגיעה לכם עמלה.
+          כששלחתם ללקוח את הלינק האישי שלכם והוא סגר ספק אחר דרך {BRAND_NAME} — מגיעה לכם עמלה.
           העמלה נצברת כשהאירוע מתקיים בפועל, ואז זמינה למשיכה בלשונית &quot;סקירה&quot;.
         </p>
       </div>

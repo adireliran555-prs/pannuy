@@ -9,6 +9,8 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import OtpInput from "@/components/ui/OtpInput";
 import { normalizeIsraeliPhone, validateIsraeliPhone } from "@/lib/utils";
+import TopEventsLogo from "@/components/common/TopEventsLogo";
+import { BRAND_NAME } from "@/lib/branding";
 
 const schema = z.object({
   phone: z
@@ -133,9 +135,7 @@ export default function SupplierLoginPage() {
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-rose-50 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link href="/" className="text-4xl font-black text-primary">
-            פנוי
-          </Link>
+          <TopEventsLogo href="/" size="lg" />
           <p className="text-text-muted text-sm mt-1">פאנל ספקים</p>
         </div>
 
@@ -172,7 +172,7 @@ export default function SupplierLoginPage() {
               <p className="text-center text-sm text-text-muted">
                 עדיין לא נרשמתם?{" "}
                 <Link href="/supplier/join" className="text-primary font-semibold">
-                  הצטרפו לפנוי
+                  הצטרפו ל-{BRAND_NAME}
                 </Link>
               </p>
             </>

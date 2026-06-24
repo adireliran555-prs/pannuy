@@ -13,6 +13,7 @@ import OtpInput from "@/components/ui/OtpInput";
 import StepProgress from "@/components/ui/StepProgress";
 import { validateIsraeliPhone, ISRAELI_CITIES, cn } from "@/lib/utils";
 import { CATEGORY_LABELS } from "@/lib/categories";
+import TopEventsLogo from "@/components/common/TopEventsLogo";
 import { uploadToCloudinary, cloudinaryEnabled } from "@/lib/cloudinary";
 
 // Categories offered when joining — legacy categories (FLORIST, BRIDAL_SUITE) are excluded.
@@ -35,7 +36,10 @@ const STEPS = [
   { label: "חבילות" },
 ];
 
+const ALL_COUNTRY = "כל הארץ";
+
 const SERVICE_AREAS = [
+  ALL_COUNTRY,
   "גוש דן",
   "תל אביב",
   "ירושלים",
@@ -241,9 +245,15 @@ export default function SupplierJoinPage() {
   };
 
   const toggleArea = (area: string) => {
-    setSelectedAreas((prev) =>
-      prev.includes(area) ? prev.filter((a) => a !== area) : [...prev, area]
-    );
+    setSelectedAreas((prev) => {
+      if (area === ALL_COUNTRY) {
+        return prev.includes(ALL_COUNTRY) ? [] : [ALL_COUNTRY];
+      }
+      const withoutAll = prev.filter((a) => a !== ALL_COUNTRY);
+      return withoutAll.includes(area)
+        ? withoutAll.filter((a) => a !== area)
+        : [...withoutAll, area];
+    });
   };
 
   const addPhoto = () => {
@@ -347,9 +357,7 @@ export default function SupplierJoinPage() {
       <div className="max-w-lg mx-auto">
         {/* Logo */}
         <div className="text-center mb-8">
-          <Link href="/" className="text-4xl font-black text-primary">
-            פנוי
-          </Link>
+          <TopEventsLogo href="/" size="lg" />
           <p className="text-text-muted text-sm mt-1">
             הצטרפו לקהילת הספקים
           </p>

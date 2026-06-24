@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireSupplierSession } from "@/lib/api-auth";
 import { delCache } from "@/lib/redis";
+import { maybeActivateSupplierListing } from "@/lib/supplier-activation";
 import { Category } from "@prisma/client";
 
 export async function GET(request: NextRequest) {
@@ -95,9 +96,18 @@ export async function PATCH(request: NextRequest) {
       },
     });
 
-    await delCache(`supplier:${session.slug}`);
+    await delCache(`supplier:${updated.slug}`);
+    await maybeActivateSupplierListing(session.id);
 
-    return NextResponse.json({ success: true, data: updated });
+    const fresh = await prisma.supplier.findUnique({
+      where: { id: session.id },
+      select: { isActive: true },
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: { ...updated, isActive: fresh?.isActive ?? updated.isActive },
+    });
   } catch (err) {
     console.error("[PATCH /api/supplier/profile]", err);
     return NextResponse.json(

@@ -5,6 +5,7 @@ import { AvailabilitySource } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { jerusalemParts } from "@/lib/timezone";
 import { invalidateAvailabilityCache } from "@/lib/availability";
+import { BRAND_CALENDAR_NAME, BRAND_NAME } from "@/lib/branding";
 
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID ?? "";
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET ?? "";
@@ -110,10 +111,10 @@ async function getSupplierOAuthClient(supplierId: string): Promise<OAuth2Client>
 
 // ─── Dedicated Pannuy calendar ────────────────────────────────────────────────
 
-export const PANNUY_CALENDAR_NAME = "פנוי — זמינות";
+export const PANNUY_CALENDAR_NAME = BRAND_CALENDAR_NAME;
 
 /**
- * Create (or reuse) a dedicated "פנוי — זמינות" calendar in the supplier's Google
+ * Create (or reuse) a dedicated Top Events availability calendar in the supplier's Google
  * account and store its id as the supplier's googleCalendarId. We then sync ONLY
  * this calendar — the supplier adds blocking events to it (privacy-friendly: we
  * never read their personal events). Idempotent and non-fatal.
@@ -143,7 +144,7 @@ export async function ensurePannuyCalendar(supplierId: string): Promise<string |
         requestBody: {
           summary: PANNUY_CALENDAR_NAME,
           description:
-            "צרו כאן אירועים כדי לחסום תאריכים בפנוי. רק אירועים ביומן זה נמשכים לאתר.",
+            `צרו כאן אירועים כדי לחסום תאריכים ב-${BRAND_NAME}. רק אירועים ביומן זה נמשכים לאתר.`,
           timeZone: "Asia/Jerusalem",
         },
       });

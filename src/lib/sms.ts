@@ -1,3 +1,5 @@
+import { BRAND_NAME } from "@/lib/branding";
+
 function toE164(phone: string): string {
   const digits = phone.replace(/\D/g, "");
   if (digits.startsWith("0")) return "+972" + digits.slice(1);
@@ -45,7 +47,7 @@ export async function sendOtp(phone: string, otp: string): Promise<boolean> {
         messaging_profile_id: process.env.TELNYX_MESSAGING_PROFILE_ID,
         from: process.env.TELNYX_FROM_NUMBER!,
         to: toE164(phone),
-        text: `קוד האימות שלך ב-פנוי: ${otp}`,
+        text: `קוד האימות שלך ב-${BRAND_NAME}: ${otp}`,
       }),
     });
 

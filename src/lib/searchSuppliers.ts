@@ -117,10 +117,14 @@ export async function searchSuppliers(filters: SearchFilters): Promise<SearchRes
 
   const where = {
     isActive: true,
-    isVerified: true,
     ...(filters.category ? { category: filters.category } : {}),
     ...(filters.areas && filters.areas.length > 0
-      ? { serviceAreas: { hasSome: filters.areas } }
+      ? {
+          OR: [
+            { serviceAreas: { hasSome: filters.areas } },
+            { serviceAreas: { has: "כל הארץ" } },
+          ],
+        }
       : {}),
     ...(filters.priceMin !== undefined ? { basePriceFrom: { gte: filters.priceMin } } : {}),
     ...(filters.priceMax !== undefined ? { basePriceTo: { lte: filters.priceMax } } : {}),

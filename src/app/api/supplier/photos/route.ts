@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireSupplierSession } from "@/lib/api-auth";
 import { delCache } from "@/lib/redis";
+import { maybeActivateSupplierListing } from "@/lib/supplier-activation";
 import { PhotoType } from "@prisma/client";
 
 export async function POST(request: NextRequest) {
@@ -40,6 +41,7 @@ export async function POST(request: NextRequest) {
     });
 
     await delCache(`supplier:${session.slug}`);
+    await maybeActivateSupplierListing(session.id);
 
     return NextResponse.json({ success: true, data: photo }, { status: 201 });
   } catch (err) {

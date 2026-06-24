@@ -10,6 +10,7 @@ import { MapPin, CalendarDays, Check, Sparkles } from "lucide-react";
 import Button from "@/components/ui/Button";
 import StepProgress from "@/components/ui/StepProgress";
 import { cn } from "@/lib/utils";
+import TopEventsLogo from "@/components/common/TopEventsLogo";
 
 const EVENT_TYPES = [
   { id: "wedding", label: "חתונה", emoji: "💍" },
@@ -91,9 +92,7 @@ export default function WeddingPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <Link href="/" className="text-4xl font-black text-primary">
-            פנוי
-          </Link>
+          <TopEventsLogo href="/" size="lg" />
         </div>
 
         {/* Card */}

@@ -22,6 +22,7 @@ import AvailabilityCalendar from "@/components/common/AvailabilityCalendar";
 import SimilarSuppliers from "@/components/common/SimilarSuppliers";
 import { formatPrice, cn } from "@/lib/utils";
 import { CATEGORY_LABELS_SINGULAR } from "@/lib/categories";
+import { BRAND_NAME } from "@/lib/branding";
 import type { NormalizedSupplier } from "@/lib/supplier";
 
 const MARKET_PRICE_RANGES: Record<string, { min: number; max: number; avg: number }> = {
@@ -118,7 +119,7 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
 
   const handleShare = async () => {
     const url = window.location.href;
-    const text = `בדקו את ${supplier.name} בפנוי 💍`;
+    const text = `בדקו את ${supplier.name} ב-${BRAND_NAME} 💍`;
     if (navigator.share) {
       await navigator.share({ title: supplier.name, text, url }).catch(() => {});
     } else {
@@ -129,7 +130,7 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
   };
 
   const handleWhatsApp = () => {
-    const msg = encodeURIComponent(`היי ${supplier.name}, ראיתי את הפרופיל שלך בפנוי ואשמח לשמוע פרטים 💍`);
+    const msg = encodeURIComponent(`היי ${supplier.name}, ראיתי את הפרופיל שלך ב-${BRAND_NAME} ואשמח לשמוע פרטים 💍`);
     window.open(`https://wa.me/?text=${msg}`, "_blank");
   };
 

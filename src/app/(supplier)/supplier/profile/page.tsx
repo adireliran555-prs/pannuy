@@ -1,17 +1,21 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, X, Check, CheckCircle, LogOut, Upload } from "lucide-react";
+import { Plus, X, Check, CheckCircle, LogOut, Upload, ExternalLink } from "lucide-react";
 import SupplierDashboardLayout from "@/components/common/SupplierDashboardLayout";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { ISRAELI_CITIES, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { cloudinaryEnabled, uploadToCloudinary } from "@/lib/cloudinary";
 import { CATEGORY_LABELS } from "@/lib/categories";
 
+const ALL_COUNTRY = "כל הארץ";
+
 const SERVICE_AREAS = [
+  ALL_COUNTRY,
   "גוש דן", "תל אביב", "ירושלים", "חיפה",
   "הצפון", "הדרום", "השרון", "שפלה", "אילת", "מרכז",
 ];
@@ -81,8 +85,8 @@ export default function SupplierProfilePage() {
 
   // Info tab state
   const [name, setName] = useState("");
+  const [slug, setSlug] = useState("");
   const [category, setCategory] = useState("");
-  const [city, setCity] = useState("");
   const [bio, setBio] = useState("");
   const [selectedAreas, setSelectedAreas] = useState<string[]>([]);
   const [priceFrom, setPriceFrom] = useState("");
@@ -108,8 +112,8 @@ export default function SupplierProfilePage() {
         if (json.success && json.data) {
           const s = json.data;
           setName(s.name ?? "");
+          setSlug(s.slug ?? "");
           setCategory(s.category ?? "");
-          setCity(s.city ?? "");
           setBio(s.bioHe ?? "");
           setSelectedAreas(s.serviceAreas ?? []);
           setPriceFrom(s.basePriceFrom?.toString() ?? "");
@@ -140,9 +144,15 @@ export default function SupplierProfilePage() {
   }, []);
 
   const toggleArea = (area: string) => {
-    setSelectedAreas((prev) =>
-      prev.includes(area) ? prev.filter((a) => a !== area) : [...prev, area]
-    );
+    setSelectedAreas((prev) => {
+      if (area === ALL_COUNTRY) {
+        return prev.includes(ALL_COUNTRY) ? [] : [ALL_COUNTRY];
+      }
+      const withoutAll = prev.filter((a) => a !== ALL_COUNTRY);
+      return withoutAll.includes(area)
+        ? withoutAll.filter((a) => a !== area)
+        : [...withoutAll, area];
+    });
   };
 
   const showSuccess = () => {
@@ -160,7 +170,6 @@ export default function SupplierProfilePage() {
           name: name || undefined,
           category: category || undefined,
           bioHe: bio || undefined,
-          city: city || undefined,
           serviceAreas: selectedAreas.length > 0 ? selectedAreas : undefined,
           basePriceFrom: priceFrom ? Number(priceFrom) : undefined,
           basePriceTo: priceTo ? Number(priceTo) : undefined,
@@ -456,9 +465,19 @@ export default function SupplierProfilePage() {
   return (
     <SupplierDashboardLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-black text-text-main">הפרופיל שלי</h1>
-          <p className="text-text-muted text-sm mt-1">עדכנו את הפרטים שמוצגים לזוגות</p>
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-black text-text-main">הפרופיל שלי</h1>
+            <p className="text-text-muted text-sm mt-1">עדכנו את הפרטים שמוצגים לזוגות</p>
+          </div>
+          {slug && (
+            <Link href={`/suppliers/${slug}`} target="_blank" rel="noopener noreferrer">
+              <Button variant="secondary" size="sm" className="whitespace-nowrap">
+                <ExternalLink className="h-4 w-4" />
+                הצג את הפרופיל שלי בזוית של לקוח
+              </Button>
+            </Link>
+          )}
         </div>
 
         {saveSuccess && (
@@ -557,20 +576,6 @@ export default function SupplierProfilePage() {
               </select>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-sm font-semibold text-text-main">עיר</label>
-              <select
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                className="w-full rounded-xl border border-border px-4 py-3 text-base text-text-main focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-              >
-                <option value="">בחרו עיר...</option>
-                {ISRAELI_CITIES.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-            </div>
-
             <div>
               <label className="text-sm font-semibold text-text-main block mb-2">אזורי שירות</label>
               <div className="flex flex-wrap gap-2">
@@ -581,6 +586,7 @@ export default function SupplierProfilePage() {
                     onClick={() => toggleArea(area)}
                     className={cn(
                       "flex items-center gap-1.5 px-3 py-2 rounded-full border-2 text-sm font-medium transition-all",
+                      area === ALL_COUNTRY && "font-bold",
                       selectedAreas.includes(area)
                         ? "border-primary bg-primary text-white"
                         : "border-border text-text-main hover:border-primary/40"

@@ -7,6 +7,7 @@ import SupplierDashboardLayout from "@/components/common/SupplierDashboardLayout
 import Button from "@/components/ui/Button";
 import { HEBREW_DAYS, HEBREW_MONTHS, getDaysInMonth, getFirstDayOfMonth } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { BRAND_CALENDAR_NAME, BRAND_NAME } from "@/lib/branding";
 
 type DayStatus = "available" | "blocked" | "confirmed" | "pending";
 
@@ -85,29 +86,31 @@ function GoogleCalendarBanner({ onSynced }: { onSynced?: () => void }) {
 
   if (calendarConnected) {
     return (
-      <div className="bg-green-50 border border-green-200 rounded-2xl px-5 py-4 space-y-2">
+      <div className="bg-green-50 border border-green-200 rounded-2xl px-5 py-4 space-y-3">
         <div className="flex items-center gap-3 flex-wrap">
-          <CheckCircle className="h-5 w-5 text-green-600" />
+          <CheckCircle className="h-5 w-5 text-green-600 shrink-0" />
           <span className="font-semibold text-green-700 text-sm">
             מחובר ל-Google Calendar ✓
           </span>
-          <button
-            type="button"
-            onClick={() => handleSync(false)}
-            disabled={isSyncing}
-            className="ms-auto flex items-center gap-1.5 text-green-600 hover:text-green-800 disabled:opacity-50 text-sm font-semibold"
-          >
-            <RefreshCw className={cn("h-3.5 w-3.5", isSyncing && "animate-spin")} />
-            {isSyncing ? "מסנכרן..." : "סנכרן עכשיו"}
-          </button>
         </div>
+        <Button
+          type="button"
+          onClick={() => handleSync(false)}
+          isLoading={isSyncing}
+          fullWidth
+          size="lg"
+          className="shadow-lg ring-2 ring-green-400/60 bg-green-600 hover:bg-green-700 border-green-600"
+        >
+          <RefreshCw className={cn("h-5 w-5", isSyncing && "animate-spin")} />
+          {isSyncing ? "מסנכרן יומן..." : "סנכרן יומן עכשיו"}
+        </Button>
         <p className="text-xs text-green-700/90 leading-relaxed">
-          יצרנו עבורכם יומן בשם <span className="font-bold">&quot;פנוי — זמינות&quot;</span> ב-Google Calendar.
+          יצרנו עבורכם יומן בשם <span className="font-bold">&quot;{BRAND_CALENDAR_NAME}&quot;</span> ב-Google Calendar.
           כדי לחסום תאריך, צרו אירוע ובחרו את היומן הזה — רק אירועים ביומן זה נמשכים לאתר,
           שאר היומנים הפרטיים שלכם נשארים פרטיים.
         </p>
         {syncMsg && (
-          <span className="block text-xs text-green-700">{syncMsg}</span>
+          <span className="block text-xs font-semibold text-green-700">{syncMsg}</span>
         )}
       </div>
     );
@@ -121,7 +124,7 @@ function GoogleCalendarBanner({ onSynced }: { onSynced?: () => void }) {
       <div className="flex-1">
         <h3 className="font-bold text-text-main">חברו את Google Calendar</h3>
         <p className="text-text-muted text-sm mt-0.5">
-          סנכרון אוטומטי של הזמינות שלכם — כשיש לכם אירוע, פנוי תסמן אותו אוטומטית
+          סנכרון אוטומטי של הזמינות שלכם — כשיש לכם אירוע, {BRAND_NAME} תסמן אותו אוטומטית
         </p>
       </div>
       <Button onClick={handleGoogleConnect} isLoading={isConnecting}>

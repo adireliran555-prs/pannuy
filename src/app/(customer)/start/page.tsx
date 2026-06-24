@@ -11,6 +11,7 @@ import Input from "@/components/ui/Input";
 import OtpInput from "@/components/ui/OtpInput";
 import StepProgress from "@/components/ui/StepProgress";
 import { validateIsraeliPhone } from "@/lib/utils";
+import TopEventsLogo from "@/components/common/TopEventsLogo";
 
 const schema = z.object({
   name: z.string().min(2, "שם חייב להכיל לפחות 2 תווים"),
@@ -135,9 +136,7 @@ export default function StartPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <Link href="/" className="text-4xl font-black text-primary">
-            פנוי
-          </Link>
+          <TopEventsLogo href="/" size="lg" />
           <p className="text-text-muted mt-1 text-sm">
             מצאו את הספקים המושלמים לחתונה שלכם
           </p>

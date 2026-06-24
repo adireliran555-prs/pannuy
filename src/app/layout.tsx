@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Heebo } from "next/font/google";
 import "./globals.css";
 import ImpersonationBanner from "@/components/common/ImpersonationBanner";
+import { BRAND_DESCRIPTION, BRAND_NAME, BRAND_TAGLINE } from "@/lib/branding";
 
 const heebo = Heebo({
   subsets: ["hebrew", "latin"],
@@ -11,13 +12,12 @@ const heebo = Heebo({
 });
 
 export const metadata: Metadata = {
-  title: "פנוי - מצאו את הספקים המושלמים לחתונה שלכם",
-  description:
-    "פנוי היא הפלטפורמה המובילה לחיפוש ספקי חתונה בישראל. בדיקת זמינות בזמן אמת, קביעת פגישה ישירות, ביקורות אמיתיות.",
+  title: `${BRAND_NAME} - ${BRAND_TAGLINE}`,
+  description: BRAND_DESCRIPTION,
   keywords: "צלמי חתונה, אולמות, תקליטנים, מאפרות, ספקי חתונה, ישראל",
   openGraph: {
-    title: "פנוי - ספקי חתונה",
-    description: "מצאו את הספקים המושלמים לחתונה שלכם",
+    title: `${BRAND_NAME} - ספקי חתונה`,
+    description: BRAND_TAGLINE,
     locale: "he_IL",
     type: "website",
   },

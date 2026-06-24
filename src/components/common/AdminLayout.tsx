@@ -18,6 +18,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { BRAND_NAME } from "@/lib/branding";
 
 const NAV = [
   { href: "/admin", label: "סקירה כללית", icon: LayoutDashboard, exact: true },
@@ -51,7 +52,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           </div>
           <div>
             <div className="font-black text-text-main">פאנל ניהול</div>
-            <div className="text-xs text-text-muted">פנוי</div>
+            <div className="text-xs text-text-muted">{BRAND_NAME}</div>
           </div>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-1">

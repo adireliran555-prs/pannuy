@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { Search, Heart, Calendar, User, Camera } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Button from "@/components/ui/Button";
+import TopEventsLogo from "@/components/common/TopEventsLogo";
 
 const MOBILE_NAV = [
   { href: "/search", label: "גלו", icon: Search },
@@ -37,12 +38,7 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           {/* Logo — right side in RTL */}
           <div className="flex items-center gap-8">
-            <Link
-              href="/"
-              className="text-2xl font-black text-primary tracking-tight hover:opacity-80 transition-opacity"
-            >
-              פנוי
-            </Link>
+            <TopEventsLogo href="/" size="md" />
             <nav className="flex items-center gap-6">
               <Link
                 href="/search"
@@ -130,12 +126,7 @@ export function SupplierNavbar() {
       <header className="hidden sm:block sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-border">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-8">
-            <Link
-              href="/supplier/dashboard"
-              className="text-2xl font-black text-primary tracking-tight hover:opacity-80 transition-opacity"
-            >
-              פנוי
-            </Link>
+            <TopEventsLogo href="/supplier/dashboard" size="md" />
             <nav className="flex items-center gap-6">
               {[
                 { href: "/supplier/dashboard", label: "דשבורד" },

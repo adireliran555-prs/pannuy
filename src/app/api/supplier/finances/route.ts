@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { BRAND_NAME } from "@/lib/branding";
 import { requireSupplierSession } from "@/lib/api-auth";
 import { computeSupplierBalance } from "@/lib/balance";
 
@@ -79,7 +80,7 @@ export async function GET(request: NextRequest) {
       amountIls: c.amountIls,
       status: c.status,
       createdAt: c.createdAt.toISOString(),
-      counterpartName: "פנוי",
+      counterpartName: BRAND_NAME,
       counterpartCategory: null as string | null,
       meetingDate: c.createdAt,
     }));

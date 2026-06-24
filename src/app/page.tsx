@@ -8,20 +8,22 @@ import SupplierCard from "@/components/common/SupplierCard";
 import HeroSearch from "@/components/common/HeroSearch";
 import { CATEGORY_LABELS } from "@/lib/categories";
 import prisma from "@/lib/prisma";
+import TopEventsLogo from "@/components/common/TopEventsLogo";
+import { BRAND_NAME } from "@/lib/branding";
 
 export default async function HomePage() {
   const [rawSuppliers, supplierCount] = await Promise.all([
     prisma.supplier.findMany({
-      where: { isActive: true, isVerified: true },
+      where: { isActive: true },
       take: 6,
-      orderBy: [{ createdAt: "desc" }],
+      orderBy: [{ isVerified: "desc" }, { createdAt: "desc" }],
       select: {
         id: true, slug: true, name: true, city: true, category: true, isVerified: true,
         basePriceFrom: true, basePriceTo: true,
         photos: { where: { type: { in: ["PROFILE", "COVER"] } }, orderBy: { sortOrder: "asc" } },
       },
     }),
-    prisma.supplier.count({ where: { isActive: true, isVerified: true } }),
+    prisma.supplier.count({ where: { isActive: true } }),
   ]);
 
   const featuredSuppliers = rawSuppliers.map((s) => ({
@@ -58,14 +60,8 @@ export default async function HomePage() {
 
         {/* Content */}
         <div className="relative z-10 text-center px-6 max-w-3xl mx-auto">
-          {/* Logo mark */}
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white shadow-xl mb-6">
-            <span className="text-4xl font-black text-primary">פ</span>
-          </div>
-
-          {/* Brand name */}
-          <div className="text-5xl sm:text-7xl font-black text-primary mb-4 tracking-tight">
-            פנוי
+          <div className="mb-6 flex justify-center">
+            <TopEventsLogo size="lg" className="scale-125 sm:scale-150" />
           </div>
 
           {/* Main tagline */}
@@ -179,21 +175,21 @@ export default async function HomePage() {
               {
                 title: CATEGORY_LABELS.VENUE,
                 emoji: "🏛️",
-                href: `https://wa.me/972555173402?text=${encodeURIComponent(`היי, תעדכנו אותי כש${CATEGORY_LABELS.VENUE} יהיו זמינים בפנוי 🙏`)}`,
+                href: `https://wa.me/972555173402?text=${encodeURIComponent(`היי, תעדכנו אותי כש${CATEGORY_LABELS.VENUE} יהיו זמינים ב-${BRAND_NAME} 🙏`)}`,
                 active: false,
                 bg: "bg-gradient-to-br from-purple-100 to-purple-200",
               },
               {
                 title: CATEGORY_LABELS.MAKEUP_ARTIST,
                 emoji: "💄",
-                href: `https://wa.me/972555173402?text=${encodeURIComponent(`היי, תעדכנו אותי כש${CATEGORY_LABELS.MAKEUP_ARTIST} יהיו זמינות בפנוי 🙏`)}`,
+                href: `https://wa.me/972555173402?text=${encodeURIComponent(`היי, תעדכנו אותי כש${CATEGORY_LABELS.MAKEUP_ARTIST} יהיו זמינות ב-${BRAND_NAME} 🙏`)}`,
                 active: false,
                 bg: "bg-gradient-to-br from-pink-100 to-pink-200",
               },
               {
                 title: CATEGORY_LABELS.CATERING,
                 emoji: "🍽️",
-                href: `https://wa.me/972555173402?text=${encodeURIComponent(`היי, תעדכנו אותי כש${CATEGORY_LABELS.CATERING} יהיה זמין בפנוי 🙏`)}`,
+                href: `https://wa.me/972555173402?text=${encodeURIComponent(`היי, תעדכנו אותי כש${CATEGORY_LABELS.CATERING} יהיה זמין ב-${BRAND_NAME} 🙏`)}`,
                 active: false,
                 bg: "bg-gradient-to-br from-amber-100 to-amber-200",
               },
@@ -338,7 +334,7 @@ export default async function HomePage() {
             מוכנים להתחיל?
           </h2>
           <p className="text-lg text-text-muted mb-8">
-            הצטרפו לאלפי זוגות שמצאו את הספקים המושלמים שלהם דרך פנוי
+            הצטרפו לאלפי זוגות שמצאו את הספקים המושלמים שלהם דרך {BRAND_NAME}
           </p>
           <Link
             href="/start"
@@ -360,7 +356,7 @@ export default async function HomePage() {
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-8 mb-10">
             <div className="sm:col-span-2">
-              <div className="text-3xl font-black text-primary mb-2">פנוי</div>
+              <TopEventsLogo size="md" className="mb-2 [&_span]:text-white [&_span.text-primary]:text-primary" />
               <p className="text-white/60 text-sm leading-relaxed max-w-xs">
                 הפלטפורמה המובילה לחיפוש ספקי חתונה בישראל. מחברים בין זוגות לספקים המושלמים עבורם.
               </p>
@@ -380,14 +376,14 @@ export default async function HomePage() {
                 לספקים
               </h4>
               <ul className="space-y-2 text-sm text-white/60">
-                <li><Link href="/for-suppliers" className="hover:text-white transition-colors">הצטרפו לפנוי</Link></li>
+                <li><Link href="/for-suppliers" className="hover:text-white transition-colors">הצטרפו ל-{BRAND_NAME}</Link></li>
                 <li><Link href="/supplier/dashboard" className="hover:text-white transition-colors">פאנל ספקים</Link></li>
               </ul>
             </div>
           </div>
 
           <div className="border-t border-white/10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-white/40">
-            <span>© {new Date().getFullYear()} פנוי. כל הזכויות שמורות.</span>
+            <span>© {new Date().getFullYear()} {BRAND_NAME}. כל הזכויות שמורות.</span>
             <div className="flex gap-4">
               <Link href="#" className="hover:text-white/70 transition-colors">פרטיות</Link>
               <Link href="#" className="hover:text-white/70 transition-colors">תנאי שימוש</Link>

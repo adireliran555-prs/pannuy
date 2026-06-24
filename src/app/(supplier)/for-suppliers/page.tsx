@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { Camera, Calendar, TrendingUp, CheckCircle, ChevronLeft, Users, Gift, ShieldCheck } from "lucide-react";
+import TopEventsLogo from "@/components/common/TopEventsLogo";
+import { BRAND_NAME } from "@/lib/branding";
 
 const FAQS = [
   {
-    q: "האם ההצטרפות לפנוי כרוכה בתשלום?",
-    a: "לא! ההצטרפות לפנוי חינמית לחלוטין. אין תשלום חודשי ואין עמלת רישום. אנחנו גובים עמלה רק על עבודות שאתם סוגרים בפועל דרך הפלטפורמה — אם לא סגרתם, לא שילמתם.",
+    q: `האם ההצטרפות ל-${BRAND_NAME} כרוכה בתשלום?`,
+    a: `לא! ההצטרפות ל-${BRAND_NAME} חינמית לחלוטין. אין תשלום חודשי ואין עמלת רישום. אנחנו גובים עמלה רק על עבודות שאתם סוגרים בפועל דרך הפלטפורמה — אם לא סגרתם, לא שילמתם.`,
   },
   {
     q: "אפשר להרוויח על הפניה של ספקים נוספים?",
@@ -16,7 +18,7 @@ const FAQS = [
   },
   {
     q: "איך מנהלים את הזמינות?",
-    a: "ניתן לסנכרן אוטומטית עם Google Calendar שלכם, או לנהל ידנית ישירות בפלטפורמה. כשיש לכם אירוע ביומן, פנוי תסמן את היום כחסום אוטומטית.",
+    a: `ניתן לסנכרן אוטומטית עם Google Calendar שלכם, או לנהל ידנית ישירות בפלטפורמה. כשיש לכם אירוע ביומן, ${BRAND_NAME} תסמן את היום כחסום אוטומטית.`,
   },
   {
     q: "מה קורה כשזוג מבקש פגישה?",
@@ -52,7 +54,7 @@ export default function ForSuppliersPage() {
             <span className="text-primary">לאלפי זוגות</span>
           </h1>
           <p className="text-lg text-white/80 mb-8 max-w-xl mx-auto leading-relaxed">
-            הצטרפו לפנוי — הפלטפורמה לספקי החתונות מהטופ של ישראל. קבלו לידים איכותיים ונהלו פגישות בקלות.
+            הצטרפו ל-{BRAND_NAME} — הפלטפורמה לספקי החתונות מהטופ של ישראל. קבלו לידים איכותיים ונהלו פגישות בקלות.
           </p>
           <Link
             href="/supplier/join"
@@ -103,7 +105,7 @@ export default function ForSuppliersPage() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-black text-text-main">
-              למה פנוי?
+              למה {BRAND_NAME}?
             </h2>
             <p className="text-text-muted mt-2 max-w-xl mx-auto">
               כל הכלים שצריך כדי להצליח, במקום אחד
@@ -166,7 +168,7 @@ export default function ForSuppliersPage() {
               {
                 step: "02",
                 title: "חברו לוח שנה",
-                desc: "סנכרנו את Google Calendar שלכם. כשאתם תפוסים, פנוי יסמן תאריכים חסומים אוטומטית.",
+                desc: `סנכרנו את Google Calendar שלכם. כשאתם תפוסים, ${BRAND_NAME} יסמן תאריכים חסומים אוטומטית.`,
                 time: "2 דקות",
               },
               {
@@ -206,7 +208,7 @@ export default function ForSuppliersPage() {
               ספקים מהטופ של ישראל
             </h2>
             <p className="text-text-muted mt-2 max-w-xl mx-auto">
-              פנוי היא קהילה סגורה של ספקים מאומתים — לא מאגר פתוח. אנחנו מצרפים רק את הטובים בכל קטגוריה.
+              {BRAND_NAME} היא קהילה סגורה של ספקים מאומתים — לא מאגר פתוח. אנחנו מצרפים רק את הטובים בכל קטגוריה.
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -292,13 +294,13 @@ export default function ForSuppliersPage() {
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-10 px-6">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-white/50">
-          <span className="text-2xl font-black text-primary">פנוי</span>
+          <TopEventsLogo size="sm" />
           <div className="flex gap-6">
             <Link href="/" className="hover:text-white/80 transition-colors">לזוגות</Link>
             <Link href="#" className="hover:text-white/80 transition-colors">תנאי שימוש</Link>
             <Link href="#" className="hover:text-white/80 transition-colors">פרטיות</Link>
           </div>
-          <span>© 2025 פנוי</span>
+          <span>© 2025 {BRAND_NAME}</span>
         </div>
       </footer>
     </div>
