@@ -3,7 +3,7 @@
 import { Fragment, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Search, Check, X, ExternalLink, LogIn, AlertTriangle, ChevronDown, Save } from "lucide-react";
+import { Search, Check, X, ExternalLink, LogIn, AlertTriangle, ChevronDown, Save, Trash2 } from "lucide-react";
 import { cn, formatRelativeHebrew } from "@/lib/utils";
 
 interface Row {
@@ -98,6 +98,27 @@ export default function SuppliersTable({ initialRows }: { initialRows: Row[] }) 
       setRows((rs) => rs.map((r) => (r.id === id ? { ...r, highlights: cleaned } : r)));
       router.refresh();
     }
+  };
+
+  const removeSupplier = async (id: string, name: string) => {
+    if (
+      !window.confirm(
+        `למחוק לצמיתות את הספק "${name}"?\n\nיפוגו גם פגישות, ביקורות ונתונים קשורים. לא ניתן לשחזר.`
+      )
+    ) {
+      return;
+    }
+    setBusyId(id);
+    const res = await fetch(`/api/admin/suppliers/${id}`, { method: "DELETE" });
+    const j = await res.json().catch(() => ({}));
+    setBusyId(null);
+    if (res.ok) {
+      setRows((rs) => rs.filter((r) => r.id !== id));
+      setExpandedId(null);
+      router.refresh();
+      return;
+    }
+    window.alert(typeof j.error === "string" ? j.error : "מחיקה נכשלה");
   };
 
   return (
@@ -216,6 +237,7 @@ export default function SuppliersTable({ initialRows }: { initialRows: Row[] }) 
                           busy={busyId === r.id}
                           onWarn={() => issueWarning(r.id)}
                           onSaveHighlights={(lines) => saveHighlights(r.id, lines)}
+                          onDelete={() => removeSupplier(r.id, r.name)}
                         />
                       </td>
                     </tr>
@@ -274,17 +296,19 @@ function SupplierDetail({
   busy,
   onWarn,
   onSaveHighlights,
+  onDelete,
 }: {
   row: Row;
   busy: boolean;
   onWarn: () => void;
   onSaveHighlights: (lines: string[]) => void;
+  onDelete: () => void;
 }) {
   const [text, setText] = useState(row.highlights.join("\n"));
   const dirty = text !== row.highlights.join("\n");
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Warnings */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
@@ -323,6 +347,22 @@ function SupplierDetail({
         >
           <Save className="h-4 w-4" />
           שמירה
+        </button>
+      </div>
+
+      {/* Delete */}
+      <div className="space-y-2">
+        <h4 className="font-bold text-sm text-text-main">מחיקת ספק</h4>
+        <p className="text-xs text-text-muted leading-relaxed">
+          מוחק את הספק לצמיתות מהמערכת, כולל פגישות, ביקורות ותמונות. לא ניתן לשחזר.
+        </p>
+        <button
+          onClick={onDelete}
+          disabled={busy}
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold border-2 border-red-300 bg-white text-red-700 hover:bg-red-50 disabled:opacity-50"
+        >
+          <Trash2 className="h-4 w-4" />
+          מחק ספק
         </button>
       </div>
     </div>

@@ -1,7 +1,6 @@
 export const revalidate = 60;
 
 import Link from "next/link";
-import Image from "next/image";
 import { Camera, CheckCircle, ShieldCheck, Search, Calendar, ArrowLeft } from "lucide-react";
 import Navbar from "@/components/common/Navbar";
 import SupplierCard from "@/components/common/SupplierCard";
@@ -252,59 +251,6 @@ export default async function HomePage() {
       </section>
 
       {/* ══════════════════════════════════════
-          REAL WEDDINGS GALLERY
-      ══════════════════════════════════════ */}
-      <section className="py-20 px-6 bg-surface">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-10">
-            <span className="text-sm font-bold text-primary uppercase tracking-widest">השראה</span>
-            <h2 className="text-3xl font-black text-text-main mt-2">גלריית השראה</h2>
-            <p className="text-text-muted mt-2">רעיונות ואווירה לחתונה שלכם</p>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {[
-              { seed: "wedding1", caption: "השראה לחתונה" },
-              { seed: "wedding2", caption: "רגעים בלתי נשכחים" },
-              { seed: "wedding3", caption: "אווירה רומנטית" },
-              { seed: "wedding4", caption: "עיצוב חלומי" },
-              { seed: "wedding5", caption: "צבעים ופרחים" },
-              { seed: "wedding6", caption: "החתונה שלכם" },
-              { seed: "wedding7", caption: "רגע הקסם" },
-              { seed: "wedding8", caption: "חגיגה מושלמת" },
-            ].map(({ seed, caption }, i) => (
-              <div
-                key={seed}
-                className={`relative overflow-hidden rounded-2xl bg-primary-light group cursor-pointer ${i === 0 || i === 5 ? "row-span-2" : ""}`}
-              >
-                <div className={`relative w-full ${i === 0 || i === 5 ? "aspect-[3/4]" : "aspect-square"}`}>
-                  <Image
-                    src={`https://picsum.photos/seed/${seed}/600/800`}
-                    alt={caption}
-                    fill
-                    className="object-cover transition-transform duration-500 group-hover:scale-105"
-
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  <p className="absolute bottom-3 right-3 text-white text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    {caption}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="text-center mt-8">
-            <Link
-              href="/search"
-              className="inline-flex items-center gap-2 bg-white border-2 border-primary text-primary font-bold px-6 py-3 rounded-full hover:bg-primary hover:text-white transition-all duration-200"
-            >
-              מצאו צלם לחתונה שלכם
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════
           STATS BAR
       ══════════════════════════════════════ */}
       <section className="py-16 px-6 bg-primary">
@@ -322,30 +268,6 @@ export default async function HomePage() {
               </div>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════
-          CTA SECTION
-      ══════════════════════════════════════ */}
-      <section className="py-24 px-6 bg-gradient-to-br from-rose-50 to-amber-50">
-        <div className="max-w-2xl mx-auto text-center">
-          <h2 className="text-3xl sm:text-5xl font-black text-text-main mb-4">
-            מוכנים להתחיל?
-          </h2>
-          <p className="text-lg text-text-muted mb-8">
-            הצטרפו לאלפי זוגות שמצאו את הספקים המושלמים שלהם דרך {BRAND_NAME}
-          </p>
-          <Link
-            href="/start"
-            className="inline-flex items-center gap-2 bg-primary text-white font-bold text-xl px-10 py-5 rounded-full shadow-xl hover:shadow-2xl hover:bg-primary-dark transition-all duration-200 hover:-translate-y-1"
-          >
-            התחילו בחינם
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-          <p className="mt-4 text-sm text-text-muted">
-            ללא עלות, ללא כרטיס אשראי, ללא התחייבות
-          </p>
         </div>
       </section>
 

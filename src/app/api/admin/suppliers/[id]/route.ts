@@ -1,6 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAdminSession } from "@/lib/api-auth";
+import { deleteSupplierPermanently, SupplierNotFoundError } from "@/lib/delete-supplier";
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { error } = requireAdminSession(request);
+  if (error) return error;
+
+  const { id } = await params;
+
+  try {
+    const { slug } = await deleteSupplierPermanently(id);
+    return NextResponse.json({ success: true, slug });
+  } catch (err) {
+    if (err instanceof SupplierNotFoundError) {
+      return NextResponse.json({ success: false, error: "ספק לא נמצא" }, { status: 404 });
+    }
+    console.error("[DELETE /api/admin/suppliers/[id]]", err);
+    return NextResponse.json({ success: false, error: "מחיקה נכשלה" }, { status: 500 });
+  }
+}
 
 export async function PATCH(
   request: NextRequest,
