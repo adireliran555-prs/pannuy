@@ -307,9 +307,9 @@ export default async function HomePage() {
           <div className="border-t border-white/10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-white/40">
             <span>© {new Date().getFullYear()} {BRAND_NAME}. כל הזכויות שמורות.</span>
             <div className="flex gap-4">
-              <Link href="#" className="hover:text-white/70 transition-colors">פרטיות</Link>
-              <Link href="#" className="hover:text-white/70 transition-colors">תנאי שימוש</Link>
-              <Link href="#" className="hover:text-white/70 transition-colors">יצירת קשר</Link>
+              <Link href="/privacy" className="hover:text-white/70 transition-colors">פרטיות</Link>
+              <Link href="/terms" className="hover:text-white/70 transition-colors">תנאי שימוש</Link>
+              <Link href="/contact" className="hover:text-white/70 transition-colors">יצירת קשר</Link>
             </div>
           </div>
         </div>

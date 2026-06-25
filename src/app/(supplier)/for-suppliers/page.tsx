@@ -297,8 +297,9 @@ export default function ForSuppliersPage() {
           <TopEventsLogo size="sm" />
           <div className="flex gap-6">
             <Link href="/" className="hover:text-white/80 transition-colors">לזוגות</Link>
-            <Link href="#" className="hover:text-white/80 transition-colors">תנאי שימוש</Link>
-            <Link href="#" className="hover:text-white/80 transition-colors">פרטיות</Link>
+            <Link href="/terms" className="hover:text-white/80 transition-colors">תנאי שימוש</Link>
+            <Link href="/privacy" className="hover:text-white/80 transition-colors">פרטיות</Link>
+            <Link href="/contact" className="hover:text-white/80 transition-colors">יצירת קשר</Link>
           </div>
           <span>© 2025 {BRAND_NAME}</span>
         </div>
