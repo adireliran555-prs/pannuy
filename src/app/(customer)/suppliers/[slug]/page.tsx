@@ -25,6 +25,7 @@ export default async function SupplierProfilePage({ params }: PageProps) {
       bioHe: true,
       city: true,
       serviceAreas: true,
+      supportedEventTypes: true,
       basePriceFrom: true,
       basePriceTo: true,
       ratingAvg: true,

@@ -5,22 +5,16 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { MapPin, CalendarDays, Check, Sparkles } from "lucide-react";
+import { MapPin, CalendarDays, Check } from "lucide-react";
 import Button from "@/components/ui/Button";
 import DatePickerField from "@/components/ui/DatePickerField";
 import StepProgress from "@/components/ui/StepProgress";
 import { cn } from "@/lib/utils";
 import TopEventsLogo from "@/components/common/TopEventsLogo";
+import EventTypePicker from "@/components/common/EventTypePicker";
 import { returnToFromSearch, sanitizeReturnTo } from "@/lib/return-to";
 import { setEventContext } from "@/lib/event-context";
-
-const EVENT_TYPES = [
-  { id: "wedding", label: "חתונה", emoji: "💍" },
-  { id: "bar_mitzvah", label: "בר/בת מצווה", emoji: "✡️" },
-  { id: "birthday", label: "יום הולדת", emoji: "🎂" },
-  { id: "corporate", label: "אירוע עסקי", emoji: "💼" },
-  { id: "other", label: "אחר", emoji: "🎉" },
-];
+import { getEventTypeLabel } from "@/lib/event-types";
 
 const REGIONS = [
   { id: "מרכז", label: "מרכז", emoji: "🏙️" },
@@ -104,13 +98,14 @@ function WeddingPageContent() {
         return;
       }
       const params = new URLSearchParams({ date: data.eventDate, areas: selectedAreas.join(",") });
+      if (selectedEventType) params.set("eventType", selectedEventType);
       router.push(`/search?${params.toString()}`);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const selectedEventLabel = EVENT_TYPES.find(e => e.id === selectedEventType)?.label ?? "האירוע";
+  const selectedEventLabel = getEventTypeLabel(selectedEventType);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50 to-amber-50 flex items-center justify-center px-4 py-12">
@@ -134,39 +129,12 @@ function WeddingPageContent() {
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-            {/* Event Type */}
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-text-main flex items-center gap-1.5">
-                <Sparkles className="h-4 w-4 text-primary" />
-                סוג האירוע
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                {EVENT_TYPES.map(({ id, label, emoji }) => {
-                  const selected = selectedEventType === id;
-                  return (
-                    <button
-                      key={id}
-                      type="button"
-                      onClick={() => setSelectedEventType(id)}
-                      className={cn(
-                        "relative flex flex-col items-center justify-center gap-1 py-3 px-2 rounded-2xl border-2 text-xs font-semibold transition-all duration-150",
-                        selected
-                          ? "border-primary bg-primary text-white shadow-md"
-                          : "border-border bg-white text-text-main hover:border-primary/50 hover:bg-primary-light/30"
-                      )}
-                    >
-                      {selected && (
-                        <span className="absolute top-1.5 left-1.5 w-4 h-4 bg-white/30 rounded-full flex items-center justify-center">
-                          <Check className="h-2.5 w-2.5 text-white" />
-                        </span>
-                      )}
-                      <span className="text-lg">{emoji}</span>
-                      <span>{label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            <EventTypePicker
+              multiple={false}
+              value={[selectedEventType]}
+              onChange={(ids) => setSelectedEventType(ids[0] ?? "wedding")}
+              label="סוג האירוע"
+            />
 
             {/* Event Date */}
             <div className="space-y-1.5">

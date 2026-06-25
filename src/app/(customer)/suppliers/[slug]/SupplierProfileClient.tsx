@@ -20,6 +20,7 @@ import AvailabilityCalendar from "@/components/common/AvailabilityCalendar";
 import SimilarSuppliers from "@/components/common/SimilarSuppliers";
 import { formatPrice, cn } from "@/lib/utils";
 import { CATEGORY_LABELS_SINGULAR } from "@/lib/categories";
+import { getEventTypeLabel } from "@/lib/event-types";
 import { BRAND_NAME } from "@/lib/branding";
 import type { NormalizedSupplier } from "@/lib/supplier";
 import { pushRecentlyViewed } from "@/lib/recently-viewed";
@@ -249,6 +250,11 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
         {/* Info row */}
         <div className="flex flex-wrap items-center gap-3 pb-5 border-b border-border">
           <Badge variant="primary">{categoryLabel}</Badge>
+          {(supplier.supportedEventTypes ?? []).map((eventTypeId: string) => (
+            <Badge key={eventTypeId} variant="default">
+              {getEventTypeLabel(eventTypeId)}
+            </Badge>
+          ))}
           {supplier.isVerified && (
             <span className="flex items-center gap-1 text-xs font-bold text-green-700 bg-green-50 border border-green-200 px-2.5 py-1 rounded-full">
               <CheckCircle className="h-3.5 w-3.5" />

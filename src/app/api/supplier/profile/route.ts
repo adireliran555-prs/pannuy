@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { requireSupplierSession } from "@/lib/api-auth";
 import { delCache } from "@/lib/redis";
 import { maybeActivateSupplierListing } from "@/lib/supplier-activation";
+import { normalizeEventTypes } from "@/lib/event-types";
 import { Category } from "@prisma/client";
 
 export async function GET(request: NextRequest) {
@@ -22,6 +23,7 @@ export async function GET(request: NextRequest) {
         bioHe: true,
         city: true,
         serviceAreas: true,
+        supportedEventTypes: true,
         basePriceFrom: true,
         basePriceTo: true,
         ratingAvg: true,
@@ -65,17 +67,33 @@ export async function PATCH(request: NextRequest) {
     if (error) return error;
 
     const body = await request.json();
-    const { name, bioHe, city, serviceAreas, basePriceFrom, basePriceTo, email, category } =
+    const { name, bioHe, city, serviceAreas, supportedEventTypes, basePriceFrom, basePriceTo, email, category } =
       body as {
         name?: string;
         bioHe?: string;
         city?: string;
         serviceAreas?: string[];
+        supportedEventTypes?: string[];
         basePriceFrom?: number;
         basePriceTo?: number;
         email?: string;
         category?: string;
       };
+
+    const nextSupportedEventTypes =
+      supportedEventTypes !== undefined
+        ? normalizeEventTypes(supportedEventTypes)
+        : undefined;
+
+    if (
+      supportedEventTypes !== undefined &&
+      nextSupportedEventTypes!.length === 0
+    ) {
+      return NextResponse.json(
+        { success: false, error: "חובה לבחור לפחות סוג אירוע אחד" },
+        { status: 400 }
+      );
+    }
 
     const nextCategory =
       category && Object.values(Category).includes(category as Category)
@@ -90,6 +108,9 @@ export async function PATCH(request: NextRequest) {
         ...(bioHe !== undefined ? { bioHe } : {}),
         ...(city !== undefined ? { city } : {}),
         ...(serviceAreas !== undefined ? { serviceAreas } : {}),
+        ...(nextSupportedEventTypes !== undefined
+          ? { supportedEventTypes: nextSupportedEventTypes }
+          : {}),
         ...(basePriceFrom !== undefined ? { basePriceFrom } : {}),
         ...(basePriceTo !== undefined ? { basePriceTo } : {}),
         ...(email !== undefined ? { email } : {}),

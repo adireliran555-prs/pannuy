@@ -14,6 +14,7 @@ import StepProgress from "@/components/ui/StepProgress";
 import { validateIsraeliPhone, ISRAELI_CITIES, cn } from "@/lib/utils";
 import { CATEGORY_LABELS } from "@/lib/categories";
 import TopEventsLogo from "@/components/common/TopEventsLogo";
+import EventTypePicker from "@/components/common/EventTypePicker";
 import { uploadToCloudinary, cloudinaryEnabled } from "@/lib/cloudinary";
 
 // Categories offered when joining — legacy categories (FLORIST, BRIDAL_SUITE) are excluded.
@@ -83,6 +84,7 @@ export default function SupplierJoinPage() {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedCity, setSelectedCity] = useState("");
   const [selectedAreas, setSelectedAreas] = useState<string[]>([]);
+  const [selectedEventTypes, setSelectedEventTypes] = useState<string[]>(["wedding"]);
   const [bio, setBio] = useState("");
   const [step2Attempted, setStep2Attempted] = useState(false);
 
@@ -136,6 +138,9 @@ export default function SupplierJoinPage() {
       if (json.data?.bioHe) setBio(json.data.bioHe);
       if (Array.isArray(json.data?.serviceAreas) && json.data.serviceAreas.length > 0) {
         setSelectedAreas(json.data.serviceAreas.filter((area: string) => SERVICE_AREAS.includes(area)));
+      }
+      if (Array.isArray(json.data?.supportedEventTypes) && json.data.supportedEventTypes.length > 0) {
+        setSelectedEventTypes(json.data.supportedEventTypes);
       }
       if (Array.isArray(json.data?.packages) && json.data.packages.length > 0) {
         setPackages((prev) => {
@@ -313,6 +318,8 @@ export default function SupplierJoinPage() {
           category: selectedCategory || undefined,
           city: selectedCity || undefined,
           serviceAreas: selectedAreas.length > 0 ? selectedAreas : undefined,
+          supportedEventTypes:
+            selectedEventTypes.length > 0 ? selectedEventTypes : undefined,
           bioHe: bio || undefined,
         }),
       });
@@ -500,6 +507,13 @@ export default function SupplierJoinPage() {
                   </select>
                 </div>
 
+                <EventTypePicker
+                  value={selectedEventTypes}
+                  onChange={setSelectedEventTypes}
+                  label="סוגי אירועים שאני מספק/ה"
+                  hint="בחרו את כל סוגי האירועים שאתם מלווים"
+                />
+
                 {/* Service areas */}
                 <div>
                   <label className="text-sm font-bold text-text-main block mb-2">
@@ -564,6 +578,10 @@ export default function SupplierJoinPage() {
                 <p className="text-red-500 text-xs -mt-3 font-medium">חובה לבחור לפחות אזור שירות אחד</p>
               )}
 
+              {step2Attempted && selectedEventTypes.length === 0 && (
+                <p className="text-red-500 text-xs -mt-3 font-medium">חובה לבחור לפחות סוג אירוע אחד</p>
+              )}
+
               {step2Attempted && !selectedCategory && (
                 <p className="text-red-500 text-xs -mt-3 font-medium">חובה לבחור תחום עיסוק</p>
               )}
@@ -572,7 +590,13 @@ export default function SupplierJoinPage() {
                 size="lg"
                 onClick={() => {
                   setStep2Attempted(true);
-                  if (selectedCategory && selectedCity && selectedAreas.length > 0 && bio.length >= 20) {
+                  if (
+                    selectedCategory &&
+                    selectedCity &&
+                    selectedAreas.length > 0 &&
+                    selectedEventTypes.length > 0 &&
+                    bio.length >= 20
+                  ) {
                     setStep(3);
                   }
                 }}

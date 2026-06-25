@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
       ? parseInt(searchParams.get("priceMax")!, 10)
       : undefined;
     const sortParam = searchParams.get("sortBy");
+    const eventType = searchParams.get("eventType") ?? undefined;
     const sortBy: SearchFilters["sortBy"] =
       sortParam === "priceAsc" || sortParam === "priceDesc" || sortParam === "relevance"
         ? sortParam
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest) {
         ? (categoryParam as Category)
         : undefined;
 
-    const filters = { areas, date, category, priceMin, priceMax, sortBy, page, limit };
+    const filters = { areas, date, category, eventType, priceMin, priceMax, sortBy, page, limit };
     const cacheKey = `search:${createHash("md5").update(JSON.stringify(filters)).digest("hex")}`;
 
     const cached = await getCache(cacheKey);

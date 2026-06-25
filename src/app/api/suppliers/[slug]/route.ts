@@ -27,6 +27,7 @@ export async function GET(
         bioHe: true,
         city: true,
         serviceAreas: true,
+        supportedEventTypes: true,
         basePriceFrom: true,
         basePriceTo: true,
         ratingAvg: true,

@@ -12,7 +12,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import Button from "@/components/ui/Button";
 import DatePickerField from "@/components/ui/DatePickerField";
 import { cn } from "@/lib/utils";
-import { setEventContext } from "@/lib/event-context";
+import { setEventContext, getEventContext } from "@/lib/event-context";
 import {
   readRecentlyViewed,
   RECENTLY_VIEWED_KEY,
@@ -42,13 +42,17 @@ interface Filters {
   sortBy: "relevance" | "priceAsc" | "priceDesc";
 }
 
+const ALL_CATEGORIES = "ALL";
+
 function SearchContent({ initialData }: { initialData?: InitialData }) {
   const searchParams = useSearchParams();
   const router = useRouter();
 
   const areasParam = searchParams.get("areas") || "";
   const initialAreas = areasParam ? areasParam.split(",").filter(Boolean) : [];
-  const initialCategory = searchParams.get("category") || "PHOTOGRAPHER";
+  const initialCategory = searchParams.get("category") || ALL_CATEGORIES;
+  const initialEventType =
+    searchParams.get("eventType") || getEventContext()?.eventType || undefined;
 
   const [filters, setFilters] = useState<Filters>({
     date: searchParams.get("date") || "",
@@ -57,6 +61,7 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
   });
   const [selectedAreas, setSelectedAreas] = useState<string[]>(initialAreas);
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
+  const [selectedEventType, setSelectedEventType] = useState(initialEventType);
   const [recentlyViewed, setRecentlyViewed] = useState<RecentView[]>([]);
   const [showFilterDrawer, setShowFilterDrawer] = useState(false);
   const [showAreaDropdown, setShowAreaDropdown] = useState(false);
@@ -65,23 +70,35 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
   const [page, setPage] = useState(1);
 
   useEffect(() => {
-    setSelectedCategory(searchParams.get("category") || "PHOTOGRAPHER");
+    setSelectedCategory(searchParams.get("category") || ALL_CATEGORIES);
+    setSelectedEventType(
+      searchParams.get("eventType") || getEventContext()?.eventType || undefined
+    );
   }, [searchParams]);
 
   useEffect(() => {
     setRecentlyViewed(readRecentlyViewed());
     const date = searchParams.get("date") || "";
     const areas = (searchParams.get("areas") || "").split(",").filter(Boolean);
-    if (date || areas.length > 0) {
-      setEventContext({ date, areas });
+    const eventType = searchParams.get("eventType") || getEventContext()?.eventType;
+    if (date || areas.length > 0 || eventType) {
+      setEventContext({
+        date,
+        areas,
+        ...(eventType ? { eventType } : {}),
+      });
     }
   }, [searchParams]);
 
   useEffect(() => {
-    if (filters.date || selectedAreas.length > 0) {
-      setEventContext({ date: filters.date, areas: selectedAreas });
+    if (filters.date || selectedAreas.length > 0 || selectedEventType) {
+      setEventContext({
+        date: filters.date,
+        areas: selectedAreas,
+        ...(selectedEventType ? { eventType: selectedEventType } : {}),
+      });
     }
-  }, [filters.date, selectedAreas]);
+  }, [filters.date, selectedAreas, selectedEventType]);
 
   const filterBarRef = useRef<HTMLDivElement>(null);
 
@@ -105,7 +122,11 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
     setSelectedCategory(categoryId);
     setPage(1);
     const params = new URLSearchParams(searchParams.toString());
-    params.set("category", categoryId);
+    if (categoryId === ALL_CATEGORIES) {
+      params.delete("category");
+    } else {
+      params.set("category", categoryId);
+    }
     params.delete("page");
     router.push(`/search?${params.toString()}`);
   };
@@ -114,7 +135,8 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
     {
       areas: selectedAreas.length > 0 ? selectedAreas : undefined,
       date: filters.date || undefined,
-      category: selectedCategory,
+      category: selectedCategory !== ALL_CATEGORIES ? selectedCategory : undefined,
+      eventType: selectedEventType,
       priceMax: filters.priceMax || undefined,
       sortBy: filters.sortBy,
       page,
@@ -148,6 +170,7 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
       <div className="sticky top-0 z-30 bg-white border-b border-border shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-3 pb-0 flex items-center gap-3 overflow-x-auto">
           {[
+            { id: ALL_CATEGORIES, emoji: "✨", label: "כל הספקים", open: true },
             { id: "PHOTOGRAPHER", emoji: "📸", open: true },
             { id: "VIDEOGRAPHER", emoji: "🎬", open: true },
             { id: "DJ", emoji: "🎧", open: false },
@@ -157,7 +180,7 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
             { id: "MAKEUP_ARTIST", emoji: "💄", open: false },
             { id: "PHOTO_BOOTH", emoji: "🖼️", open: false },
             { id: "EVENT_PRODUCER", emoji: "🎪", open: false },
-          ].map(({ id, emoji, open }) => (
+          ].map(({ id, emoji, label, open }) => (
             <button
               key={id}
               type="button"
@@ -173,7 +196,7 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
               )}
             >
               <span>{emoji}</span>
-              {CATEGORY_LABELS[id]}
+              {label ?? CATEGORY_LABELS[id]}
               {!open && (
                 <span className="text-[10px] font-bold bg-gray-700 text-white px-1.5 py-0.5 rounded-full">
                   בקרוב

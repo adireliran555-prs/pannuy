@@ -20,6 +20,7 @@ interface SuppliersFilters {
   areas?: string[];
   date?: string;
   category?: string;
+  eventType?: string;
   priceMin?: number;
   priceMax?: number;
   sortBy?: "relevance" | "priceAsc" | "priceDesc";
@@ -60,6 +61,7 @@ function buildUrl(filters: SuppliersFilters): string {
   if (filters.areas && filters.areas.length > 0) params.set("areas", filters.areas.join(","));
   if (filters.date) params.set("date", filters.date);
   if (filters.category) params.set("category", filters.category);
+  if (filters.eventType) params.set("eventType", filters.eventType);
   if (filters.priceMin) params.set("priceMin", String(filters.priceMin));
   if (filters.priceMax) params.set("priceMax", String(filters.priceMax));
   if (filters.sortBy && filters.sortBy !== "relevance") params.set("sortBy", filters.sortBy);

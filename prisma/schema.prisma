@@ -48,6 +48,7 @@ model Supplier {
   bioHe                String?            @db.Text
   city                 String?
   serviceAreas         String[]
+  supportedEventTypes  String[]           @default(["wedding"])
   basePriceFrom        Int?
   basePriceTo          Int?
   ratingAvg            Float              @default(0)

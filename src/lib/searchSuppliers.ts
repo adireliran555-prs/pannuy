@@ -1,10 +1,12 @@
 import prisma from "@/lib/prisma";
 import { Category } from "@prisma/client";
+import { isValidEventTypeId } from "@/lib/event-types";
 
 export interface SearchFilters {
   areas?: string[];
   date?: string;
   category?: Category;
+  eventType?: string;
   priceMin?: number;
   priceMax?: number;
   sortBy?: "relevance" | "priceAsc" | "priceDesc";
@@ -118,6 +120,9 @@ export async function searchSuppliers(filters: SearchFilters): Promise<SearchRes
   const where = {
     isActive: true,
     ...(filters.category ? { category: filters.category } : {}),
+    ...(filters.eventType && isValidEventTypeId(filters.eventType)
+      ? { supportedEventTypes: { has: filters.eventType } }
+      : {}),
     ...(filters.areas && filters.areas.length > 0
       ? {
           OR: [

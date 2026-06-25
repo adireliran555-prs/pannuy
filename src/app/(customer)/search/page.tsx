@@ -7,6 +7,7 @@ interface PageProps {
     areas?: string;
     date?: string;
     category?: string;
+    eventType?: string;
     page?: string;
   }>;
 }
@@ -58,7 +59,8 @@ export default async function SearchPage({ searchParams }: PageProps) {
   const data = await searchSuppliers({
     areas,
     date: params.date,
-    category: category ?? Category.PHOTOGRAPHER,
+    category,
+    eventType: params.eventType,
     page,
   });
 

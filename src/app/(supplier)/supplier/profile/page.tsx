@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { cn } from "@/lib/utils";
 import { cloudinaryEnabled, uploadToCloudinary } from "@/lib/cloudinary";
 import { CATEGORY_LABELS } from "@/lib/categories";
+import EventTypePicker from "@/components/common/EventTypePicker";
 
 const ALL_COUNTRY = "כל הארץ";
 
@@ -89,6 +90,7 @@ export default function SupplierProfilePage() {
   const [category, setCategory] = useState("");
   const [bio, setBio] = useState("");
   const [selectedAreas, setSelectedAreas] = useState<string[]>([]);
+  const [selectedEventTypes, setSelectedEventTypes] = useState<string[]>(["wedding"]);
   const [priceFrom, setPriceFrom] = useState("");
   const [priceTo, setPriceTo] = useState("");
 
@@ -116,6 +118,9 @@ export default function SupplierProfilePage() {
           setCategory(s.category ?? "");
           setBio(s.bioHe ?? "");
           setSelectedAreas(s.serviceAreas ?? []);
+          setSelectedEventTypes(
+            s.supportedEventTypes?.length ? s.supportedEventTypes : ["wedding"]
+          );
           setPriceFrom(s.basePriceFrom?.toString() ?? "");
           setPriceTo(s.basePriceTo?.toString() ?? "");
           setPhotos(
@@ -161,6 +166,7 @@ export default function SupplierProfilePage() {
   };
 
   const handleSaveInfo = async () => {
+    if (selectedEventTypes.length === 0) return;
     setIsLoading(true);
     try {
       const res = await fetch("/api/supplier/profile", {
@@ -171,6 +177,7 @@ export default function SupplierProfilePage() {
           category: category || undefined,
           bioHe: bio || undefined,
           serviceAreas: selectedAreas.length > 0 ? selectedAreas : undefined,
+          supportedEventTypes: selectedEventTypes,
           basePriceFrom: priceFrom ? Number(priceFrom) : undefined,
           basePriceTo: priceTo ? Number(priceTo) : undefined,
         }),
@@ -575,6 +582,13 @@ export default function SupplierProfilePage() {
                 ))}
               </select>
             </div>
+
+            <EventTypePicker
+              value={selectedEventTypes}
+              onChange={setSelectedEventTypes}
+              label="סוגי אירועים שאני מספק/ה"
+              hint="בחרו את כל סוגי האירועים שאתם מלווים — כמו שהזוגות בוחרים בחיפוש"
+            />
 
             <div>
               <label className="text-sm font-semibold text-text-main block mb-2">אזורי שירות</label>
