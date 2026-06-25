@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireSupplierSession } from "@/lib/api-auth";
-
-const AFFILIATE_BASE_URL = "https://pannuy.vercel.app/?ref=";
+import { getAppUrl } from "@/lib/app-url";
 
 function generateAffiliateCode(): string {
   return Math.random().toString(36).slice(2, 10).toUpperCase();
@@ -100,7 +99,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       affiliateCode,
-      affiliateUrl: AFFILIATE_BASE_URL + affiliateCode,
+      affiliateUrl: `${getAppUrl()}/?ref=${affiliateCode}`,
       totalEarned: earnedAgg._sum.amountIls ?? 0,
       totalOwed: owedAgg._sum.amountIls ?? 0,
       earnings,

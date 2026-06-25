@@ -1,15 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSupplierSession } from "@/lib/api-auth";
+import { getAppUrl } from "@/lib/app-url";
 import { mirrorImagesParallel } from "@/lib/cloudinary-server";
 import { resolveSiteImport } from "@/lib/landing-import";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-const FETCH_HEADERS = {
-  "User-Agent": "Mozilla/5.0 (compatible; PannuyBot/1.0; +https://pannuy.vercel.app)",
-  Accept: "text/html,application/xhtml+xml",
-};
+function fetchHeaders(): Record<string, string> {
+  return {
+    "User-Agent": `Mozilla/5.0 (compatible; PannuyBot/1.0; +${getAppUrl()})`,
+    Accept: "text/html,application/xhtml+xml",
+  };
+}
 
 function isSafeUrl(raw: string): URL | null {
   try {
@@ -36,7 +39,7 @@ async function fetchHtml(url: string): Promise<{ html: string; finalUrl: string 
   const timeout = setTimeout(() => controller.abort(), 12_000);
   try {
     const res = await fetch(url, {
-      headers: FETCH_HEADERS,
+      headers: fetchHeaders(),
       signal: controller.signal,
       redirect: "follow",
     });

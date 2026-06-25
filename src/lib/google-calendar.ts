@@ -6,6 +6,7 @@ import prisma from "@/lib/prisma";
 import { jerusalemParts } from "@/lib/timezone";
 import { invalidateAvailabilityCache } from "@/lib/availability";
 import { BRAND_CALENDAR_NAME, BRAND_NAME } from "@/lib/branding";
+import { getAppUrl } from "@/lib/app-url";
 
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID ?? "";
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET ?? "";
@@ -367,7 +368,7 @@ export async function registerCalendarWatch(
     // and we verify it in the webhook handler before trusting the call.
     const channelId = randomUUID();
     const channelToken = randomUUID();
-    const baseUrl = process.env.GOOGLE_WEBHOOK_URL ?? "https://pannuy.vercel.app";
+    const baseUrl = process.env.GOOGLE_WEBHOOK_URL ?? getAppUrl();
 
     const res = await calendar.events.watch({
       calendarId,
