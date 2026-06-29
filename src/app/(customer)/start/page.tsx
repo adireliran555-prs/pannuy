@@ -13,7 +13,8 @@ import OtpInput from "@/components/ui/OtpInput";
 import StepProgress from "@/components/ui/StepProgress";
 import { validateIsraeliPhone } from "@/lib/utils";
 import TopEventsLogo from "@/components/common/TopEventsLogo";
-import { returnToFromSearch, sanitizeReturnTo, withReturnTo } from "@/lib/return-to";
+import { returnToFromSearch, sanitizeReturnTo } from "@/lib/return-to";
+import { getEventContext } from "@/lib/event-context";
 
 const schema = z.object({
   name: z.string().min(2, "שם חייב להכיל לפחות 2 תווים"),
@@ -111,12 +112,29 @@ function StartPageContent() {
         }
         const user = json.user;
         const safeReturn = sanitizeReturnTo(returnTo);
-        if (!user?.weddingDate) {
-          window.location.href = withReturnTo("/start/wedding", safeReturn);
-          return;
+
+        // Event details (type/date/area) are now collected up-front on the
+        // homepage and kept in event-context — persist them to the profile so
+        // the separate "event details" step is unnecessary.
+        const ctx = getEventContext();
+        if (ctx?.date && !user?.weddingDate) {
+          await fetch("/api/users/profile", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              weddingDate: ctx.date,
+              weddingArea: ctx.areas.join(","),
+            }),
+          }).catch(() => {});
         }
+
         if (safeReturn) {
           window.location.href = safeReturn;
+          return;
+        }
+        // Fallback only for direct logins with no prior search and no profile.
+        if (!user?.weddingDate && !ctx?.date) {
+          window.location.href = "/start/wedding";
           return;
         }
         window.location.href = "/dashboard/meetings";

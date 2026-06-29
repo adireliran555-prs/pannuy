@@ -2,106 +2,104 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { MapPin, Search, ArrowLeft, PartyPopper } from "lucide-react";
+import { MapPin, CalendarDays, Check } from "lucide-react";
+import Button from "@/components/ui/Button";
 import DatePickerField from "@/components/ui/DatePickerField";
-import { EVENT_TYPES } from "@/lib/event-types";
+import EventTypePicker from "@/components/common/EventTypePicker";
 import { setEventContext } from "@/lib/event-context";
 import { cn } from "@/lib/utils";
 
 const REGIONS = [
-  { id: "מרכז", label: "מרכז" },
-  { id: "תל אביב", label: "תל אביב" },
-  { id: "ירושלים", label: "ירושלים" },
-  { id: "הצפון", label: "צפון" },
-  { id: "הדרום", label: "דרום" },
-  { id: "השרון", label: "השרון" },
+  { id: "מרכז", label: "מרכז", emoji: "🏙️" },
+  { id: "תל אביב", label: "תל אביב", emoji: "🌆" },
+  { id: "ירושלים", label: "ירושלים", emoji: "🕌" },
+  { id: "הצפון", label: "צפון", emoji: "🌿" },
+  { id: "הדרום", label: "דרום", emoji: "🌵" },
+  { id: "השרון", label: "השרון", emoji: "🌊" },
 ];
 
 export default function HeroSearch() {
   const router = useRouter();
   const [date, setDate] = useState("");
-  const [area, setArea] = useState("");
+  const [areas, setAreas] = useState<string[]>([]);
   const [eventType, setEventType] = useState("wedding");
+
+  const toggleArea = (id: string) => {
+    setAreas((prev) => (prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]));
+  };
 
   const submit = () => {
     const params = new URLSearchParams();
     if (date) params.set("date", date);
-    if (area) params.set("areas", area);
+    if (areas.length) params.set("areas", areas.join(","));
     if (eventType) params.set("eventType", eventType);
-    if (date || area) {
-      setEventContext({
-        date,
-        areas: area ? [area] : [],
-        eventType,
-      });
-    }
+    setEventContext({ date, areas, eventType });
     router.push(`/search${params.toString() ? `?${params}` : ""}`);
   };
 
-  const fieldClass =
-    "w-full min-w-0 rounded-xl border-2 border-border bg-white text-sm font-semibold text-text-main hover:border-primary focus-within:border-primary focus:border-primary outline-none transition-colors";
-
   return (
-    <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-border p-3 sm:p-4 max-w-2xl mx-auto w-full">
-      <div className="flex flex-col gap-3">
+    <div className="bg-white rounded-3xl shadow-xl border border-border p-5 sm:p-6 max-w-md mx-auto w-full text-right">
+      <div className="space-y-5">
         {/* Event type */}
-        <div className="relative w-full min-w-0">
-          <PartyPopper
-            className="absolute end-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary pointer-events-none"
-            aria-hidden
-          />
-          <select
-            value={eventType}
-            onChange={(e) => setEventType(e.target.value)}
-            className={cn(fieldClass, "appearance-none pe-10 ps-4 py-3 cursor-pointer")}
-            aria-label="סוג האירוע"
-          >
-            {EVENT_TYPES.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.emoji} {t.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <DatePickerField
-          value={date}
-          onChange={setDate}
-          placeholder="תאריך האירוע"
-          modalTitle="מתי האירוע?"
+        <EventTypePicker
+          multiple={false}
+          value={[eventType]}
+          onChange={(ids) => setEventType(ids[0] ?? "wedding")}
+          label="סוג האירוע"
         />
 
-        {/* Area */}
-        <div className="relative w-full min-w-0">
-          <MapPin
-            className="absolute end-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary pointer-events-none"
-            aria-hidden
+        {/* Event date */}
+        <div className="space-y-1.5">
+          <label className="text-sm font-semibold text-text-main flex items-center gap-1.5">
+            <CalendarDays className="h-4 w-4 text-primary" />
+            תאריך האירוע
+          </label>
+          <DatePickerField
+            value={date}
+            onChange={setDate}
+            placeholder="בחרו תאריך האירוע"
+            modalTitle="מתי האירוע?"
           />
-          <select
-            value={area}
-            onChange={(e) => setArea(e.target.value)}
-            className={cn(fieldClass, "appearance-none pe-10 ps-4 py-3 cursor-pointer")}
-            aria-label="אזור"
-          >
-            <option value="">כל האזורים</option>
-            {REGIONS.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.label}
-              </option>
-            ))}
-          </select>
         </div>
 
-        {/* Submit */}
-        <button
-          type="button"
-          onClick={submit}
-          className="w-full inline-flex items-center justify-center gap-2 bg-primary text-white font-bold px-6 py-3.5 rounded-xl shadow-md hover:bg-primary-dark transition-colors text-sm"
-        >
-          <Search className="h-4 w-4 shrink-0" />
-          <span>חפשו ספקים פנויים</span>
-          <ArrowLeft className="h-4 w-4 shrink-0" />
-        </button>
+        {/* Area multi-select */}
+        <div className="space-y-2">
+          <label className="text-sm font-semibold text-text-main flex items-center gap-1.5">
+            <MapPin className="h-4 w-4 text-primary" />
+            אזור האירוע
+            <span className="text-text-muted font-normal text-xs">(ניתן לבחור מספר אזורים)</span>
+          </label>
+          <div className="grid grid-cols-3 gap-2">
+            {REGIONS.map(({ id, label, emoji }) => {
+              const selected = areas.includes(id);
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => toggleArea(id)}
+                  className={cn(
+                    "relative flex flex-col items-center justify-center gap-1 py-3 px-2 rounded-2xl border-2 text-sm font-semibold transition-all duration-150",
+                    selected
+                      ? "border-primary bg-primary text-white shadow-md"
+                      : "border-border bg-white text-text-main hover:border-primary/50 hover:bg-primary-light/30"
+                  )}
+                >
+                  {selected && (
+                    <span className="absolute top-1.5 left-1.5 w-4 h-4 bg-white/30 rounded-full flex items-center justify-center">
+                      <Check className="h-2.5 w-2.5 text-white" />
+                    </span>
+                  )}
+                  <span className="text-lg">{emoji}</span>
+                  <span>{label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <Button type="button" onClick={submit} fullWidth size="lg" className="mt-2">
+          מצאו ספקים 🔍
+        </Button>
       </div>
     </div>
   );
