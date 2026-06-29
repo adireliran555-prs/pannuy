@@ -8,6 +8,7 @@ import { CalendarDays, MapPin, CheckCircle } from "lucide-react";
 import DashboardLayout from "@/components/common/DashboardLayout";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import DatePickerField from "@/components/ui/DatePickerField";
 import { ISRAELI_CITIES } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
@@ -39,6 +40,7 @@ export default function ProfilePage() {
     register,
     handleSubmit,
     setValue,
+    watch,
     reset,
     formState: { errors },
   } = useForm<FormData>({
@@ -159,11 +161,12 @@ export default function ProfilePage() {
                   <CalendarDays className="h-4 w-4 text-primary" />
                   תאריך האירוע
                 </label>
-                <input
-                  type="date"
-                  min={new Date().toISOString().split("T")[0]}
-                  className="w-full rounded-xl border border-border px-4 py-3 text-base text-text-main focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                  {...register("weddingDate")}
+                <DatePickerField
+                  value={watch("weddingDate") ?? ""}
+                  onChange={(d) => setValue("weddingDate", d, { shouldValidate: true })}
+                  placeholder="בחרו תאריך האירוע"
+                  modalTitle="מתי האירוע?"
+                  triggerClassName="border py-3"
                 />
               </div>
 
