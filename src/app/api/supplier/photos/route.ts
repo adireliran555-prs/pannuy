@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { requireSupplierSession } from "@/lib/api-auth";
 import { delCache } from "@/lib/redis";
 import { maybeActivateSupplierListing } from "@/lib/supplier-activation";
+import { scanImageForPhone, deleteCloudinaryAsset } from "@/lib/cloudinary-ocr";
 import { PhotoType } from "@prisma/client";
 
 export async function POST(request: NextRequest) {
@@ -22,6 +23,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: "url ו-publicId חובה" },
         { status: 400 }
+      );
+    }
+
+    // Never allow a phone number printed on an image — suppliers must be
+    // reachable only through the app. Reject (and remove) any image whose OCR
+    // text contains an Israeli phone number.
+    const scan = await scanImageForPhone(publicId);
+    if (scan.hasPhone) {
+      console.warn(`[photos] rejected image with phone for supplier ${session.id}: ${scan.matched}`);
+      await deleteCloudinaryAsset(publicId);
+      return NextResponse.json(
+        {
+          success: false,
+          code: "PHONE_IN_IMAGE",
+          error:
+            "לא ניתן להעלות תמונה שמכילה מספר טלפון. אנא הסירו את המספר מהתמונה ונסו שוב — יצירת הקשר נעשית דרך האתר בלבד.",
+        },
+        { status: 422 }
       );
     }
 

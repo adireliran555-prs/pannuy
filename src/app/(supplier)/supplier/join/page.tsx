@@ -90,7 +90,7 @@ export default function SupplierJoinPage() {
 
   // Step 3 state
   const [photoUrl, setPhotoUrl] = useState("");
-  const [photos, setPhotos] = useState<string[]>([]);
+  const [photos, setPhotos] = useState<{ url: string; publicId: string }[]>([]);
 
   // Landing-page import
   const [importUrl, setImportUrl] = useState("");
@@ -106,8 +106,8 @@ export default function SupplierJoinPage() {
       for (const file of Array.from(files)) {
         if (photos.length >= 20) break;
         try {
-          const { url } = await uploadToCloudinary(file);
-          setPhotos((prev) => (prev.length < 20 ? [...prev, url] : prev));
+          const { url, publicId } = await uploadToCloudinary(file);
+          setPhotos((prev) => (prev.length < 20 ? [...prev, { url, publicId }] : prev));
         } catch {
           /* skip a failed file */
         }
@@ -160,12 +160,14 @@ export default function SupplierJoinPage() {
           return next;
         });
       }
-      const imgs: string[] = json.data?.images ?? [];
+      const imgs: { url: string; publicId: string }[] = Array.isArray(json.data?.imageUploads)
+        ? json.data.imageUploads.map((u: { url: string; publicId: string }) => ({ url: u.url, publicId: u.publicId }))
+        : (json.data?.images ?? []).map((u: string) => ({ url: u, publicId: "" }));
       setPhotos((prev) => {
         const merged = [...prev];
-        for (const u of imgs) {
+        for (const item of imgs) {
           if (merged.length >= 20) break;
-          if (!merged.includes(u)) merged.push(u);
+          if (!merged.some((p) => p.url === item.url)) merged.push(item);
         }
         return merged;
       });
@@ -264,7 +266,7 @@ export default function SupplierJoinPage() {
   const addPhoto = () => {
     const url = photoUrl.trim();
     if (url && photos.length < 20) {
-      setPhotos((prev) => [...prev, url]);
+      setPhotos((prev) => [...prev, { url, publicId: "" }]);
       setPhotoUrl("");
     }
   };
@@ -340,13 +342,13 @@ export default function SupplierJoinPage() {
         }
       }
 
-      for (const [idx, url] of photos.entries()) {
+      for (const [idx, photo] of photos.entries()) {
         await fetch("/api/supplier/photos", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            url,
-            publicId: `join-${Date.now()}-${idx}`,
+            url: photo.url,
+            publicId: photo.publicId || `join-${Date.now()}-${idx}`,
             type: idx === 0 ? "COVER" : idx === 1 ? "PROFILE" : "PORTFOLIO",
             sortOrder: idx,
           }),
@@ -700,14 +702,14 @@ export default function SupplierJoinPage() {
               {/* Photo grid */}
               {photos.length > 0 && (
                 <div className="grid grid-cols-3 gap-2">
-                  {photos.map((url, idx) => (
+                  {photos.map((photo, idx) => (
                     <div
                       key={idx}
                       className="relative aspect-square rounded-xl overflow-hidden bg-gray-100 group"
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={url}
+                        src={photo.url}
                         alt={`תמונה ${idx + 1}`}
                         className="w-full h-full object-cover"
                         onError={(e) => ((e.target as HTMLImageElement).src = "/placeholder-supplier.svg")}

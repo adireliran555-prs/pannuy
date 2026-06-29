@@ -24,6 +24,7 @@ model User {
   reviews       Review[]
   notifications Notification[]
   profileViews  ProfileView[]
+  referrals     Referral[]
 }
 
 model Otp {
@@ -86,6 +87,7 @@ model Supplier {
   warnings           SupplierWarning[]
   payments           PaymentTransaction[]
   payoutRequests     PayoutRequest[]
+  referrals          Referral[]
 
   @@index([category])
   @@index([isActive, isVerified])
@@ -253,6 +255,7 @@ model Meeting {
   supplier         Supplier          @relation("SupplierMeetings", fields: [supplierId], references: [id])
   review           Review?
   affiliateEarning AffiliateEarning?
+  referral         Referral?
 
   @@index([customerId])
   @@index([supplierId])
@@ -317,6 +320,51 @@ enum AffiliateStatus {
   CONFIRMED
   PAID
   CANCELLED
+}
+
+// Tracks every time the platform connects a customer to a supplier — whether the
+// contact happened in-app (a meeting request) or off-platform (WhatsApp). Lets us
+// follow up with the customer, escalate to an admin call when there's no reply,
+// and know the outcome of every referral we make.
+model Referral {
+  id                  String          @id @default(uuid())
+  customerId          String
+  supplierId          String
+  channel             ReferralChannel @default(IN_APP)
+  status              ReferralStatus  @default(NEW)
+  meetingId           String?         @unique // set when the contact was an in-app booking
+  customerNotes       String?         @db.Text
+  adminNotes          String?         @db.Text
+  followUpCount       Int             @default(0)
+  lastFollowUpAt      DateTime?
+  customerConfirmedAt DateTime? // customer told us whether they connected
+  convertedAt         DateTime? // turned into a booking / deal
+  closedAt            DateTime?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  customer User     @relation(fields: [customerId], references: [id])
+  supplier Supplier @relation(fields: [supplierId], references: [id])
+  meeting  Meeting? @relation(fields: [meetingId], references: [id])
+
+  @@index([supplierId])
+  @@index([customerId])
+  @@index([status])
+  @@index([status, lastFollowUpAt])
+}
+
+enum ReferralChannel {
+  IN_APP // booked a meeting through the app
+  WHATSAPP // opened WhatsApp from the supplier profile
+}
+
+enum ReferralStatus {
+  NEW // just created, supplier notified
+  AWAITING_REPLY // follow-up sent to the customer, waiting for an answer
+  CONNECTED // customer confirmed they spoke with the supplier
+  NO_ANSWER // no reply after repeated follow-ups → needs an admin call
+  CONVERTED // turned into a booking
+  LOST // didn't work out
 }
 
 model SavedSupplier {

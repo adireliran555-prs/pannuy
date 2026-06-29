@@ -16,6 +16,7 @@ import {
   Store,
   ExternalLink,
   Wallet,
+  Target,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BRAND_NAME } from "@/lib/branding";
@@ -25,6 +26,7 @@ const NAV = [
   { href: "/admin/suppliers", label: "ספקים", icon: Briefcase },
   { href: "/admin/customers", label: "לקוחות", icon: Users },
   { href: "/admin/meetings", label: "פגישות", icon: CalendarCheck },
+  { href: "/admin/referrals", label: "הפניות", icon: Target },
   { href: "/admin/reviews", label: "ביקורות", icon: Star },
   { href: "/admin/payouts", label: "משיכות", icon: Wallet },
   { href: "/admin/activity", label: "פעילות", icon: Activity },

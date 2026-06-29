@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import useSWR from "swr";
-import { Calendar, Clock, Eye, CheckCircle, X, ArrowLeft, TrendingUp, ShieldCheck } from "lucide-react";
+import { Calendar, Clock, Eye, CheckCircle, X, ArrowLeft, TrendingUp, ShieldCheck, Target } from "lucide-react";
 import SupplierDashboardLayout from "@/components/common/SupplierDashboardLayout";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
@@ -60,6 +60,9 @@ export default function SupplierDashboardPage() {
     revalidateOnFocus: false,
   });
   const { data: analytics } = useSWR("/api/supplier/analytics", analyticsFetcher, {
+    revalidateOnFocus: false,
+  });
+  const { data: referrals = [] } = useSWR("/api/supplier/referrals", fetcher, {
     revalidateOnFocus: false,
   });
 
@@ -188,6 +191,46 @@ export default function SupplierDashboardPage() {
             ₪{affiliateEarnings.toLocaleString("he-IL")} שהרווחתם עד כה
           </p>
         </div>
+
+        {/* Leads referred to this supplier */}
+        {referrals.length > 0 && (
+          <section className="bg-white rounded-2xl border border-border p-5">
+            <div className="flex items-center gap-2 mb-1">
+              <Target className="h-5 w-5 text-primary" />
+              <h2 className="text-lg font-black text-text-main">לידים שהפנינו אליכם 🎯</h2>
+            </div>
+            <p className="text-sm text-text-muted mb-4">
+              לקוחות שהתעניינו בכם דרך Top Eventer. בקשות הפגישה מופיעות תחת &quot;בקשות&quot; — הקשר נעשה דרך המערכת בלבד.
+            </p>
+            <div className="space-y-2">
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+              {referrals.slice(0, 5).map((r: any) => (
+                <div
+                  key={r.id}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-border px-4 py-2.5"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="font-semibold text-text-main text-sm truncate">
+                      {r.customerFirstName}
+                    </span>
+                    <span className="text-xs text-text-muted">
+                      · {r.channel === "WHATSAPP" ? "וואטסאפ" : "באתר"}
+                    </span>
+                    {r.hasMeeting && (
+                      <span className="text-[10px] text-green-700">· כולל בקשת פגישה</span>
+                    )}
+                  </div>
+                  <span className="text-xs text-text-muted whitespace-nowrap">
+                    {new Date(r.createdAt).toLocaleDateString("he-IL", {
+                      day: "2-digit",
+                      month: "2-digit",
+                    })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Stats grid */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

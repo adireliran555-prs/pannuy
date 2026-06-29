@@ -219,8 +219,8 @@ export default function SupplierProfilePage() {
         uploaded += 1;
       }
       setImportMsg(uploaded > 0 ? `נוספו ${uploaded} תמונות` : "לא נוספו תמונות");
-    } catch {
-      setImportMsg("העלאת התמונה נכשלה, נסו שוב");
+    } catch (err) {
+      setImportMsg(err instanceof Error ? err.message : "העלאת התמונה נכשלה, נסו שוב");
     } finally {
       setUploading(false);
     }
@@ -234,8 +234,8 @@ export default function SupplierProfilePage() {
       await persistPhoto(url, `manual-${Date.now()}`);
       setPhotoUrl("");
       setImportMsg("התמונה נוספה");
-    } catch {
-      setImportMsg("שמירת התמונה נכשלה");
+    } catch (err) {
+      setImportMsg(err instanceof Error ? err.message : "שמירת התמונה נכשלה");
     }
   };
 

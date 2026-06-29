@@ -350,7 +350,7 @@ export default function BookPage({ params }: PageProps) {
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="ספרו לנו על החתונה שלכם, ואיזה קונספט אתם מחפשים..."
+                  placeholder="ספרו לנו על האירוע שלכם, ואיזה קונספט אתם מחפשים..."
                   rows={4}
                   className="w-full rounded-xl border-2 border-border px-4 py-3 text-base text-text-main placeholder:text-text-muted focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 resize-none"
                 />

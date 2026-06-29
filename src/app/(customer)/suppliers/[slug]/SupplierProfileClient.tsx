@@ -164,7 +164,15 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
   };
 
   const handleWhatsApp = () => {
-    const msg = encodeURIComponent(`היי ${supplier.name}, ראיתי את הפרופיל שלך ב-${BRAND_NAME} ואשמח לשמוע פרטים 💍`);
+    // Record this as a referral (lead) so we can follow it up — fire-and-forget
+    // so it never blocks opening WhatsApp.
+    fetch("/api/referrals", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ supplierId: supplier.id, channel: "WHATSAPP" }),
+      keepalive: true,
+    }).catch(() => {});
+    const msg = encodeURIComponent(`היי ${supplier.name}, ראיתי את הפרופיל שלך ב-${BRAND_NAME} ואשמח לשמוע פרטים 🎉`);
     window.open(`https://wa.me/?text=${msg}`, "_blank");
   };
 
@@ -185,7 +193,6 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
               <img src={supplier.profilePhoto} alt={supplier.name} className="w-full h-full object-cover" />
             </div>
             <span className="font-bold text-text-main text-sm truncate">{supplier.name}</span>
-            <span className="text-xs font-semibold text-primary">מהטופ של ישראל</span>
           </div>
           <Button size="sm" onClick={() => router.push(withReturnTo(`/book/${supplier.id}`, `/suppliers/${supplier.slug}`))}>קבעו פגישה</Button>
         </div>
@@ -265,7 +272,6 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
             <MapPin className="h-3.5 w-3.5" />
             {supplier.city}
           </div>
-          <span className="text-sm font-semibold text-primary">מהטופ של ישראל</span>
         </div>
 
         {/* Trust signals */}
@@ -361,7 +367,7 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
                   </ul>
                 ) : (
                   <p className="text-text-muted leading-relaxed">
-                    מהטופ של ישראל — ספק נבחר ומאומת בקטגוריה.
+                    ספק נבחר ומאומת בקטגוריה.
                   </p>
                 )}
               </div>
@@ -390,7 +396,6 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
                 </div>
                 <div>
                   <h3 className="font-bold text-text-main">{supplier.name}</h3>
-                  <span className="text-xs font-semibold text-primary">מהטופ של ישראל</span>
                 </div>
               </div>
 

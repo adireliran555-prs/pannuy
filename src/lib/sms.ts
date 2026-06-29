@@ -27,12 +27,18 @@ export function devOtpEchoEnabled(): boolean {
   return !smsConfigured();
 }
 
-export async function sendOtp(phone: string, otp: string): Promise<boolean> {
+/**
+ * Generic SMS sender. When Telnyx isn't configured (current state), the message
+ * is logged server-side instead of sent — so referral follow-ups and OTPs work in
+ * dev and start delivering for real the moment the Telnyx number is SMS-capable.
+ * Returns true if the message was sent (or successfully logged in dev).
+ */
+export async function sendSms(phone: string, text: string): Promise<boolean> {
   const isDev = process.env.NODE_ENV !== "production";
   const hasTelnyx = smsConfigured();
 
   if (isDev || !hasTelnyx) {
-    console.log(`[SMS] OTP for ${phone}: ${otp}`);
+    console.log(`[SMS] to ${phone}: ${text}`);
     return true;
   }
 
@@ -47,7 +53,7 @@ export async function sendOtp(phone: string, otp: string): Promise<boolean> {
         messaging_profile_id: process.env.TELNYX_MESSAGING_PROFILE_ID,
         from: process.env.TELNYX_FROM_NUMBER!,
         to: toE164(phone),
-        text: `קוד האימות שלך ב-${BRAND_NAME}: ${otp}`,
+        text,
       }),
     });
 
@@ -56,4 +62,8 @@ export async function sendOtp(phone: string, otp: string): Promise<boolean> {
     console.error("[SMS] Telnyx error:", err);
     return false;
   }
+}
+
+export async function sendOtp(phone: string, otp: string): Promise<boolean> {
+  return sendSms(phone, `קוד האימות שלך ב-${BRAND_NAME}: ${otp}`);
 }

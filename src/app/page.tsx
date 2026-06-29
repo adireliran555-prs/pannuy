@@ -67,7 +67,7 @@ export default async function HomePage() {
           <h1 className="text-2xl sm:text-4xl font-bold text-text-main leading-tight mb-4">
             מצאו את הספקים המושלמים
             <br />
-            <span className="text-primary">לחתונה שלכם</span>
+            <span className="text-primary">לאירוע שלכם</span>
           </h1>
 
           {/* Sub-tagline */}
@@ -115,7 +115,7 @@ export default async function HomePage() {
                 step: "1",
                 icon: Calendar,
                 title: "בחרו תאריך ואזור",
-                desc: "ספרו לנו מתי ואיפה החתונה שלכם, ואנחנו נמצא את הספקים שפנויים עבורכם",
+                desc: "ספרו לנו מתי ואיפה האירוע שלכם, ואנחנו נמצא את הספקים שפנויים עבורכם",
                 color: "bg-rose-100 text-rose-600",
               },
               {
@@ -280,12 +280,12 @@ export default async function HomePage() {
             <div className="sm:col-span-2">
               <TopEventsLogo size="md" className="mb-2 [&_span]:text-white [&_span.text-primary]:text-primary" />
               <p className="text-white/60 text-sm leading-relaxed max-w-xs">
-                הפלטפורמה המובילה לחיפוש ספקי חתונה בישראל. מחברים בין זוגות לספקים המושלמים עבורם.
+                הפלטפורמה המובילה לחיפוש ספקי אירועים בישראל. מחברים בין לקוחות לספקים המושלמים עבורם.
               </p>
             </div>
             <div>
               <h4 className="font-bold mb-3 text-sm text-white/80 uppercase tracking-widest">
-                לזוגות
+                ללקוחות
               </h4>
               <ul className="space-y-2 text-sm text-white/60">
                 <li><Link href="/search" className="hover:text-white transition-colors">חפשו ספקים</Link></li>

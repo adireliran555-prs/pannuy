@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireCustomerSession } from "@/lib/api-auth";
 import { invalidateAvailabilityCache } from "@/lib/availability";
-import { MeetingType, MeetingStatus, Prisma } from "@prisma/client";
+import { createOrUpdateReferral } from "@/lib/referrals";
+import { MeetingType, MeetingStatus, ReferralChannel, Prisma } from "@prisma/client";
 
 // Sentinel used to bail out of the booking transaction when the requested slot
 // is already taken. Caught below and translated to a 409.
@@ -175,6 +176,19 @@ export async function POST(request: NextRequest) {
     }
 
     await invalidateAvailabilityCache(supplierId);
+
+    // Track this connection as a referral (lead) so we can follow it up. Non-fatal.
+    try {
+      await createOrUpdateReferral({
+        customerId: session.id,
+        customerName: session.name,
+        supplierId,
+        channel: ReferralChannel.IN_APP,
+        meetingId: meeting.id,
+      });
+    } catch (refErr) {
+      console.error("[referral] in-app create failed (non-fatal):", refErr);
+    }
 
     return NextResponse.json({ success: true, data: meeting }, { status: 201 });
   } catch (err) {

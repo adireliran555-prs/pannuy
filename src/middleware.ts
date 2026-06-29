@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const CUSTOMER_PROTECTED_PREFIXES = ["/dashboard"];
+const CUSTOMER_PROTECTED_PREFIXES = ["/dashboard", "/search"];
 const SUPPLIER_PROTECTED_PREFIXES = [
   "/supplier/dashboard",
   "/supplier/bookings",
@@ -41,11 +41,16 @@ export function middleware(request: NextRequest) {
   }
 
   if (CUSTOMER_PROTECTED_PREFIXES.some((p) => pathname.startsWith(p))) {
+    // Preserve the original destination (e.g. /search?date=...) so the user
+    // lands back on it after completing registration.
+    const startUrl = new URL("/start", request.url);
+    startUrl.searchParams.set("returnTo", `${pathname}${request.nextUrl.search}`);
+
     const token = request.cookies.get("pannuy_session")?.value;
-    if (!token) return NextResponse.redirect(new URL("/start", request.url));
+    if (!token) return NextResponse.redirect(startUrl);
     const payload = decodeJwtPayload(token);
     if (!payload || payload.type !== "customer") {
-      const res = NextResponse.redirect(new URL("/start", request.url));
+      const res = NextResponse.redirect(startUrl);
       res.cookies.delete("pannuy_session");
       return res;
     }

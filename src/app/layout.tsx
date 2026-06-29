@@ -14,9 +14,9 @@ const heebo = Heebo({
 export const metadata: Metadata = {
   title: `${BRAND_NAME} - ${BRAND_TAGLINE}`,
   description: BRAND_DESCRIPTION,
-  keywords: "צלמי חתונה, אולמות, תקליטנים, מאפרות, ספקי חתונה, ישראל",
+  keywords: "צלמי אירועים, אולמות, תקליטנים, מאפרות, ספקי אירועים, ישראל",
   openGraph: {
-    title: `${BRAND_NAME} - ספקי חתונה`,
+    title: `${BRAND_NAME} - ספקי אירועים`,
     description: BRAND_TAGLINE,
     locale: "he_IL",
     type: "website",

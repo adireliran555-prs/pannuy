@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { MapPin, Search, ArrowLeft } from "lucide-react";
 import DatePickerField from "@/components/ui/DatePickerField";
+import EventTypePicker from "@/components/common/EventTypePicker";
+import { getEventTypeLabel } from "@/lib/event-types";
 import { setEventContext } from "@/lib/event-context";
 import { cn } from "@/lib/utils";
 
@@ -20,15 +22,20 @@ export default function HeroSearch() {
   const router = useRouter();
   const [date, setDate] = useState("");
   const [area, setArea] = useState("");
+  const [eventType, setEventType] = useState("wedding");
+
+  const eventLabel = getEventTypeLabel(eventType);
 
   const submit = () => {
     const params = new URLSearchParams();
     if (date) params.set("date", date);
     if (area) params.set("areas", area);
+    if (eventType) params.set("eventType", eventType);
     if (date || area) {
       setEventContext({
         date,
         areas: area ? [area] : [],
+        eventType,
       });
     }
     router.push(`/search${params.toString() ? `?${params}` : ""}`);
@@ -40,11 +47,18 @@ export default function HeroSearch() {
   return (
     <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-border p-3 sm:p-4 max-w-2xl mx-auto w-full">
       <div className="flex flex-col gap-3">
+        <EventTypePicker
+          multiple={false}
+          value={[eventType]}
+          onChange={(ids) => setEventType(ids[0] ?? "wedding")}
+          label="סוג האירוע"
+        />
+
         <DatePickerField
           value={date}
           onChange={setDate}
-          placeholder="תאריך החתונה"
-          modalTitle="מתי החתונה?"
+          placeholder={`תאריך ${eventLabel}`}
+          modalTitle={`מתי ${eventLabel}?`}
         />
 
         {/* Area */}
