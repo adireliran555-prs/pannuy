@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     // Never allow a phone number printed on an image — suppliers must be
     // reachable only through the app. Reject (and remove) any image whose OCR
     // text contains an Israeli phone number.
-    const scan = await scanImageForPhone(publicId);
+    const scan = await scanImageForPhone(url);
     if (scan.hasPhone) {
       console.warn(`[photos] rejected image with phone for supplier ${session.id}: ${scan.matched}`);
       await deleteCloudinaryAsset(publicId);

@@ -76,39 +76,44 @@ export interface PhoneScanResult {
 }
 
 /**
- * Runs OCR on an already-uploaded Cloudinary asset and reports whether it
- * contains a phone number. Uses the signed `explicit` API with `ocr=adv_ocr`.
+ * Runs OCR on an image (by URL) and reports whether it contains a phone number.
+ *
+ * Uses a signed `upload` with `file=<url>` + `ocr=adv_ocr` — the `explicit`
+ * method silently ignores the OCR add-on for this account, whereas upload-by-URL
+ * returns `info.ocr.adv_ocr` reliably. The scan produces a throwaway Cloudinary
+ * asset which we destroy afterwards, leaving the supplier's real asset untouched.
  */
 export async function scanImageForPhone(
-  publicId: string
+  imageUrl: string
 ): Promise<PhoneScanResult> {
   if (!ocrEnabled()) return { hasPhone: false, skipped: true };
+  if (!imageUrl) return { hasPhone: false, skipped: true };
 
   const timestamp = Math.floor(Date.now() / 1000).toString();
-  const params: Record<string, string> = {
-    ocr: "adv_ocr",
-    public_id: publicId,
-    timestamp,
-    type: "upload",
-  };
+  const signed: Record<string, string> = { ocr: "adv_ocr", timestamp };
 
   const form = new URLSearchParams({
-    ...params,
+    file: imageUrl,
+    ...signed,
     api_key: API_KEY!,
-    signature: sign(params),
+    signature: sign(signed),
   });
 
   try {
     const res = await fetch(
-      `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/explicit`,
-      { method: "POST", body: form, signal: AbortSignal.timeout(15_000) }
+      `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+      { method: "POST", body: form, signal: AbortSignal.timeout(20_000) }
     );
     if (!res.ok) {
-      console.error("[OCR] Cloudinary explicit failed:", res.status, await res.text());
+      console.error("[OCR] Cloudinary upload failed:", res.status, await res.text());
       // Fail open: don't block uploads on an OCR outage.
       return { hasPhone: false, skipped: true };
     }
-    const json = (await res.json()) as { info?: unknown };
+    const json = (await res.json()) as { info?: unknown; public_id?: string };
+
+    // Remove the throwaway scan copy (best-effort, awaited so it runs in serverless).
+    if (json.public_id) await deleteCloudinaryAsset(json.public_id).catch(() => {});
+
     const text = extractOcrText(json.info);
     const matched = textContainsPhone(text);
     return matched ? { hasPhone: true, matched } : { hasPhone: false };
