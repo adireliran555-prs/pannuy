@@ -306,7 +306,7 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
               clearable
               value={filters.date}
               onChange={(date) => setFilters((f) => ({ ...f, date }))}
-              placeholder="תאריך החתונה"
+              placeholder="תאריך האירוע"
               modalTitle="מתי האירוע?"
             />
 

@@ -37,7 +37,7 @@ export default async function AdminCustomersPage() {
                 <tr>
                   <th className="px-4 py-3 text-start">שם</th>
                   <th className="px-4 py-3 text-start">טלפון</th>
-                  <th className="px-4 py-3 text-start">תאריך חתונה</th>
+                  <th className="px-4 py-3 text-start">תאריך האירוע</th>
                   <th className="px-4 py-3 text-start">אזור</th>
                   <th className="px-4 py-3 text-start">פגישות</th>
                   <th className="px-4 py-3 text-start">שמורות</th>

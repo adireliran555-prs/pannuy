@@ -155,7 +155,7 @@ function StartPageContent() {
         <div className="text-center mb-8">
           <TopEventsLogo href="/" size="lg" />
           <p className="text-text-muted mt-1 text-sm">
-            מצאו את הספקים המושלמים לחתונה שלכם
+            מצאו את הספקים המושלמים לאירוע שלכם
           </p>
         </div>
 

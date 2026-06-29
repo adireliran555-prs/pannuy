@@ -2,10 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { MapPin, Search, ArrowLeft } from "lucide-react";
+import { MapPin, Search, ArrowLeft, PartyPopper } from "lucide-react";
 import DatePickerField from "@/components/ui/DatePickerField";
-import EventTypePicker from "@/components/common/EventTypePicker";
-import { getEventTypeLabel } from "@/lib/event-types";
+import { EVENT_TYPES } from "@/lib/event-types";
 import { setEventContext } from "@/lib/event-context";
 import { cn } from "@/lib/utils";
 
@@ -23,8 +22,6 @@ export default function HeroSearch() {
   const [date, setDate] = useState("");
   const [area, setArea] = useState("");
   const [eventType, setEventType] = useState("wedding");
-
-  const eventLabel = getEventTypeLabel(eventType);
 
   const submit = () => {
     const params = new URLSearchParams();
@@ -47,18 +44,31 @@ export default function HeroSearch() {
   return (
     <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-border p-3 sm:p-4 max-w-2xl mx-auto w-full">
       <div className="flex flex-col gap-3">
-        <EventTypePicker
-          multiple={false}
-          value={[eventType]}
-          onChange={(ids) => setEventType(ids[0] ?? "wedding")}
-          label="סוג האירוע"
-        />
+        {/* Event type */}
+        <div className="relative w-full min-w-0">
+          <PartyPopper
+            className="absolute end-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary pointer-events-none"
+            aria-hidden
+          />
+          <select
+            value={eventType}
+            onChange={(e) => setEventType(e.target.value)}
+            className={cn(fieldClass, "appearance-none pe-10 ps-4 py-3 cursor-pointer")}
+            aria-label="סוג האירוע"
+          >
+            {EVENT_TYPES.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.emoji} {t.label}
+              </option>
+            ))}
+          </select>
+        </div>
 
         <DatePickerField
           value={date}
           onChange={setDate}
-          placeholder={`תאריך ${eventLabel}`}
-          modalTitle={`מתי ${eventLabel}?`}
+          placeholder="תאריך האירוע"
+          modalTitle="מתי האירוע?"
         />
 
         {/* Area */}

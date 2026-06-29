@@ -313,7 +313,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Customers by area */}
-        <ChartCard title="לקוחות לפי אזור החתונה">
+        <ChartCard title="לקוחות לפי אזור האירוע">
           {(data?.customersByArea ?? []).length === 0 ? (
             <p className="text-sm text-text-muted text-center py-6">אין נתונים עדיין</p>
           ) : (

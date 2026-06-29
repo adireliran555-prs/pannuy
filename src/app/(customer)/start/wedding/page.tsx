@@ -14,7 +14,6 @@ import TopEventsLogo from "@/components/common/TopEventsLogo";
 import EventTypePicker from "@/components/common/EventTypePicker";
 import { returnToFromSearch, sanitizeReturnTo } from "@/lib/return-to";
 import { setEventContext } from "@/lib/event-context";
-import { getEventTypeLabel } from "@/lib/event-types";
 
 const REGIONS = [
   { id: "מרכז", label: "מרכז", emoji: "🏙️" },
@@ -105,7 +104,6 @@ function WeddingPageContent() {
     }
   };
 
-  const selectedEventLabel = getEventTypeLabel(selectedEventType);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50 to-amber-50 flex items-center justify-center px-4 py-12">
@@ -140,13 +138,13 @@ function WeddingPageContent() {
             <div className="space-y-1.5">
               <label className="text-sm font-semibold text-text-main flex items-center gap-1.5">
                 <CalendarDays className="h-4 w-4 text-primary" />
-                תאריך {selectedEventLabel}
+                תאריך האירוע
               </label>
               <DatePickerField
                 value={eventDate}
                 onChange={(date) => setValue("eventDate", date, { shouldValidate: true })}
-                placeholder={`בחרו תאריך ${selectedEventLabel}`}
-                modalTitle={`מתי ${selectedEventLabel}?`}
+                placeholder="בחרו תאריך האירוע"
+                modalTitle="מתי האירוע?"
                 error={errors.eventDate?.message}
               />
             </div>
