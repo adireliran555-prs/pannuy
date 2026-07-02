@@ -14,25 +14,35 @@ interface TopEventsLogoProps {
   href?: string;
   size?: Size;
   className?: string;
+  /** Render on a dark background (footer): all text/dot become light. */
+  onDark?: boolean;
 }
 
 export default function TopEventsLogo({
   href,
   size = "md",
   className,
+  onDark = false,
 }: TopEventsLogoProps) {
   const mark = (
     <span
       dir="ltr"
       className={cn(
-        "inline-flex items-baseline font-black tracking-tight leading-none select-none whitespace-nowrap",
+        "inline-flex items-center font-black tracking-tight leading-none select-none whitespace-nowrap",
         SIZE_STYLES[size],
         className
       )}
       aria-label={BRAND_NAME}
     >
-      <span className="text-primary">Top</span>
-      <span className="text-text-main"> Eventer</span>
+      <span className={onDark ? "text-white" : "text-primary"}>Top</span>
+      <span
+        aria-hidden
+        className={cn(
+          "mx-[0.15em] inline-block h-[0.2em] w-[0.2em] shrink-0 rounded-full align-middle",
+          onDark ? "bg-white" : "bg-primary"
+        )}
+      />
+      <span className={onDark ? "text-white/95" : "text-text-main"}>Eventer</span>
     </span>
   );
 

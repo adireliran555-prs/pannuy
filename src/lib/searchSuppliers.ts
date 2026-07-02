@@ -76,9 +76,11 @@ const SUPPLIER_SELECT = {
   photos: PHOTO_SELECT,
 };
 
+const MAX_LIMIT = 50;
+
 export async function searchSuppliers(filters: SearchFilters): Promise<SearchResult> {
-  const limit = filters.limit ?? DEFAULT_LIMIT;
-  const page = filters.page ?? 1;
+  const limit = Math.min(Math.max(filters.limit ?? DEFAULT_LIMIT, 1), MAX_LIMIT);
+  const page = Math.max(filters.page ?? 1, 1);
   const skip = (page - 1) * limit;
 
   let blockedSupplierIds: string[] | undefined;
@@ -156,8 +158,10 @@ export async function searchSuppliers(filters: SearchFilters): Promise<SearchRes
 
   let areaFallback = false;
   if (total === 0 && filters.areas && filters.areas.length > 0) {
+    // The area constraint is applied via the `OR` clause above, so removing
+    // `serviceAreas` alone would leave the filter intact. Drop `OR` instead.
     const whereNoArea = { ...where };
-    delete (whereNoArea as Record<string, unknown>).serviceAreas;
+    delete (whereNoArea as Record<string, unknown>).OR;
     [suppliers, total] = await Promise.all([
       prisma.supplier.findMany({ where: whereNoArea, skip, take: limit, orderBy, select: SUPPLIER_SELECT }),
       prisma.supplier.count({ where: whereNoArea }),

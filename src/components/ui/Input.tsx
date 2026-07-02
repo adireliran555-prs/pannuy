@@ -30,7 +30,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           id={inputId}
           dir={ltr ? "ltr" : undefined}
           className={cn(
-            "w-full rounded-xl border px-4 py-3 text-base transition-all duration-200",
+            "w-full h-12 rounded-xl border px-4 text-base transition-all duration-200",
             "bg-white text-text-main placeholder:text-text-muted",
             "border-border focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20",
             "disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-50",

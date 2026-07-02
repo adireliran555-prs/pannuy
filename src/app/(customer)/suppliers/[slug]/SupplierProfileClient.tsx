@@ -9,7 +9,6 @@ import {
   CheckCircle,
   ChevronRight,
   Phone,
-  Check,
   Sparkles,
 } from "lucide-react";
 import Button from "@/components/ui/Button";
@@ -19,6 +18,7 @@ import PackageCard from "@/components/common/PackageCard";
 import AvailabilityCalendar from "@/components/common/AvailabilityCalendar";
 import SimilarSuppliers from "@/components/common/SimilarSuppliers";
 import { formatPrice, cn } from "@/lib/utils";
+import { cld, CLD_AVATAR, CLD_COVER } from "@/lib/cloudinary-image";
 import { CATEGORY_LABELS_SINGULAR } from "@/lib/categories";
 import { getEventTypeLabel } from "@/lib/event-types";
 import { BRAND_NAME } from "@/lib/branding";
@@ -173,14 +173,23 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
       keepalive: true,
     }).catch(() => {});
     const msg = encodeURIComponent(`היי ${supplier.name}, ראיתי את הפרופיל שלך ב-${BRAND_NAME} ואשמח לשמוע פרטים 🎉`);
-    window.open(`https://wa.me/?text=${msg}`, "_blank");
+    window.open(`https://wa.me/${waPhone}?text=${msg}`, "_blank");
   };
 
   const bioShort = supplier.bio.length > 200 && !bioExpanded;
   const categoryLabel = CATEGORY_LABELS_SINGULAR[supplier.category] ?? supplier.category;
 
+  // Build a wa.me target from the supplier phone (strip non-digits, normalize
+  // Israeli local numbers to +972). Falls back to a generic share if missing.
+  const phoneDigits = (supplier.phone ?? "").replace(/\D/g, "");
+  const waPhone = phoneDigits
+    ? phoneDigits.startsWith("0")
+      ? `972${phoneDigits.slice(1)}`
+      : phoneDigits
+    : "";
+
   return (
-    <div className="min-h-screen bg-surface">
+    <div className="min-h-screen bg-surface pb-28 lg:pb-8">
       {/* ── Sticky top bar (shows on scroll) ── */}
       <div className={cn(
         "fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-border shadow-sm transition-all duration-300",
@@ -190,7 +199,7 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 bg-primary-light">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={supplier.profilePhoto} alt={supplier.name} className="w-full h-full object-cover" />
+              <img src={cld(supplier.profilePhoto, CLD_AVATAR)} alt={supplier.name} loading="lazy" decoding="async" className="w-full h-full object-cover" />
             </div>
             <span className="font-bold text-text-main text-sm truncate">{supplier.name}</span>
           </div>
@@ -199,13 +208,14 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
       </div>
 
       {/* ── Cover photo ── */}
-      <div className="relative h-64 sm:h-96 w-full overflow-hidden bg-gradient-to-br from-rose-100 to-amber-100">
+      <div className="relative h-64 sm:h-96 w-full overflow-hidden bg-primary-light">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={supplier.coverPhoto}
+          src={cld(supplier.coverPhoto, CLD_COVER)}
           alt={`${supplier.name} - תמונת כיסוי`}
+          fetchPriority="high"
+          decoding="async"
           className="w-full h-full object-cover"
-
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
 
@@ -247,10 +257,10 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
         <div className="relative -mt-16 flex items-end gap-5 pb-4">
           <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-white shadow-xl flex-shrink-0 bg-primary-light">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={supplier.profilePhoto} alt={supplier.name} className="w-full h-full object-cover" />
+            <img src={cld(supplier.profilePhoto, CLD_AVATAR)} alt={supplier.name} decoding="async" className="w-full h-full object-cover" />
           </div>
           <div className="pb-2 flex-1">
-            <h1 className="text-2xl sm:text-3xl font-black text-white [text-shadow:0_2px_8px_rgba(0,0,0,0.6)]">{supplier.name}</h1>
+            <h1 className="font-black text-3xl sm:text-4xl text-white [text-shadow:0_2px_8px_rgba(0,0,0,0.6)]">{supplier.name}</h1>
           </div>
         </div>
 
@@ -296,13 +306,13 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
           <div className="flex-1 min-w-0 space-y-10">
             {/* Portfolio */}
             <section>
-              <h2 className="text-xl font-black text-text-main mb-4">תיק עבודות</h2>
+              <h2 className="text-xl font-bold text-text-main mb-4">תיק עבודות</h2>
               <PhotoGallery photos={supplier.portfolio} supplierName={supplier.name} />
             </section>
 
             {/* About */}
             <section>
-              <h2 className="text-xl font-black text-text-main mb-3">אודות</h2>
+              <h2 className="text-xl font-bold text-text-main mb-3">אודות</h2>
               <div className="bg-white rounded-2xl border border-border p-6">
                 <p className="text-text-muted leading-relaxed">
                   {bioShort ? supplier.bio.slice(0, 200) + "..." : supplier.bio}
@@ -330,7 +340,7 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
 
             {/* Packages */}
             <section>
-              <h2 className="text-xl font-black text-text-main mb-4">חבילות ומחירים</h2>
+              <h2 className="text-xl font-bold text-text-main mb-4">חבילות ומחירים</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                 {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 {supplier.packages.map((pkg: any) => (
@@ -347,35 +357,9 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
               </div>
             </section>
 
-            {/* Why choose this supplier — admin-curated highlights */}
-            <section>
-              <div className="flex items-center gap-2 mb-4">
-                <Sparkles className="h-5 w-5 text-primary" />
-                <h2 className="text-xl font-black text-text-main">למה לבחור בספק הזה</h2>
-              </div>
-              <div className="bg-white rounded-2xl border border-border p-6">
-                {supplier.highlights && supplier.highlights.length > 0 ? (
-                  <ul className="space-y-3">
-                    {(supplier.highlights as string[]).map((highlight, i) => (
-                      <li key={i} className="flex items-start gap-3">
-                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary-light text-primary flex items-center justify-center mt-0.5">
-                          <Check className="h-4 w-4" />
-                        </span>
-                        <span className="text-text-main leading-relaxed">{highlight}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-text-muted leading-relaxed">
-                    ספק נבחר ומאומת בקטגוריה.
-                  </p>
-                )}
-              </div>
-            </section>
-
             {/* Availability */}
             <section>
-              <h2 className="text-xl font-black text-text-main mb-4">זמינות</h2>
+              <h2 className="text-xl font-bold text-text-main mb-4">זמינות</h2>
               <div className="bg-white rounded-2xl border border-border p-6">
                 <AvailabilityCalendar supplierId={supplier.id} />
                 <p className="mt-4 text-xs text-text-muted text-center">
@@ -392,7 +376,7 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
               <div className="flex items-center gap-3 pb-4 border-b border-border">
                 <div className="relative w-14 h-14 rounded-full overflow-hidden bg-primary-light flex-shrink-0">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={supplier.profilePhoto} alt={supplier.name} className="w-full h-full object-cover" />
+                  <img src={cld(supplier.profilePhoto, CLD_AVATAR)} alt={supplier.name} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                 </div>
                 <div>
                   <h3 className="font-bold text-text-main">{supplier.name}</h3>
@@ -466,7 +450,7 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
                 }`}
               >
                 <Heart className={`h-4 w-4 ${isSaved ? "fill-red-500 stroke-red-500" : ""}`} />
-                {isSaved ? "שמור ❤" : "שמרו"}
+                {isSaved ? "נשמר ❤" : "שמרו"}
               </button>
 
               <p className="text-xs text-text-muted text-center">
@@ -481,7 +465,7 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
       <SimilarSuppliers currentSupplierId={supplier.id} category={supplier.category} />
 
       {/* ── Mobile sticky CTA ── */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-sm border-t border-border px-4 py-3 flex gap-3">
+      <div className="lg:hidden fixed bottom-16 left-0 right-0 z-40 bg-white/95 backdrop-blur-sm border-t border-border px-4 py-3 flex gap-3 safe-area-pb">
         <button
           onClick={handleWhatsApp}
           className="flex items-center justify-center gap-2 px-4 py-3 rounded-full border-2 border-[#25D366] text-[#25D366] font-semibold text-sm transition-all hover:bg-[#25D366] hover:text-white flex-shrink-0"

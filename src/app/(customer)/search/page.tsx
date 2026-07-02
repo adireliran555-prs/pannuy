@@ -1,6 +1,14 @@
+import type { Metadata } from "next";
 import { Category } from "@prisma/client";
 import { searchSuppliers } from "@/lib/searchSuppliers";
 import SearchClient from "./SearchClient";
+
+export const metadata: Metadata = {
+  title: "חיפוש ספקי אירועים",
+  description:
+    "גלו ספקים מאומתים לאירוע שלכם לפי תאריך, אזור וקטגוריה — עם בדיקת זמינות בזמן אמת.",
+  alternates: { canonical: "/search" },
+};
 
 interface PageProps {
   searchParams: Promise<{

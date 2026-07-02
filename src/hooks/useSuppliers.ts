@@ -102,6 +102,9 @@ export function useSuppliers(
     revalidateOnFocus: false,
     keepPreviousData: true,
     fallbackData,
+    // When the server already provided initialData for this exact query, skip
+    // the redundant on-mount refetch. Filter changes still fetch normally.
+    revalidateOnMount: !fallbackData,
   });
 
   return {

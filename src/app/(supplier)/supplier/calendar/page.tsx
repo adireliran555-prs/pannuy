@@ -20,6 +20,7 @@ function GoogleCalendarBanner({ onSynced }: { onSynced?: () => void }) {
   const searchParams = useSearchParams();
   const [calendarConnected, setCalendarConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [connectError, setConnectError] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState<string | null>(null);
 
@@ -41,12 +42,18 @@ function GoogleCalendarBanner({ onSynced }: { onSynced?: () => void }) {
 
   const handleGoogleConnect = async () => {
     setIsConnecting(true);
+    setConnectError(null);
     try {
       const res = await fetch("/api/supplier/calendar/connect");
       const json = await res.json();
       if (json.success && json.data?.authUrl) {
-        window.location.href = json.data.authUrl;
+        // OAuth must run in Safari/Chrome — in-app browsers (e.g. WhatsApp) often 400.
+        window.location.assign(json.data.authUrl);
+        return;
       }
+      setConnectError(json.error ?? "לא ניתן להתחבר ל-Google. נסו שוב מ-Safari או Chrome.");
+    } catch {
+      setConnectError("שגיאת רשת. נסו שוב מ-Safari או Chrome.");
     } finally {
       setIsConnecting(false);
     }
@@ -126,6 +133,12 @@ function GoogleCalendarBanner({ onSynced }: { onSynced?: () => void }) {
         <p className="text-text-muted text-sm mt-0.5">
           סנכרון אוטומטי של הזמינות שלכם — כשיש לכם אירוע, {BRAND_NAME} תסמן אותו אוטומטית
         </p>
+        <p className="text-text-muted text-xs mt-1">
+          פתחו את האתר ב-Safari או Chrome (לא מתוך WhatsApp).
+        </p>
+        {connectError && (
+          <p className="text-sm text-red-600 font-medium mt-2">{connectError}</p>
+        )}
       </div>
       <Button onClick={handleGoogleConnect} isLoading={isConnecting}>
         חברו עכשיו

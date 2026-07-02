@@ -3,7 +3,8 @@ import LegalPageShell from "@/components/legal/LegalPageShell";
 import { BRAND_NAME, SUPPORT_EMAIL } from "@/lib/branding";
 
 export const metadata: Metadata = {
-  title: `יצירת קשר | ${BRAND_NAME}`,
+  title: "יצירת קשר",
+  description: `יצירת קשר עם ${BRAND_NAME} — לקוחות, ספקים ותמיכה טכנית.`,
 };
 
 export default function ContactPage() {

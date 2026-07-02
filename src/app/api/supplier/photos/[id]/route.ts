@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import prisma from "@/lib/prisma";
 import { requireSupplierSession } from "@/lib/api-auth";
 import { delCache } from "@/lib/redis";
@@ -31,6 +32,7 @@ export async function DELETE(
 
     await prisma.supplierPhoto.delete({ where: { id } });
     await delCache(`supplier:${session.slug}`);
+    revalidatePath(`/suppliers/${session.slug}`);
 
     return NextResponse.json({ success: true });
   } catch (err) {

@@ -113,6 +113,18 @@ export default function Navbar() {
 export function SupplierNavbar() {
   const pathname = usePathname();
 
+  // Dashboard routes render their own chrome via SupplierDashboardLayout
+  // (sidebar + mobile bottom nav), so avoid stacking a second navbar there.
+  const usesDashboardLayout = [
+    "/supplier/dashboard",
+    "/supplier/bookings",
+    "/supplier/calendar",
+    "/supplier/analytics",
+    "/supplier/finances",
+    "/supplier/profile",
+  ].some((p) => pathname.startsWith(p));
+  if (usesDashboardLayout) return null;
+
   const SUPPLIER_MOBILE_NAV = [
     { href: "/supplier/dashboard", label: "בית", icon: Camera },
     { href: "/supplier/bookings", label: "הזמנות", icon: Calendar },

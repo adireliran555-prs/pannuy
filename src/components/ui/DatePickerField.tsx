@@ -15,7 +15,7 @@ interface DatePickerFieldProps {
   minDate?: Date;
   className?: string;
   triggerClassName?: string;
-  variant?: "field" | "chip";
+  variant?: "field" | "chip" | "ghost";
   clearable?: boolean;
 }
 
@@ -45,6 +45,38 @@ export default function DatePickerField({
     : placeholder;
 
   const selectedDate = value ? parseIsoDate(value) : null;
+
+  if (variant === "ghost") {
+    return (
+      <div className={className}>
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className={cn(
+            "flex w-full items-center justify-between gap-2 border-0 bg-transparent px-0 py-1.5 text-lg font-medium text-start",
+            value ? "text-text-main" : "text-text-muted",
+            triggerClassName
+          )}
+        >
+          <span className="truncate">{displayLabel}</span>
+          <CalendarDays className="h-4 w-4 shrink-0 text-text-muted" aria-hidden />
+        </button>
+
+        {error && <p className="text-sm text-red-500 font-medium mt-1">{error}</p>}
+
+        <Modal open={open} onClose={() => setOpen(false)} title={modalTitle} size="sm">
+          <div className="bg-surface rounded-2xl p-4 -mx-2">
+            <CalendarPicker
+              key={value || "new"}
+              selectedDate={selectedDate}
+              onDaySelect={handleSelect}
+              minDate={minDate}
+            />
+          </div>
+        </Modal>
+      </div>
+    );
+  }
 
   if (variant === "chip") {
     return (
@@ -97,16 +129,17 @@ export default function DatePickerField({
         type="button"
         onClick={() => setOpen(true)}
         className={cn(
-          "w-full min-w-0 rounded-xl border-2 border-border bg-white text-sm font-semibold text-text-main hover:border-primary transition-colors",
-          "flex items-center gap-2 px-4 py-3 cursor-pointer text-start",
+          "w-full min-w-0 h-12 rounded-xl border border-border bg-white px-4 text-base text-text-main transition-colors",
+          "hover:border-primary focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20",
+          "flex items-center justify-between gap-2 cursor-pointer text-start",
           error && "border-red-400",
           triggerClassName
         )}
       >
-        <CalendarDays className="h-4 w-4 text-primary shrink-0" aria-hidden />
-        <span className="flex-1 truncate text-text-main">
+        <span className={cn("min-w-0 truncate", value ? "text-text-main" : "text-text-muted")}>
           {displayLabel}
         </span>
+        <CalendarDays className="h-5 w-5 shrink-0 text-text-muted" aria-hidden />
       </button>
 
       {error && <p className="text-sm text-red-500 font-medium mt-1">{error}</p>}

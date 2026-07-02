@@ -11,15 +11,7 @@ import {
 } from "@/lib/event-context";
 import CalendarPicker from "@/components/common/CalendarPicker";
 import { cn, parseIsoDate, toIsoDate } from "@/lib/utils";
-
-const REGIONS = [
-  "מרכז",
-  "תל אביב",
-  "ירושלים",
-  "הצפון",
-  "הדרום",
-  "השרון",
-];
+import { REGIONS } from "@/lib/regions";
 
 function formatEventDate(date: string): string {
   if (!date) return "לא נבחר תאריך";
@@ -119,7 +111,7 @@ export default function EventContextBar() {
 
   return (
     <>
-      <div className="sticky top-0 z-30 bg-primary/5 border-b border-primary/15">
+      <div className="sticky top-0 sm:top-16 z-30 bg-primary/5 border-b border-primary/15">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2 flex items-center gap-2 flex-wrap text-sm">
           <span className="font-bold text-text-main text-xs uppercase tracking-wide text-primary">
             האירוע שלכם
@@ -170,20 +162,20 @@ export default function EventContextBar() {
             <div className="space-y-2">
               <label className="text-sm font-semibold text-text-main">אזור</label>
               <div className="flex flex-wrap gap-2">
-                {REGIONS.map((area) => (
+                {REGIONS.map(({ id, label }) => (
                   <button
-                    key={area}
+                    key={id}
                     type="button"
-                    onClick={() => toggleArea(area)}
+                    onClick={() => toggleArea(id)}
                     className={cn(
                       "px-3 py-1.5 rounded-full border-2 text-sm font-medium transition-all",
-                      draftAreas.includes(area)
+                      draftAreas.includes(id)
                         ? "border-primary bg-primary text-white"
                         : "border-border text-text-main"
                     )}
                   >
-                    {draftAreas.includes(area) && <Check className="h-3 w-3 inline me-1" />}
-                    {area}
+                    {draftAreas.includes(id) && <Check className="h-3 w-3 inline me-1" />}
+                    {label}
                   </button>
                 ))}
               </div>

@@ -5,7 +5,10 @@ import { Heart, MapPin, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatPrice } from "@/lib/utils";
 import { CATEGORY_LABELS_SINGULAR } from "@/lib/categories";
-import { useState } from "react";
+import { cld, CLD_CARD } from "@/lib/cloudinary-image";
+import { useEffect, useState } from "react";
+import { useSWRConfig } from "swr";
+import { useRouter } from "next/navigation";
 
 interface SupplierCardProps {
   id: string;
@@ -44,15 +47,53 @@ export default function SupplierCard({
 }: SupplierCardProps) {
   const [saved, setSaved] = useState(initialSaved);
   const [heartAnimating, setHeartAnimating] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const handleSave = (e: React.MouseEvent) => {
+  // Keep in sync when the real saved state loads/changes from the parent.
+  useEffect(() => {
+    setSaved(initialSaved);
+  }, [initialSaved]);
+  const { mutate } = useSWRConfig();
+  const router = useRouter();
+
+  const handleSave = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (saving) return;
+
     const newSaved = !saved;
     setSaved(newSaved);
     setHeartAnimating(true);
     setTimeout(() => setHeartAnimating(false), 300);
-    onSave?.(id, newSaved);
+    setSaving(true);
+
+    try {
+      const res = newSaved
+        ? await fetch("/api/saved", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ supplierId: id }),
+          })
+        : await fetch(`/api/saved/${id}`, { method: "DELETE" });
+
+      if (!res.ok) {
+        if (res.status === 401) {
+          // Saving requires a logged-in customer — send them to log in.
+          router.push("/start");
+          return;
+        }
+        throw new Error("save failed");
+      }
+
+      // Refresh the saved list wherever it's mounted (e.g. the saved page).
+      mutate("/api/saved");
+      onSave?.(id, newSaved);
+    } catch {
+      // Revert optimistic toggle on failure.
+      setSaved(!newSaved);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const photo = coverPhoto || profilePhoto;
@@ -62,7 +103,7 @@ export default function SupplierCard({
       href={`/suppliers/${slug}`}
       className={cn(
         "group block bg-white rounded-2xl overflow-hidden border border-border",
-        "shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1",
+        "shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-card-hover)] transition-all duration-300 hover:-translate-y-0.5",
         className
       )}
     >
@@ -70,14 +111,15 @@ export default function SupplierCard({
       <div className="relative aspect-[3/2] overflow-hidden bg-primary-light">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={photo}
+          src={cld(photo, CLD_CARD)}
           alt={`${name} - ${category}`}
+          loading="lazy"
+          decoding="async"
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-
         />
 
         {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
 
         {/* Save button */}
         <button
@@ -97,18 +139,18 @@ export default function SupplierCard({
         {/* Badges top-right */}
         <div className="absolute top-3 right-3 flex flex-col gap-1 items-end">
           {isVerified && (
-            <span className="inline-flex items-center gap-1 bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">
+            <span className="inline-flex items-center gap-1 bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
               מהטופ של ישראל
             </span>
           )}
           {isAvailable !== undefined && (
             isAvailable ? (
-              <span className="inline-flex items-center gap-1 bg-green-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-sm">
+              <span className="inline-flex items-center gap-1 bg-success text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-sm">
                 <CheckCircle className="h-3 w-3" />
                 פנוי
               </span>
             ) : (
-              <span className="inline-flex items-center bg-gray-800/80 text-white text-xs font-semibold px-2.5 py-1 rounded-full">
+              <span className="inline-flex items-center bg-text-main/80 text-white text-xs font-semibold px-2.5 py-1 rounded-full">
                 לא פנוי
               </span>
             )

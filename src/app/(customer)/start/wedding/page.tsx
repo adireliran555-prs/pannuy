@@ -1,28 +1,21 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { MapPin, CalendarDays, Check } from "lucide-react";
+import { MapPin, CalendarDays } from "lucide-react";
 import Button from "@/components/ui/Button";
 import DatePickerField from "@/components/ui/DatePickerField";
+import FormSelect from "@/components/ui/FormSelect";
+import MultiSelectDropdown from "@/components/ui/MultiSelectDropdown";
 import StepProgress from "@/components/ui/StepProgress";
-import { cn } from "@/lib/utils";
 import TopEventsLogo from "@/components/common/TopEventsLogo";
-import EventTypePicker from "@/components/common/EventTypePicker";
 import { returnToFromSearch, sanitizeReturnTo } from "@/lib/return-to";
 import { setEventContext } from "@/lib/event-context";
-
-const REGIONS = [
-  { id: "מרכז", label: "מרכז", emoji: "🏙️" },
-  { id: "תל אביב", label: "תל אביב", emoji: "🌆" },
-  { id: "ירושלים", label: "ירושלים", emoji: "🕌" },
-  { id: "הצפון", label: "צפון", emoji: "🌿" },
-  { id: "הדרום", label: "דרום", emoji: "🌵" },
-  { id: "השרון", label: "השרון", emoji: "🌊" },
-];
+import { EVENT_TYPES } from "@/lib/event-types";
+import { REGIONS } from "@/lib/regions";
 
 const schema = z.object({
   eventDate: z.string().min(1, "חובה לבחור תאריך"),
@@ -64,13 +57,6 @@ function WeddingPageContent() {
 
   const eventDate = watch("eventDate");
 
-  const toggleArea = (id: string) => {
-    setSelectedAreas((prev) =>
-      prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]
-    );
-    setAreasError("");
-  };
-
   const onSubmit = async (data: FormData) => {
     if (selectedAreas.length === 0) {
       setAreasError("חובה לבחור לפחות אזור אחד");
@@ -104,37 +90,34 @@ function WeddingPageContent() {
     }
   };
 
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50 to-amber-50 flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-rose-50 to-amber-50 flex items-center justify-center px-4 py-10 sm:py-12">
       <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <TopEventsLogo href="/" size="lg" />
         </div>
 
-        {/* Card */}
-        <div className="bg-white rounded-3xl shadow-xl p-8 space-y-6">
+        <div className="bg-white rounded-2xl shadow-lg border border-border/80 p-6 sm:p-8 space-y-5">
           <StepProgress steps={STEPS} currentStep={2} />
 
           <div>
-            <h1 className="text-2xl font-black text-text-main">
-              ספרו לנו על האירוע שלכם ✨
+            <h1 className="text-xl sm:text-2xl font-black text-text-main">
+              ספרו לנו על האירוע שלכם
             </h1>
             <p className="text-text-muted text-sm mt-1">
-              נוכל למצוא עבורכם את הספקים המובילים
+              נמצא עבורכם את הספקים המתאימים
             </p>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-            <EventTypePicker
-              multiple={false}
-              value={[selectedEventType]}
-              onChange={(ids) => setSelectedEventType(ids[0] ?? "wedding")}
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <FormSelect
               label="סוג האירוע"
+              value={selectedEventType}
+              onChange={setSelectedEventType}
+              placeholder="בחרו סוג אירוע"
+              options={EVENT_TYPES.map((t) => ({ value: t.id, label: t.label }))}
             />
 
-            {/* Event Date */}
             <div className="space-y-1.5">
               <label className="text-sm font-semibold text-text-main flex items-center gap-1.5">
                 <CalendarDays className="h-4 w-4 text-primary" />
@@ -143,48 +126,27 @@ function WeddingPageContent() {
               <DatePickerField
                 value={eventDate}
                 onChange={(date) => setValue("eventDate", date, { shouldValidate: true })}
-                placeholder="בחרו תאריך האירוע"
+                placeholder="בחרו תאריך"
                 modalTitle="מתי האירוע?"
                 error={errors.eventDate?.message}
               />
             </div>
 
-            {/* Region multi-select */}
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <label className="text-sm font-semibold text-text-main flex items-center gap-1.5">
                 <MapPin className="h-4 w-4 text-primary" />
                 אזור האירוע
-                <span className="text-text-muted font-normal text-xs">(ניתן לבחור מספר אזורים)</span>
               </label>
-              <div className="grid grid-cols-3 gap-2">
-                {REGIONS.map(({ id, label, emoji }) => {
-                  const selected = selectedAreas.includes(id);
-                  return (
-                    <button
-                      key={id}
-                      type="button"
-                      onClick={() => toggleArea(id)}
-                      className={cn(
-                        "relative flex flex-col items-center justify-center gap-1 py-3 px-2 rounded-2xl border-2 text-sm font-semibold transition-all duration-150",
-                        selected
-                          ? "border-primary bg-primary text-white shadow-md"
-                          : "border-border bg-white text-text-main hover:border-primary/50 hover:bg-primary-light/30"
-                      )}
-                    >
-                      {selected && (
-                        <span className="absolute top-1.5 left-1.5 w-4 h-4 bg-white/30 rounded-full flex items-center justify-center">
-                          <Check className="h-2.5 w-2.5 text-white" />
-                        </span>
-                      )}
-                      <span className="text-lg">{emoji}</span>
-                      <span>{label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-              {areasError && (
-                <p className="text-sm text-red-500 font-medium">{areasError}</p>
-              )}
+              <MultiSelectDropdown
+                values={selectedAreas}
+                onChange={(next) => {
+                  setSelectedAreas(next);
+                  setAreasError("");
+                }}
+                options={REGIONS.map((r) => ({ value: r.id, label: r.label }))}
+                placeholder="בחרו אזור אחד או יותר"
+                error={areasError}
+              />
             </div>
 
             <Button
@@ -192,9 +154,9 @@ function WeddingPageContent() {
               fullWidth
               isLoading={isLoading}
               size="lg"
-              className="mt-4"
+              className="mt-2"
             >
-              מצאו ספקים 🔍
+              מצאו ספקים
             </Button>
           </form>
         </div>

@@ -4,7 +4,7 @@ import LegalPageShell from "@/components/legal/LegalPageShell";
 import { BRAND_NAME, SUPPORT_EMAIL } from "@/lib/branding";
 
 export const metadata: Metadata = {
-  title: `תנאי שימוש | ${BRAND_NAME}`,
+  title: "תנאי שימוש",
   description: `תנאי השימוש של ${BRAND_NAME} ללקוחות וספקים.`,
 };
 

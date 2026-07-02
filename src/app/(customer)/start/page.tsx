@@ -137,7 +137,20 @@ function StartPageContent() {
           window.location.href = "/start/wedding";
           return;
         }
-        window.location.href = "/dashboard/meetings";
+        // Discovery-first: send users into search with whatever event context
+        // we have, so they can find and book suppliers right away.
+        const params = new URLSearchParams();
+        const date = ctx?.date || user?.weddingDate || "";
+        const areas = ctx?.areas?.length
+          ? ctx.areas
+          : user?.weddingArea
+            ? String(user.weddingArea).split(",").filter(Boolean)
+            : [];
+        if (date) params.set("date", date);
+        if (areas.length > 0) params.set("areas", areas.join(","));
+        if (ctx?.eventType) params.set("eventType", ctx.eventType);
+        const query = params.toString();
+        window.location.href = query ? `/search?${query}` : "/search";
       } catch {
         setOtpError("שגיאת תקשורת. נסו שוב.");
         setOtp("");
@@ -235,7 +248,7 @@ function StartPageContent() {
 
               <p className="text-center text-sm text-text-muted">
                 בלחיצה על &apos;המשיכו&apos; מסכימים ל
-                <Link href="#" className="text-primary font-semibold">
+                <Link href="/terms" className="text-primary font-semibold">
                   תנאי השימוש
                 </Link>
               </p>

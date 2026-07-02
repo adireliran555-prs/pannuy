@@ -12,3 +12,7 @@ export const BRAND_DESCRIPTION =
 export const SUPPORT_EMAIL = "adireliran555@gmail.com";
 
 export const APP_URL = "https://topeventer.co.il";
+
+/** Shared asset paths (served from /public). */
+export const LOGO_PATH = "/brand/top-eventer-logo-512.png";
+export const OG_IMAGE_PATH = "/brand/top-eventer-logo-512.png";

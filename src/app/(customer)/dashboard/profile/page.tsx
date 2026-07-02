@@ -4,13 +4,12 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { CalendarDays, MapPin, CheckCircle } from "lucide-react";
+import { MapPin, CheckCircle } from "lucide-react";
 import DashboardLayout from "@/components/common/DashboardLayout";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import DatePickerField from "@/components/ui/DatePickerField";
 import { ISRAELI_CITIES } from "@/lib/utils";
-import { cn } from "@/lib/utils";
 
 const schema = z.object({
   name: z.string().min(2, "שם חייב להכיל לפחות 2 תווים"),
@@ -147,7 +146,7 @@ export default function ProfilePage() {
                 <label className="text-sm font-semibold text-text-main">
                   מספר טלפון
                 </label>
-                <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-xl border border-border text-text-muted text-base" dir="ltr">
+                <div className="flex items-center gap-3 h-12 px-4 bg-surface rounded-xl border border-border text-text-muted text-base" dir="ltr">
                   {profile?.phone ?? "—"}
                   <span className="text-xs font-medium text-text-muted me-auto" dir="rtl">
                     (לא ניתן לשינוי)
@@ -157,8 +156,7 @@ export default function ProfilePage() {
 
               {/* Wedding date */}
               <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-text-main flex items-center gap-1.5">
-                  <CalendarDays className="h-4 w-4 text-primary" />
+                <label className="block text-sm font-semibold text-text-main">
                   תאריך האירוע
                 </label>
                 <DatePickerField
@@ -166,14 +164,12 @@ export default function ProfilePage() {
                   onChange={(d) => setValue("weddingDate", d, { shouldValidate: true })}
                   placeholder="בחרו תאריך האירוע"
                   modalTitle="מתי האירוע?"
-                  triggerClassName="border py-3"
                 />
               </div>
 
               {/* Wedding city */}
               <div className="space-y-1.5 relative">
-                <label className="text-sm font-semibold text-text-main flex items-center gap-1.5">
-                  <MapPin className="h-4 w-4 text-primary" />
+                <label className="block text-sm font-semibold text-text-main">
                   עיר האירוע
                 </label>
                 <input
@@ -187,7 +183,7 @@ export default function ProfilePage() {
                   }}
                   onFocus={() => setShowCitySuggestions(true)}
                   onBlur={() => setTimeout(() => setShowCitySuggestions(false), 200)}
-                  className="w-full rounded-xl border border-border px-4 py-3 text-base text-text-main placeholder:text-text-muted focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  className="w-full h-12 rounded-xl border border-border px-4 text-base text-text-main placeholder:text-text-muted focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                 />
                 <input type="hidden" {...register("weddingCity")} />
 

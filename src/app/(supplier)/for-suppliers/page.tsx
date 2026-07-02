@@ -1,7 +1,14 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Camera, Calendar, TrendingUp, CheckCircle, ChevronLeft, Users, Gift, ShieldCheck } from "lucide-react";
 import TopEventsLogo from "@/components/common/TopEventsLogo";
 import { BRAND_NAME } from "@/lib/branding";
+
+export const metadata: Metadata = {
+  title: "הצטרפו כספקים",
+  description: `הצטרפות חינם, לידים איכותיים ולוח שנה חכם. ${BRAND_NAME} לספקי אירועים בישראל.`,
+  alternates: { canonical: "/for-suppliers" },
+};
 
 const FAQS = [
   {
@@ -117,7 +124,7 @@ export default function ForSuppliersPage() {
               {
                 icon: Calendar,
                 title: "לוח שנה חכם",
-                desc: "סנכרון Google Calendar, ניהול זמינות בזמן אמת. זוגות רואים רק תאריכים שאתם פנויים.",
+                desc: "סנכרון Google Calendar, ניהול זמינות בזמן אמת. לקוחות רואים רק תאריכים שבהם אתם פנויים.",
                 color: "bg-blue-100 text-blue-600",
               },
               {
@@ -301,7 +308,7 @@ export default function ForSuppliersPage() {
             <Link href="/privacy" className="hover:text-white/80 transition-colors">פרטיות</Link>
             <Link href="/contact" className="hover:text-white/80 transition-colors">יצירת קשר</Link>
           </div>
-          <span>© 2025 {BRAND_NAME}</span>
+          <span>© {new Date().getFullYear()} {BRAND_NAME}</span>
         </div>
       </footer>
     </div>

@@ -16,7 +16,11 @@ const nextConfig: NextConfig = {
         hostname: "picsum.photos",
       },
     ],
+    formats: ["image/avif", "image/webp"],
     unoptimized: process.env.NODE_ENV === "development",
+  },
+  experimental: {
+    optimizePackageImports: ["lucide-react", "recharts"],
   },
 };
 

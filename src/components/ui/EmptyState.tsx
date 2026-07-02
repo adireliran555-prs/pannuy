@@ -25,10 +25,12 @@ export default function EmptyState({
         className
       )}
     >
-      <div className="text-6xl mb-2 select-none">{emoji}</div>
-      <h3 className="text-xl font-bold text-text-main">{title}</h3>
+      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-light text-primary text-3xl select-none">
+        {emoji}
+      </div>
+      <h3 className="text-lg font-semibold text-text-main">{title}</h3>
       {description && (
-        <p className="text-text-muted max-w-xs leading-relaxed">{description}</p>
+        <p className="text-sm text-text-muted max-w-xs leading-relaxed">{description}</p>
       )}
       {ctaLabel && onCta && (
         <Button onClick={onCta} className="mt-2">

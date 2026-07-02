@@ -515,13 +515,13 @@ export default function SupplierProfilePage() {
               placeholder="https://..."
               dir="ltr"
               disabled={importing}
-              className="flex-1 rounded-xl border border-border px-4 py-3 text-sm text-text-main focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+              className="flex-1 h-11 rounded-xl border border-border px-4 text-base text-text-main focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
             />
             <Button
               onClick={handleImportLanding}
               isLoading={importing}
               disabled={!importUrl.trim()}
-              size="sm"
+              size="md"
             >
               ייבאו
             </Button>
@@ -574,7 +574,7 @@ export default function SupplierProfilePage() {
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full rounded-xl border border-border px-4 py-3 text-base text-text-main focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                className="w-full h-12 rounded-xl border border-border px-4 text-base text-text-main focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
               >
                 <option value="">בחרו תחום...</option>
                 {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
@@ -636,7 +636,7 @@ export default function SupplierProfilePage() {
                   value={priceFrom}
                   onChange={(e) => setPriceFrom(e.target.value)}
                   dir="ltr"
-                  className="w-full rounded-xl border border-border px-4 py-3 text-base focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  className="w-full h-12 rounded-xl border border-border px-4 text-base focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                 />
               </div>
               <div>
@@ -646,7 +646,7 @@ export default function SupplierProfilePage() {
                   value={priceTo}
                   onChange={(e) => setPriceTo(e.target.value)}
                   dir="ltr"
-                  className="w-full rounded-xl border border-border px-4 py-3 text-base focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  className="w-full h-12 rounded-xl border border-border px-4 text-base focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                 />
               </div>
             </div>
@@ -668,7 +668,7 @@ export default function SupplierProfilePage() {
                 )}
               >
                 <Upload className="h-6 w-6 text-primary" />
-                <span className="text-sm font-bold text-text-main">
+                <span className="text-sm font-semibold text-text-main">
                   {uploading ? "מעלה..." : "העלו תמונות מהמכשיר"}
                 </span>
                 <span className="text-xs text-text-muted">עד 20 תמונות · JPG/PNG</span>
@@ -691,12 +691,12 @@ export default function SupplierProfilePage() {
                 onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addPhoto())}
                 placeholder="https://... (הוספת תמונה בודדת)"
                 dir="ltr"
-                className="flex-1 rounded-xl border border-border px-4 py-3 text-sm text-text-main focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                className="flex-1 h-11 rounded-xl border border-border px-4 text-base text-text-main focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
               <Button
                 onClick={addPhoto}
                 disabled={!photoUrl.trim() || photos.length >= 20}
-                size="sm"
+                size="md"
               >
                 <Plus className="h-4 w-4" />
                 הוסיפו
@@ -788,7 +788,7 @@ export default function SupplierProfilePage() {
                         setPackages(updated);
                       }}
                       dir="ltr"
-                      className="w-full rounded-xl border border-border px-4 py-3 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                      className="w-full h-12 rounded-xl border border-border px-4 text-base focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                     />
                   </div>
                   <div>
@@ -802,7 +802,7 @@ export default function SupplierProfilePage() {
                         setPackages(updated);
                       }}
                       dir="ltr"
-                      className="w-full rounded-xl border border-border px-4 py-3 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                      className="w-full h-12 rounded-xl border border-border px-4 text-base focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                     />
                   </div>
                 </div>
@@ -845,7 +845,7 @@ export default function SupplierProfilePage() {
                           }
                         }
                       }}
-                      className="flex-1 rounded-xl border border-border px-3 py-2.5 text-sm focus:outline-none focus:border-primary"
+                      className="flex-1 h-12 rounded-xl border border-border px-4 text-base focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                     />
                     <button
                       type="button"
@@ -858,7 +858,7 @@ export default function SupplierProfilePage() {
                           setPackages(updated);
                         }
                       }}
-                      className="p-2.5 bg-primary-light text-primary rounded-xl hover:bg-primary hover:text-white transition-colors"
+                      className="grid place-items-center h-12 w-12 shrink-0 bg-primary-light text-primary rounded-xl hover:bg-primary hover:text-white transition-colors"
                     >
                       <Plus className="h-4 w-4" />
                     </button>

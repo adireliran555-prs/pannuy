@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { SlidersHorizontal, X, ChevronDown, Check } from "lucide-react";
 import { useSuppliers, NormalizedSupplier } from "@/hooks/useSuppliers";
+import { useSaved } from "@/hooks/useSaved";
 import { CATEGORY_LABELS } from "@/lib/categories";
 import SupplierCard from "@/components/common/SupplierCard";
 import { SupplierCardSkeleton } from "@/components/ui/Skeleton";
@@ -13,6 +14,7 @@ import Button from "@/components/ui/Button";
 import DatePickerField from "@/components/ui/DatePickerField";
 import { cn } from "@/lib/utils";
 import { setEventContext, getEventContext } from "@/lib/event-context";
+import { REGIONS } from "@/lib/regions";
 import {
   readRecentlyViewed,
   RECENTLY_VIEWED_KEY,
@@ -26,15 +28,6 @@ interface InitialData {
   totalPages: number;
   areaFallback: boolean;
 }
-
-const REGIONS = [
-  { id: "מרכז", label: "מרכז", emoji: "🏙️" },
-  { id: "תל אביב", label: "תל אביב", emoji: "🌆" },
-  { id: "ירושלים", label: "ירושלים", emoji: "🕌" },
-  { id: "הצפון", label: "צפון", emoji: "🌿" },
-  { id: "הדרום", label: "דרום", emoji: "🌵" },
-  { id: "השרון", label: "השרון", emoji: "🌊" },
-];
 
 interface Filters {
   date: string;
@@ -131,6 +124,7 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
     router.push(`/search?${params.toString()}`);
   };
 
+  const { saved: savedList } = useSaved();
   const { suppliers, total, totalPages, areaFallback, isLoading } = useSuppliers(
     {
       areas: selectedAreas.length > 0 ? selectedAreas : undefined,
@@ -144,6 +138,9 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
     initialData
   );
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const savedIds = new Set(savedList.map((s: any) => s.id));
+
   const activeFilterCount = [
     selectedAreas.length > 0,
     !!filters.date,
@@ -153,6 +150,15 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
   const clearFilter = (key: keyof Filters) => {
     const defaults: Record<keyof Filters, string | number> = { date: "", priceMax: 0, sortBy: "relevance" };
     setFilters((f) => ({ ...f, [key]: defaults[key] }));
+  };
+
+  const resetAllFilters = () => {
+    setFilters({ date: "", priceMax: 0, sortBy: "relevance" });
+    setSelectedAreas([]);
+    setSelectedCategory(ALL_CATEGORIES);
+    setSelectedEventType(undefined);
+    setPage(1);
+    router.push("/search");
   };
 
   const SORT_LABELS: Record<Filters["sortBy"], string> = {
@@ -427,6 +433,18 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
               <SupplierCardSkeleton key={i} />
             ))}
           </div>
+        ) : suppliers.length === 0 ? (
+          <EmptyState
+            emoji="🔎"
+            title="לא מצאנו ספקים לחיפוש הזה"
+            description={
+              activeFilterCount > 0 || selectedCategory !== ALL_CATEGORIES
+                ? "נסו לשנות תאריך, אזור או קטגוריה — או נקו את כל הפילטרים"
+                : "נסו שוב מאוחר יותר או הרחיבו את החיפוש"
+            }
+            ctaLabel="נקו פילטרים"
+            onCta={resetAllFilters}
+          />
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -445,7 +463,7 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
                   priceTo={supplier.priceTo}
                   category={supplier.category}
                   isAvailable={supplier.isAvailable}
-                  isSaved={supplier.isSaved}
+                  isSaved={savedIds.has(supplier.id)}
                 />
               ))}
             </div>
@@ -496,6 +514,18 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
               </button>
             </div>
 
+            {/* Date mobile */}
+            <div>
+              <label className="text-sm font-bold text-text-main block mb-2">תאריך האירוע</label>
+              <DatePickerField
+                clearable
+                value={filters.date}
+                onChange={(date) => setFilters((f) => ({ ...f, date }))}
+                placeholder="בחרו תאריך"
+                modalTitle="מתי האירוע?"
+              />
+            </div>
+
             {/* City mobile */}
             <div>
               <label className="text-sm font-bold text-text-main block mb-2">אזור</label>
@@ -536,6 +566,27 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
                     )}
                   >
                     עד ₪{price.toLocaleString("he-IL")}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Sort mobile */}
+            <div>
+              <label className="text-sm font-bold text-text-main block mb-2">מיון</label>
+              <div className="grid grid-cols-3 gap-2">
+                {(Object.keys(SORT_LABELS) as Filters["sortBy"][]).map((key) => (
+                  <button
+                    key={key}
+                    onClick={() => setFilters((f) => ({ ...f, sortBy: key }))}
+                    className={cn(
+                      "py-2 px-2 rounded-xl border-2 text-xs font-semibold transition-colors",
+                      filters.sortBy === key
+                        ? "border-primary bg-primary text-white"
+                        : "border-border text-text-main"
+                    )}
+                  >
+                    {SORT_LABELS[key]}
                   </button>
                 ))}
               </div>

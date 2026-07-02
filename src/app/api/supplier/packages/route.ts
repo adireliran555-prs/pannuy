@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import prisma from "@/lib/prisma";
 import { requireSupplierSession } from "@/lib/api-auth";
 import { delCache } from "@/lib/redis";
@@ -38,6 +39,7 @@ export async function POST(request: NextRequest) {
     });
 
     await delCache(`supplier:${session.slug}`);
+    revalidatePath(`/suppliers/${session.slug}`);
 
     return NextResponse.json({ success: true, data: pkg }, { status: 201 });
   } catch (err) {

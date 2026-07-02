@@ -8,11 +8,15 @@ import { invalidateAvailabilityCache } from "@/lib/availability";
 import { BRAND_CALENDAR_NAME, BRAND_NAME } from "@/lib/branding";
 import { getAppUrl } from "@/lib/app-url";
 
-const CLIENT_ID = process.env.GOOGLE_CLIENT_ID ?? "";
-const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET ?? "";
-const REDIRECT_URI =
-  process.env.GOOGLE_REDIRECT_URI ??
-  "http://localhost:3000/api/supplier/calendar/callback";
+const CLIENT_ID = (process.env.GOOGLE_CLIENT_ID ?? "").trim();
+const CLIENT_SECRET = (process.env.GOOGLE_CLIENT_SECRET ?? "").trim();
+
+/** Must exactly match an Authorized redirect URI in Google Cloud Console. */
+export function getGoogleRedirectUri(): string {
+  const fromEnv = process.env.GOOGLE_REDIRECT_URI?.trim();
+  if (fromEnv) return fromEnv;
+  return `${getAppUrl()}/api/supplier/calendar/callback`;
+}
 
 // ─── OAuth2 client factory ────────────────────────────────────────────────────
 
@@ -20,7 +24,7 @@ export function getOAuthClient(refreshToken?: string): OAuth2Client {
   const oauth2Client = new google.auth.OAuth2(
     CLIENT_ID,
     CLIENT_SECRET,
-    REDIRECT_URI
+    getGoogleRedirectUri()
   );
 
   if (refreshToken) {
@@ -33,6 +37,9 @@ export function getOAuthClient(refreshToken?: string): OAuth2Client {
 // ─── Auth URL ─────────────────────────────────────────────────────────────────
 
 export function getAuthUrl(state: string): string {
+  if (!CLIENT_ID) {
+    throw new Error("GOOGLE_CLIENT_ID is not configured");
+  }
   const oauth2Client = getOAuthClient();
   return oauth2Client.generateAuthUrl({
     access_type: "offline",

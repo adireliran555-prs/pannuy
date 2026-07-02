@@ -470,7 +470,7 @@ export default function SupplierJoinPage() {
               <div className="space-y-5">
                 {/* Category */}
                 <div>
-                  <label className="text-sm font-bold text-text-main block mb-2">
+                  <label className="text-sm font-semibold text-text-main block mb-2">
                     תחום עיסוק
                   </label>
                   <div className="grid grid-cols-2 gap-3">
@@ -494,13 +494,13 @@ export default function SupplierJoinPage() {
 
                 {/* City */}
                 <div>
-                  <label className="text-sm font-bold text-text-main block mb-2">
+                  <label className="text-sm font-semibold text-text-main block mb-2">
                     עיר מגורים
                   </label>
                   <select
                     value={selectedCity}
                     onChange={(e) => setSelectedCity(e.target.value)}
-                    className="w-full rounded-xl border border-border px-4 py-3 text-base text-text-main focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                    className="w-full h-12 rounded-xl border border-border px-4 text-base text-text-main focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                   >
                     <option value="">בחרו עיר...</option>
                     {ISRAELI_CITIES.map((c) => (
@@ -518,7 +518,7 @@ export default function SupplierJoinPage() {
 
                 {/* Service areas */}
                 <div>
-                  <label className="text-sm font-bold text-text-main block mb-2">
+                  <label className="text-sm font-semibold text-text-main block mb-2">
                     אזורי שירות
                   </label>
                   <div className="flex flex-wrap gap-2">
@@ -544,7 +544,7 @@ export default function SupplierJoinPage() {
                 {/* Bio */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <label className="text-sm font-bold text-text-main">
+                    <label className="text-sm font-semibold text-text-main">
                       קצת עליי
                     </label>
                     <span className={cn("text-xs font-medium", bio.length > 450 ? "text-red-500" : "text-text-muted")}>
@@ -629,7 +629,7 @@ export default function SupplierJoinPage() {
                   )}
                 >
                   <Upload className="h-6 w-6 text-primary" />
-                  <span className="text-sm font-bold text-text-main">
+                  <span className="text-sm font-semibold text-text-main">
                     {uploading ? "מעלה..." : "העלו תמונות מהמכשיר"}
                   </span>
                   <span className="text-xs text-text-muted">עד 20 תמונות · JPG/PNG</span>
@@ -646,7 +646,7 @@ export default function SupplierJoinPage() {
 
               {/* Import from existing website / landing page */}
               <div className="p-4 bg-primary-light/40 border border-primary/30 rounded-xl space-y-2">
-                <p className="text-sm font-bold text-text-main">
+                <p className="text-sm font-semibold text-text-main">
                   יש לכם אתר או דף נחיתה? ייבאו ממנו תמונות ✨
                 </p>
                 <p className="text-xs text-text-muted">
@@ -662,13 +662,13 @@ export default function SupplierJoinPage() {
                     }
                     placeholder="https://your-site.com"
                     dir="ltr"
-                    className="flex-1 rounded-xl border border-border px-4 py-2.5 text-sm text-text-main focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                    className="flex-1 h-11 rounded-xl border border-border px-4 text-base text-text-main focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                   />
                   <Button
                     onClick={handleImportLanding}
                     isLoading={importing}
                     disabled={!importUrl.trim() || photos.length >= 20}
-                    size="sm"
+                    size="md"
                   >
                     ייבאו
                   </Button>
@@ -687,12 +687,12 @@ export default function SupplierJoinPage() {
                   onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addPhoto())}
                   placeholder="https://... (הוספת תמונה בודדת)"
                   dir="ltr"
-                  className="flex-1 rounded-xl border border-border px-4 py-3 text-sm text-text-main focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  className="flex-1 h-11 rounded-xl border border-border px-4 text-base text-text-main focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                 />
                 <Button
                   onClick={addPhoto}
                   disabled={!photoUrl.trim() || photos.length >= 20}
-                  size="sm"
+                  size="md"
                 >
                   <Plus className="h-4 w-4" />
                   הוסיפו
@@ -803,7 +803,7 @@ export default function SupplierJoinPage() {
                           value={pkg.price}
                           onChange={(e) => updatePackage(pkg.id, "price", e.target.value)}
                           dir="ltr"
-                          className="w-full rounded-xl border border-border px-4 py-3 text-base focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                          className="w-full h-12 rounded-xl border border-border px-4 text-base focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                         />
                       </div>
                       <div>
@@ -816,7 +816,7 @@ export default function SupplierJoinPage() {
                           value={pkg.hours}
                           onChange={(e) => updatePackage(pkg.id, "hours", e.target.value)}
                           dir="ltr"
-                          className="w-full rounded-xl border border-border px-4 py-3 text-base focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                          className="w-full h-12 rounded-xl border border-border px-4 text-base focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                         />
                       </div>
                     </div>
@@ -850,12 +850,12 @@ export default function SupplierJoinPage() {
                           onKeyDown={(e) =>
                             e.key === "Enter" && (e.preventDefault(), addInclude(pkg.id))
                           }
-                          className="flex-1 rounded-xl border border-border px-3 py-2.5 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                          className="flex-1 h-12 rounded-xl border border-border px-4 text-base focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                         />
                         <button
                           type="button"
                           onClick={() => addInclude(pkg.id)}
-                          className="p-2.5 bg-primary-light text-primary rounded-xl hover:bg-primary hover:text-white transition-colors"
+                          className="grid place-items-center h-12 w-12 shrink-0 bg-primary-light text-primary rounded-xl hover:bg-primary hover:text-white transition-colors"
                         >
                           <Plus className="h-4 w-4" />
                         </button>

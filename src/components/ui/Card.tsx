@@ -23,10 +23,10 @@ export default function Card({
   return (
     <div
       className={cn(
-        "bg-white rounded-2xl border border-border shadow-sm",
+        "bg-white rounded-2xl border border-border shadow-[var(--shadow-card)]",
         paddings[padding],
         hover &&
-          "transition-all duration-200 hover:-translate-y-1 hover:shadow-lg cursor-pointer",
+          "transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-card-hover)] cursor-pointer",
         className
       )}
       {...props}

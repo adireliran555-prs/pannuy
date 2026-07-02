@@ -7,7 +7,7 @@ import {
 } from "@/lib/branding";
 
 export const metadata: Metadata = {
-  title: `מדיניות פרטיות | ${BRAND_NAME}`,
+  title: "מדיניות פרטיות",
   description: `מדיניות הפרטיות של ${BRAND_NAME} — איסוף מידע, שימוש בנתונים וסנכרון Google Calendar.`,
 };
 
@@ -74,7 +74,7 @@ export default function PrivacyPage() {
           <li>קבלת עדכונים כאשר הספק מוסיף או משנה חסימות ביומן זה</li>
         </ul>
         <p>
-          <strong>איננו קוראים, שומרים או מציגים</strong> אירועים מיומנים אישיים
+          <strong>איננו קוראים, שומרים או מציגים</strong> אירועים ביומנים אישיים
           אחרים של הספק (למשל יומן משפחתי או עסקי נפרד). הספק שולט בתוכן שמוסיף
           ליומן {BRAND_NAME}.
         </p>
