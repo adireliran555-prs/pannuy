@@ -5,6 +5,7 @@ import {
   exchangeCodeForTokens,
   ensurePannuyCalendar,
   syncSupplierBusyDays,
+  registerCalendarWatch,
 } from "@/lib/google-calendar";
 
 export async function GET(request: NextRequest) {
@@ -48,10 +49,13 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Provision the dedicated "פנוי — זמינות" calendar and pull anything already
-    // on it. Both are non-fatal — connection still succeeds if they fail.
+    // Provision the dedicated availability calendar, pull anything already on it,
+    // and register a push-notification watch so future calendar changes sync back
+    // to the site automatically (two-way sync from the moment of connect). All
+    // non-fatal — connection still succeeds if any of them fail.
     await ensurePannuyCalendar(session.id);
     await syncSupplierBusyDays(session.id).catch(() => {});
+    await registerCalendarWatch(session.id).catch(() => {});
 
     const res = NextResponse.redirect(
       new URL("/supplier/calendar?connected=true", request.url)
