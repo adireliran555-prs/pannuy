@@ -44,10 +44,11 @@ export function getAuthUrl(state: string): string {
   return oauth2Client.generateAuthUrl({
     access_type: "offline",
     prompt: "consent",
-    scope: [
-      "https://www.googleapis.com/auth/calendar",
-      "https://www.googleapis.com/auth/calendar.events",
-    ],
+    // Least-privilege: this scope lets us create and fully manage ONLY the
+    // dedicated availability calendar we create for the supplier. It grants no
+    // access to the supplier's personal/primary calendars, so all reads and
+    // writes must target the app-created calendar (see getSyncCalendarId).
+    scope: ["https://www.googleapis.com/auth/calendar.app.created"],
     state,
   });
 }
@@ -172,6 +173,29 @@ export async function ensurePannuyCalendar(supplierId: string): Promise<string |
   }
 }
 
+/**
+ * Resolve the calendar id the app is allowed to operate on. With the
+ * calendar.app.created scope the app can ONLY touch calendars it created, so we
+ * always use the dedicated availability calendar (provisioning it if missing).
+ * Never falls back to "primary" — that would be outside the granted scope.
+ */
+async function getSyncCalendarId(supplierId: string): Promise<string> {
+  const supplier = await prisma.supplier.findUniqueOrThrow({
+    where: { id: supplierId },
+    select: { googleCalendarId: true },
+  });
+  if (supplier.googleCalendarId && supplier.googleCalendarId !== "primary") {
+    return supplier.googleCalendarId;
+  }
+  const ensured = await ensurePannuyCalendar(supplierId);
+  if (!ensured || ensured === "primary") {
+    throw new Error(
+      "Could not provision the dedicated availability calendar"
+    );
+  }
+  return ensured;
+}
+
 // ─── Busy slots ───────────────────────────────────────────────────────────────
 
 export async function getSupplierBusySlots(
@@ -182,12 +206,7 @@ export async function getSupplierBusySlots(
   const oauth2Client = await getSupplierOAuthClient(supplierId);
   const calendar = google.calendar({ version: "v3", auth: oauth2Client });
 
-  const supplier = await prisma.supplier.findUniqueOrThrow({
-    where: { id: supplierId },
-    select: { googleCalendarId: true },
-  });
-
-  const calendarId = supplier.googleCalendarId ?? "primary";
+  const calendarId = await getSyncCalendarId(supplierId);
 
   const res = await calendar.freebusy.query({
     requestBody: {
@@ -213,12 +232,7 @@ export async function getSupplierBusyDays(
   const oauth2Client = await getSupplierOAuthClient(supplierId);
   const calendar = google.calendar({ version: "v3", auth: oauth2Client });
 
-  const supplier = await prisma.supplier.findUniqueOrThrow({
-    where: { id: supplierId },
-    select: { googleCalendarId: true },
-  });
-
-  const calendarId = supplier.googleCalendarId ?? "primary";
+  const calendarId = await getSyncCalendarId(supplierId);
 
   const res = await calendar.events.list({
     calendarId,
@@ -364,12 +378,7 @@ export async function registerCalendarWatch(
     const oauth2Client = await getSupplierOAuthClient(supplierId);
     const calendar = google.calendar({ version: "v3", auth: oauth2Client });
 
-    const supplier = await prisma.supplier.findUniqueOrThrow({
-      where: { id: supplierId },
-      select: { googleCalendarId: true },
-    });
-
-    const calendarId = supplier.googleCalendarId ?? "primary";
+    const calendarId = await getSyncCalendarId(supplierId);
     // Random, unguessable channel id and secret token. The token is echoed back
     // by Google in the x-goog-channel-token header on every push notification,
     // and we verify it in the webhook handler before trusting the call.
@@ -457,10 +466,11 @@ export async function createCalendarEvent(
   const oauth2Client = await getSupplierOAuthClient(supplierId);
   const calendar = google.calendar({ version: "v3", auth: oauth2Client });
 
-  // Confirmed bookings are written to the supplier's PRIMARY calendar so they
-  // show up where the supplier actually looks. (We READ availability from the
-  // dedicated "פנוי — זמינות" calendar, but bookings belong in their main one.)
-  const calendarId = "primary";
+  // Confirmed bookings are written to the dedicated "פנוי — זמינות" calendar the
+  // app created. The calendar.app.created scope grants no access to the
+  // supplier's primary calendar, so bookings live alongside their availability
+  // blocks (which also auto-blocks the booked slot on next sync).
+  const calendarId = await getSyncCalendarId(supplierId);
 
   // Naive local datetime (no offset, no Z). Combined with timeZone below, Google
   // interprets these wall-clock times as Asia/Jerusalem. Applying both
@@ -504,6 +514,7 @@ export async function deleteCalendarEvent(
   const oauth2Client = await getSupplierOAuthClient(supplierId);
   const calendar = google.calendar({ version: "v3", auth: oauth2Client });
 
-  // Booking events are created on the primary calendar (see createCalendarEvent).
-  await calendar.events.delete({ calendarId: "primary", eventId });
+  // Booking events live on the dedicated calendar (see createCalendarEvent).
+  const calendarId = await getSyncCalendarId(supplierId);
+  await calendar.events.delete({ calendarId, eventId });
 }

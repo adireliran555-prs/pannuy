@@ -75,13 +75,38 @@ export default function PrivacyPage() {
         </ul>
         <p>
           <strong>איננו קוראים, שומרים או מציגים</strong> אירועים ביומנים אישיים
-          אחרים של הספק (למשל יומן משפחתי או עסקי נפרד). הספק שולט בתוכן שמוסיף
-          ליומן {BRAND_NAME}.
+          אחרים של הספק (למשל יומן משפחתי או עסקי נפרד). ההרשאה שאנו מבקשים
+          (<code>calendar.app.created</code>) מאפשרת גישה <strong>אך ורק ליומן
+          הייעודי שנוצר על ידי {BRAND_NAME}</strong> — לא ליומן הראשי ולא ליומנים
+          אחרים בחשבון הספק. הספק שולט בתוכן שמוסיף ליומן {BRAND_NAME}.
         </p>
         <p>
           ניתן לנתק את Google Calendar בכל עת מהגדרות היומן בפאנל הספק או דרך
-          הגדרות האבטחה של Google.
+          הגדרות האבטחה של Google. עם הניתוק אנו מפסיקים לגשת לנתוני היומן ומוחקים
+          את אסימוני הגישה השמורים.
         </p>
+        <div className="rounded-xl border border-border bg-surface p-4 space-y-2">
+          <p className="font-semibold">
+            שימוש מוגבל בנתוני Google (Limited Use)
+          </p>
+          <p>
+            השימוש של {BRAND_NAME} במידע המתקבל מממשקי Google API, והעברתו לכל
+            אפליקציה אחרת, כפוף ל־
+            <a
+              href="https://developers.google.com/terms/api-services-user-data-policy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary font-semibold hover:underline"
+            >
+              Google API Services User Data Policy
+            </a>
+            , לרבות דרישות ה־Limited Use. בהתאם לכך, אנו משתמשים בנתוני
+            Google Calendar אך ורק לצורך הצגת זמינות הספק וקביעת פגישות, איננו
+            משתמשים בנתונים אלה לפרסום, איננו מוכרים אותם, ואיננו מעבירים אותם
+            לצדדים שלישיים למעט לצורך אספקת השירות, בהתאם להסכמת המשתמש, או
+            כנדרש על פי דין.
+          </p>
+        </div>
       </section>
 
       <section className="space-y-3">
