@@ -141,13 +141,21 @@ export async function ensurePannuyCalendar(supplierId: string): Promise<string |
     const oauth2Client = await getSupplierOAuthClient(supplierId);
     const calendar = google.calendar({ version: "v3", auth: oauth2Client });
 
-    // Reuse an existing Pannuy calendar if the supplier already has one.
-    const list = await calendar.calendarList.list();
-    const existing = list.data.items?.find(
-      (c) => c.summary === PANNUY_CALENDAR_NAME
-    );
+    // Best-effort reuse: try to find a calendar we already created. The
+    // calendar.app.created scope forbids listing the user's calendars, so this
+    // call is expected to fail under that scope — we must NOT let it abort the
+    // creation below. The DB (googleCalendarId, checked above) is the real guard
+    // against duplicates.
+    let calendarId: string | null = null;
+    try {
+      const list = await calendar.calendarList.list();
+      calendarId =
+        list.data.items?.find((c) => c.summary === PANNUY_CALENDAR_NAME)?.id ??
+        null;
+    } catch {
+      // Expected with calendar.app.created — fall through to create.
+    }
 
-    let calendarId = existing?.id ?? null;
     if (!calendarId) {
       const created = await calendar.calendars.insert({
         requestBody: {
