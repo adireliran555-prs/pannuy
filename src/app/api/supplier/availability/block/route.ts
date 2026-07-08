@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireSupplierSession } from "@/lib/api-auth";
 import { invalidateAvailabilityCache } from "@/lib/availability";
+import { createBlockEvent } from "@/lib/google-calendar";
 
 export async function GET(request: NextRequest) {
   try {
@@ -77,6 +78,30 @@ export async function POST(request: NextRequest) {
         source: "MANUAL",
       },
     });
+
+    // Mirror the block into the supplier's Google Calendar (website → calendar
+    // sync), if they've connected one. Non-fatal: the local block stands even if
+    // the calendar write fails.
+    const supplier = await prisma.supplier.findUnique({
+      where: { id: session.id },
+      select: { googleRefreshToken: true },
+    });
+    if (supplier?.googleRefreshToken) {
+      const allDay = startTime === "00:00" && endTime >= "23:59";
+      const eventId = await createBlockEvent(session.id, {
+        date,
+        startTime,
+        endTime,
+        allDay,
+      });
+      if (eventId) {
+        await prisma.availabilitySlot.update({
+          where: { id: slot.id },
+          data: { googleEventId: eventId },
+        });
+        slot.googleEventId = eventId;
+      }
+    }
 
     await invalidateAvailabilityCache(session.id);
 

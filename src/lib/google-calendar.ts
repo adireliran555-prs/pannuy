@@ -526,3 +526,57 @@ export async function deleteCalendarEvent(
   const calendarId = await getSyncCalendarId(supplierId);
   await calendar.events.delete({ calendarId, eventId });
 }
+
+// ─── Manual availability block → calendar (website → calendar sync) ────────────
+
+/**
+ * Mirror a manual availability block the supplier set on the website into the
+ * dedicated "Top Eventer — זמינות" calendar, so it also shows in Google Calendar.
+ * Returns the created event id, or null on failure (non-fatal — the local block
+ * still stands even if the calendar write fails).
+ */
+export async function createBlockEvent(
+  supplierId: string,
+  block: { date: string; startTime: string; endTime: string; allDay: boolean }
+): Promise<string | null> {
+  try {
+    const oauth2Client = await getSupplierOAuthClient(supplierId);
+    const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+    const calendarId = await getSyncCalendarId(supplierId);
+
+    let start: { date: string } | { dateTime: string; timeZone: string };
+    let end: { date: string } | { dateTime: string; timeZone: string };
+
+    if (block.allDay) {
+      // Google all-day events use an exclusive end date → the next day.
+      const endExclusive = new Date(`${block.date}T00:00:00Z`);
+      endExclusive.setUTCDate(endExclusive.getUTCDate() + 1);
+      start = { date: block.date };
+      end = { date: endExclusive.toISOString().slice(0, 10) };
+    } else {
+      start = {
+        dateTime: `${block.date}T${block.startTime}:00`,
+        timeZone: "Asia/Jerusalem",
+      };
+      end = {
+        dateTime: `${block.date}T${block.endTime}:00`,
+        timeZone: "Asia/Jerusalem",
+      };
+    }
+
+    const res = await calendar.events.insert({
+      calendarId,
+      requestBody: {
+        summary: `חסום — ${BRAND_NAME}`,
+        description: "חסימת זמינות שנוצרה מהאתר.",
+        start,
+        end,
+      },
+    });
+
+    return res.data.id ?? null;
+  } catch (err) {
+    console.warn("[createBlockEvent] failed:", err);
+    return null;
+  }
+}

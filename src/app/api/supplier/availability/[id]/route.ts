@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireSupplierSession } from "@/lib/api-auth";
 import { invalidateAvailabilityCache } from "@/lib/availability";
+import { deleteCalendarEvent } from "@/lib/google-calendar";
 
 export async function DELETE(
   request: NextRequest,
@@ -29,7 +30,37 @@ export async function DELETE(
       );
     }
 
+    // If this manual block was mirrored into Google Calendar, remove the event
+    // there too (website → calendar sync), then clean up the GOOGLE slot that
+    // the calendar watch echoed back so the date fully unblocks. Non-fatal.
+    const mirroredToGoogle = slot.source === "MANUAL" && !!slot.googleEventId;
+    if (mirroredToGoogle) {
+      try {
+        await deleteCalendarEvent(slot.supplierId, slot.googleEventId!);
+      } catch (calErr) {
+        console.warn(
+          "[DELETE /api/supplier/availability/[id]] calendar delete failed:",
+          calErr
+        );
+      }
+    }
+
     await prisma.availabilitySlot.delete({ where: { id } });
+
+    if (mirroredToGoogle) {
+      const dateStr = slot.date.toISOString().slice(0, 10);
+      await prisma.availabilitySlot.deleteMany({
+        where: {
+          supplierId: slot.supplierId,
+          date: slot.date,
+          source: "GOOGLE",
+          googleEventId: {
+            in: [`allday-${dateStr}`, `${dateStr}-${slot.startTime}`],
+          },
+        },
+      });
+    }
+
     await invalidateAvailabilityCache(session.id);
 
     return NextResponse.json({ success: true });
