@@ -77,6 +77,16 @@ export default function AccessibilityPage() {
               {SUPPORT_EMAIL}
             </a>
           </li>
+          <li>
+            <strong>טלפון:</strong>{" "}
+            <a
+              href="tel:+972508263639"
+              dir="ltr"
+              className="text-primary font-semibold hover:underline"
+            >
+              050-8263639
+            </a>
+          </li>
         </ul>
         <p>
           בפנייתכם נשמח שתפרטו את הבעיה, הדף שבו נתקלתם בה וסוג הדפדפן/הטכנולוגיה
