@@ -172,6 +172,7 @@ export default async function HomePage() {
             <div className="flex gap-4">
               <Link href="/privacy" className="hover:text-white/70 transition-colors">פרטיות</Link>
               <Link href="/terms" className="hover:text-white/70 transition-colors">תנאי שימוש</Link>
+              <Link href="/accessibility" className="hover:text-white/70 transition-colors">נגישות</Link>
               <Link href="/contact" className="hover:text-white/70 transition-colors">יצירת קשר</Link>
             </div>
           </div>
