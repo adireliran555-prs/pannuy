@@ -176,38 +176,30 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
       <div className="sticky top-0 z-30 bg-white border-b border-border shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-3 pb-0 flex items-center gap-3 overflow-x-auto">
           {[
-            { id: ALL_CATEGORIES, emoji: "✨", label: "כל הספקים", open: true },
-            { id: "PHOTOGRAPHER", emoji: "📸", open: true },
-            { id: "VIDEOGRAPHER", emoji: "🎬", open: true },
-            { id: "DJ", emoji: "🎧", open: false },
-            { id: "CATERING", emoji: "🍽️", open: false },
-            { id: "VENUE", emoji: "🏛️", open: false },
-            { id: "HAIR_STYLIST", emoji: "💇", open: false },
-            { id: "MAKEUP_ARTIST", emoji: "💄", open: false },
-            { id: "PHOTO_BOOTH", emoji: "🖼️", open: false },
-            { id: "EVENT_PRODUCER", emoji: "🎪", open: false },
-          ].map(({ id, emoji, label, open }) => (
+            { id: ALL_CATEGORIES, emoji: "✨", label: "כל הספקים" },
+            { id: "PHOTOGRAPHER", emoji: "📸" },
+            { id: "VIDEOGRAPHER", emoji: "🎬" },
+            { id: "DJ", emoji: "🎧" },
+            { id: "CATERING", emoji: "🍽️" },
+            { id: "VENUE", emoji: "🏛️" },
+            { id: "HAIR_STYLIST", emoji: "💇" },
+            { id: "MAKEUP_ARTIST", emoji: "💄" },
+            { id: "PHOTO_BOOTH", emoji: "🖼️" },
+            { id: "EVENT_PRODUCER", emoji: "🎪" },
+          ].map(({ id, emoji, label }) => (
             <button
               key={id}
               type="button"
-              disabled={!open}
-              onClick={() => open && handleCategoryChange(id)}
+              onClick={() => handleCategoryChange(id)}
               className={cn(
                 "flex items-center gap-1.5 px-4 py-2 rounded-full border-2 text-sm font-semibold whitespace-nowrap mb-3 transition-colors",
-                selectedCategory === id && open
+                selectedCategory === id
                   ? "border-primary bg-primary text-white"
-                  : open
-                    ? "border-border text-text-main hover:border-primary"
-                    : "border-border text-text-muted cursor-not-allowed opacity-60"
+                  : "border-border text-text-main hover:border-primary"
               )}
             >
               <span>{emoji}</span>
               {label ?? CATEGORY_LABELS[id]}
-              {!open && (
-                <span className="text-[10px] font-bold bg-gray-700 text-white px-1.5 py-0.5 rounded-full">
-                  בקרוב
-                </span>
-              )}
             </button>
           ))}
         </div>
