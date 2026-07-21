@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Calendar, Heart, User, Settings } from "lucide-react";
+import { Calendar, Heart, User, Settings, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
+  { href: "/plan", label: "התוכנית שלי", icon: ClipboardList },
   { href: "/dashboard/meetings", label: "הפגישות שלי", icon: Calendar },
   { href: "/dashboard/saved", label: "שמורות", icon: Heart },
   { href: "/dashboard/profile", label: "הפרופיל שלי", icon: User },

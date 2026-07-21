@@ -23,6 +23,9 @@ import { CATEGORY_LABELS_SINGULAR } from "@/lib/categories";
 import { getEventTypeLabel } from "@/lib/event-types";
 import { BRAND_NAME } from "@/lib/branding";
 import type { NormalizedSupplier } from "@/lib/supplier";
+import type { Category } from "@prisma/client";
+import type { PickerPackageDTO } from "@/types/event";
+import ProfilePlanPicker from "@/components/plan/PlanSupplierCard";
 import { pushRecentlyViewed } from "@/lib/recently-viewed";
 import { EVENT_CONTEXT_CHANGED, getEventContext } from "@/lib/event-context";
 import { withReturnTo } from "@/lib/return-to";
@@ -36,8 +39,23 @@ const MARKET_PRICE_RANGES: Record<string, { min: number; max: number; avg: numbe
   CATERING: { min: 150, max: 500, avg: 280 },
 };
 
-export default function SupplierProfileClient({ supplier }: { supplier: NormalizedSupplier }) {
+export default function SupplierProfileClient({
+  supplier,
+  planMode = false,
+  planEventId,
+  planPackages = [],
+}: {
+  supplier: NormalizedSupplier;
+  planMode?: boolean;
+  planEventId?: string;
+  planPackages?: PickerPackageDTO[];
+}) {
   const router = useRouter();
+
+  // In plan mode, booking CTAs jump to the in-sidebar package picker instead of
+  // the (irrelevant) meeting-booking flow.
+  const scrollToPicker = () =>
+    document.getElementById("plan-picker")?.scrollIntoView({ behavior: "smooth" });
   const [bioExpanded, setBioExpanded] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [savePending, setSavePending] = useState(false);
@@ -203,7 +221,16 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
             </div>
             <span className="font-bold text-text-main text-sm truncate">{supplier.name}</span>
           </div>
-          <Button size="sm" onClick={() => router.push(withReturnTo(`/book/${supplier.id}`, `/suppliers/${supplier.slug}`))}>קבעו פגישה</Button>
+          <Button
+            size="sm"
+            onClick={
+              planMode
+                ? scrollToPicker
+                : () => router.push(withReturnTo(`/book/${supplier.id}`, `/suppliers/${supplier.slug}`))
+            }
+          >
+            {planMode ? "בחרו חבילה" : "קבעו פגישה"}
+          </Button>
         </div>
       </div>
 
@@ -351,26 +378,33 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
                     hours={pkg.hours}
                     includes={pkg.includes}
                     isPopular={pkg.isPopular}
-                    onSelect={() => router.push(withReturnTo(`/book/${supplier.id}`, `/suppliers/${supplier.slug}`))}
+                    onSelect={
+                      planMode
+                        ? scrollToPicker
+                        : () => router.push(withReturnTo(`/book/${supplier.id}`, `/suppliers/${supplier.slug}`))
+                    }
                   />
                 ))}
               </div>
             </section>
 
-            {/* Availability */}
-            <section>
-              <h2 className="text-xl font-bold text-text-main mb-4">זמינות</h2>
-              <div className="bg-white rounded-2xl border border-border p-6">
-                <AvailabilityCalendar supplierId={supplier.id} />
-                <p className="mt-4 text-xs text-text-muted text-center">
-                  פגישה כוללת 60 דקות · וידאו, טלפון, או פנים אל פנים
-                </p>
-              </div>
-            </section>
+            {/* Availability — meeting scheduler; hidden in plan mode where the
+                couple is choosing a package, not booking a meeting. */}
+            {!planMode && (
+              <section>
+                <h2 className="text-xl font-bold text-text-main mb-4">זמינות</h2>
+                <div className="bg-white rounded-2xl border border-border p-6">
+                  <AvailabilityCalendar supplierId={supplier.id} />
+                  <p className="mt-4 text-xs text-text-muted text-center">
+                    פגישה כוללת 60 דקות · וידאו, טלפון, או פנים אל פנים
+                  </p>
+                </div>
+              </section>
+            )}
           </div>
 
           {/* ── Sticky sidebar ── */}
-          <aside className="w-full lg:w-80 flex-shrink-0">
+          <aside id="plan-picker" className="w-full lg:w-80 flex-shrink-0">
             <div className="bg-white rounded-2xl border border-border p-6 sticky top-24 shadow-md space-y-5">
               {/* Supplier summary */}
               <div className="flex items-center gap-3 pb-4 border-b border-border">
@@ -420,42 +454,56 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
                 </p>
               )}
 
-              {/* CTA */}
-              <Button
-                size="lg"
-                fullWidth
-                onClick={() =>
-                  router.push(withReturnTo(`/book/${supplier.id}`, `/suppliers/${supplier.slug}`))
-                }
-              >
-                קבעו פגישה
-              </Button>
+              {planMode && planEventId ? (
+                /* Plan mode: choose a package for the event, not book a meeting */
+                <ProfilePlanPicker
+                  variant="sidebar"
+                  eventId={planEventId}
+                  category={supplier.category as Category}
+                  supplierId={supplier.id}
+                  supplierName={supplier.name}
+                  packages={planPackages}
+                />
+              ) : (
+                <>
+                  {/* CTA */}
+                  <Button
+                    size="lg"
+                    fullWidth
+                    onClick={() =>
+                      router.push(withReturnTo(`/book/${supplier.id}`, `/suppliers/${supplier.slug}`))
+                    }
+                  >
+                    קבעו פגישה
+                  </Button>
 
-              {/* WhatsApp */}
-              <button
-                onClick={handleWhatsApp}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-full border-2 border-[#25D366] text-[#25D366] hover:bg-[#25D366] hover:text-white font-semibold text-sm transition-all"
-              >
-                <Phone className="h-4 w-4" />
-                שלחו הודעת WhatsApp
-              </button>
+                  {/* WhatsApp */}
+                  <button
+                    onClick={handleWhatsApp}
+                    className="w-full flex items-center justify-center gap-2 py-3 rounded-full border-2 border-[#25D366] text-[#25D366] hover:bg-[#25D366] hover:text-white font-semibold text-sm transition-all"
+                  >
+                    <Phone className="h-4 w-4" />
+                    שלחו הודעת WhatsApp
+                  </button>
 
-              <button
-                onClick={handleToggleSave}
-                disabled={savePending}
-                className={`w-full flex items-center justify-center gap-2 py-3 rounded-full border-2 font-semibold text-sm transition-all disabled:opacity-60 ${
-                  isSaved
-                    ? "border-red-300 text-red-500 bg-red-50"
-                    : "border-border text-text-muted hover:border-primary hover:text-primary"
-                }`}
-              >
-                <Heart className={`h-4 w-4 ${isSaved ? "fill-red-500 stroke-red-500" : ""}`} />
-                {isSaved ? "נשמר ❤" : "שמרו"}
-              </button>
+                  <button
+                    onClick={handleToggleSave}
+                    disabled={savePending}
+                    className={`w-full flex items-center justify-center gap-2 py-3 rounded-full border-2 font-semibold text-sm transition-all disabled:opacity-60 ${
+                      isSaved
+                        ? "border-red-300 text-red-500 bg-red-50"
+                        : "border-border text-text-muted hover:border-primary hover:text-primary"
+                    }`}
+                  >
+                    <Heart className={`h-4 w-4 ${isSaved ? "fill-red-500 stroke-red-500" : ""}`} />
+                    {isSaved ? "נשמר ❤" : "שמרו"}
+                  </button>
 
-              <p className="text-xs text-text-muted text-center">
-                הפגישה חינמית ואינה מחייבת בחירה
-              </p>
+                  <p className="text-xs text-text-muted text-center">
+                    הפגישה חינמית ואינה מחייבת בחירה
+                  </p>
+                </>
+              )}
             </div>
           </aside>
         </div>
@@ -466,22 +514,30 @@ export default function SupplierProfileClient({ supplier }: { supplier: Normaliz
 
       {/* ── Mobile sticky CTA ── */}
       <div className="lg:hidden fixed bottom-16 left-0 right-0 z-40 bg-white/95 backdrop-blur-sm border-t border-border px-4 py-3 flex gap-3 safe-area-pb">
-        <button
-          onClick={handleWhatsApp}
-          className="flex items-center justify-center gap-2 px-4 py-3 rounded-full border-2 border-[#25D366] text-[#25D366] font-semibold text-sm transition-all hover:bg-[#25D366] hover:text-white flex-shrink-0"
-        >
-          <Phone className="h-4 w-4" />
-          WhatsApp
-        </button>
-        <Button
-          size="lg"
-          fullWidth
-          onClick={() =>
-            router.push(withReturnTo(`/book/${supplier.id}`, `/suppliers/${supplier.slug}`))
-          }
-        >
-          קבעו פגישה · {formatPrice(supplier.priceFrom)}+
-        </Button>
+        {planMode ? (
+          <Button size="lg" fullWidth onClick={scrollToPicker}>
+            בחרו חבילה לאירוע
+          </Button>
+        ) : (
+          <>
+            <button
+              onClick={handleWhatsApp}
+              className="flex items-center justify-center gap-2 px-4 py-3 rounded-full border-2 border-[#25D366] text-[#25D366] font-semibold text-sm transition-all hover:bg-[#25D366] hover:text-white flex-shrink-0"
+            >
+              <Phone className="h-4 w-4" />
+              WhatsApp
+            </button>
+            <Button
+              size="lg"
+              fullWidth
+              onClick={() =>
+                router.push(withReturnTo(`/book/${supplier.id}`, `/suppliers/${supplier.slug}`))
+              }
+            >
+              קבעו פגישה · {formatPrice(supplier.priceFrom)}+
+            </Button>
+          </>
+        )}
       </div>
     </div>
   );

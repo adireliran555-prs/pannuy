@@ -69,7 +69,10 @@ export default function RootLayout({
         <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="" />
         <link rel="dns-prefetch" href="https://res.cloudinary.com" />
       </head>
-      <body className={`${heebo.className} min-h-full flex flex-col bg-surface antialiased`}>
+      <body
+        suppressHydrationWarning
+        className={`${heebo.className} min-h-full flex flex-col bg-surface antialiased`}
+      >
         <ImpersonationBanner />
         {children}
       </body>

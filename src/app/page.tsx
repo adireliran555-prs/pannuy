@@ -1,7 +1,7 @@
 export const revalidate = 60;
 
 import Link from "next/link";
-import { Camera, CheckCircle, ShieldCheck, Search, Calendar } from "lucide-react";
+import { Camera, CheckCircle, ShieldCheck, Search, Calendar, Sparkles, ChevronLeft } from "lucide-react";
 import Navbar from "@/components/common/Navbar";
 import HeroSearch from "@/components/common/HeroSearch";
 import prisma from "@/lib/prisma";
@@ -18,7 +18,7 @@ export default async function HomePage() {
       {/* ══════════════════════════════════════
           HERO SECTION
       ══════════════════════════════════════ */}
-      <section className="relative min-h-screen flex items-center justify-center py-20 sm:py-24">
+      <section className="relative min-h-[100svh] flex items-center justify-center py-6 sm:py-10">
         {/* Background + decorative blobs (clipped to the hero so content is never cut off) */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-rose-50 via-amber-50 to-primary-light" />
@@ -28,27 +28,51 @@ export default async function HomePage() {
         </div>
 
         {/* Content */}
-        <div className="relative z-10 text-center px-6 max-w-3xl mx-auto w-full">
-          <div className="mb-6 flex justify-center">
-            <TopEventsLogo size="lg" className="scale-110 sm:scale-125" />
+        <div className="relative z-10 text-center px-6 max-w-md mx-auto w-full">
+          <div className="mb-3 flex justify-center">
+            <TopEventsLogo size="md" />
           </div>
 
           {/* Main tagline */}
-          <h1 className="text-2xl sm:text-4xl font-bold text-text-main leading-tight mb-4">
+          <h1 className="text-2xl sm:text-3xl font-bold text-text-main leading-tight mb-1.5">
             מצאו את הספקים המושלמים
-            <br />
+            {" "}
             <span className="text-primary">לאירוע שלכם</span>
           </h1>
 
           {/* Sub-tagline */}
-          <p className="text-base sm:text-lg text-text-muted mb-8 max-w-xl mx-auto">
+          <p className="text-sm text-text-muted mb-5">
             בדיקת זמינות בזמן אמת&nbsp;·&nbsp;קביעת פגישה ישירות&nbsp;·&nbsp;ספקים מאומתים
           </p>
 
-          {/* Quick search */}
+          {/* ── PRIMARY path: plan with us ── */}
+          <Link
+            href="/plan"
+            className="group flex items-center gap-4 text-right rounded-2xl bg-gradient-to-br from-primary to-primary-dark p-5 text-white shadow-[var(--shadow-card-hover)] transition-all hover:-translate-y-0.5"
+          >
+            <div className="w-12 h-12 shrink-0 rounded-2xl bg-white/20 flex items-center justify-center">
+              <Sparkles className="h-6 w-6 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-lg font-bold leading-tight">בואו נתכנן אירוע יחד</div>
+              <p className="text-sm text-white/85 leading-snug mt-0.5">
+                נלווה אתכם צעד־צעד — אולם, קייטרינג, צלם והכל בתקציב שלכם
+              </p>
+            </div>
+            <ChevronLeft className="h-6 w-6 shrink-0 transition-transform group-hover:-translate-x-1" />
+          </Link>
+
+          {/* ── Fork divider ── */}
+          <div className="flex items-center gap-3 my-4">
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-text-muted text-xs">או יודעים מה אתם מחפשים?</span>
+            <div className="flex-1 h-px bg-border" />
+          </div>
+
+          {/* ── SECONDARY path: quick search ── */}
           <HeroSearch />
 
-          <p className="mt-6 text-sm text-text-muted">
+          <p className="mt-4 text-sm text-text-muted">
             כבר רשומים?{" "}
             <Link href="/start" className="text-primary font-semibold underline underline-offset-2">
               התחברו

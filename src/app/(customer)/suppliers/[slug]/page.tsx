@@ -13,6 +13,7 @@ export const revalidate = 300;
 
 interface PageProps {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ plan?: string; cat?: string }>;
 }
 
 const SUPPLIER_SELECT = {
@@ -92,8 +93,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function SupplierProfilePage({ params }: PageProps) {
+export default async function SupplierProfilePage({
+  params,
+  searchParams,
+}: PageProps) {
   const { slug } = await params;
+  const { plan, cat } = await searchParams;
 
   const raw = await prisma.supplier.findUnique({
     where: { slug },
@@ -103,6 +108,18 @@ export default async function SupplierProfilePage({ params }: PageProps) {
   if (!raw) notFound();
 
   const supplier = normalizeSupplier(raw);
+
+  // Plan-aware: only when arriving from a plan step with a matching category.
+  const planMode = Boolean(plan) && cat === raw.category;
+  const planPackages = raw.packages.map((p) => ({
+    id: p.id,
+    nameHe: p.nameHe,
+    descHe: p.descHe,
+    price: p.price,
+    hours: p.hours,
+    includes: p.includes,
+    isPopular: p.isPopular,
+  }));
 
   const categoryLabel = CATEGORY_LABELS_SINGULAR[raw.category] ?? raw.category;
   const coverPhoto = supplier.coverPhoto;
@@ -138,7 +155,12 @@ export default async function SupplierProfilePage({ params }: PageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <SupplierProfileClient supplier={supplier} />
+      <SupplierProfileClient
+        supplier={supplier}
+        planMode={planMode && Boolean(plan)}
+        planEventId={plan}
+        planPackages={planPackages}
+      />
     </>
   );
 }

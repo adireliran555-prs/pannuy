@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
-import { Search, Heart, Calendar, User, Camera } from "lucide-react";
+import { Search, Heart, Calendar, User, Camera, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Button from "@/components/ui/Button";
 import TopEventsLogo from "@/components/common/TopEventsLogo";
 
 const MOBILE_NAV = [
+  { href: "/plan", label: "התוכנית", icon: ClipboardList },
   { href: "/search", label: "גלו", icon: Search },
   { href: "/dashboard/saved", label: "שמורים", icon: Heart },
   { href: "/dashboard/meetings", label: "פגישות", icon: Calendar },
@@ -36,7 +37,7 @@ export default function Navbar() {
       {/* Desktop Top Navbar */}
       <header className="hidden sm:block sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-border">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          {/* Logo — right side in RTL */}
+          {/* Logo + nav — right side in RTL */}
           <div className="flex items-center gap-8">
             <TopEventsLogo href="/" size="md" />
             <nav className="flex items-center gap-6">
@@ -51,15 +52,45 @@ export default function Navbar() {
               >
                 גלו ספקים
               </Link>
+              {isLoggedIn && (
+                <>
+                  <Link
+                    href="/plan"
+                    className={cn(
+                      "text-sm font-semibold transition-colors",
+                      pathname.startsWith("/plan")
+                        ? "text-primary"
+                        : "text-text-muted hover:text-text-main"
+                    )}
+                  >
+                    התוכנית שלי
+                  </Link>
+                  <Link
+                    href="/dashboard/meetings"
+                    className={cn(
+                      "text-sm font-semibold transition-colors",
+                      pathname.startsWith("/dashboard/meetings")
+                        ? "text-primary"
+                        : "text-text-muted hover:text-text-main"
+                    )}
+                  >
+                    הפגישות שלי
+                  </Link>
+                </>
+              )}
             </nav>
           </div>
 
-          {/* Auth buttons — left side in RTL */}
+          {/* Account — left side (top-left) in RTL */}
           <div className="flex items-center gap-3">
             {isLoggedIn ? (
-              <Link href="/dashboard/meetings">
-                <Button size="sm" variant="secondary">
-                  הפגישות שלי
+              <Link href="/dashboard/profile">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  leftIcon={<User className="h-4 w-4" />}
+                >
+                  הפרופיל שלי
                 </Button>
               </Link>
             ) : (

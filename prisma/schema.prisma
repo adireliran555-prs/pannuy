@@ -7,24 +7,25 @@ datasource db {
 }
 
 model User {
-  id              String    @id @default(uuid())
-  phone           String    @unique
-  name            String
-  email           String?
-  weddingDate     DateTime?
-  weddingArea     String?
-  weddingAreaLat  Float?
-  weddingAreaLng  Float?
-  sessionToken    String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id             String    @id @default(uuid())
+  phone          String    @unique
+  name           String
+  email          String?
+  weddingDate    DateTime?
+  weddingArea    String?
+  weddingAreaLat Float?
+  weddingAreaLng Float?
+  sessionToken   String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
-  meetings      Meeting[]      @relation("CustomerMeetings")
+  meetings      Meeting[]       @relation("CustomerMeetings")
   saved         SavedSupplier[]
   reviews       Review[]
   notifications Notification[]
   profileViews  ProfileView[]
   referrals     Referral[]
+  events        Event[]
 }
 
 model Otp {
@@ -40,54 +41,57 @@ model Otp {
 }
 
 model Supplier {
-  id                   String             @id @default(uuid())
-  slug                 String             @unique
-  name                 String
-  phone                String             @unique
-  email                String?
-  category             Category           @default(PHOTOGRAPHER)
-  bioHe                String?            @db.Text
-  city                 String?
-  serviceAreas         String[]
-  supportedEventTypes  String[]           @default(["wedding"])
-  basePriceFrom        Int?
-  basePriceTo          Int?
-  ratingAvg            Float              @default(0)
-  ratingCount          Int                @default(0)
-  isVerified           Boolean            @default(false)
-  isActive             Boolean            @default(false)
-  googleCalendarId     String?
-  googleRefreshToken   String?
-  googleAccessToken    String?
-  googleTokenExpiry    DateTime?
-  responseRate         Float?
-  sessionToken         String?
-  createdAt            DateTime           @default(now())
-  updatedAt            DateTime           @updatedAt
-  affiliateCode        String?            @unique
-  warningCount         Int                @default(0)
-  subscriptionStatus   SubscriptionStatus @default(INACTIVE)
-  subscriptionStartAt  DateTime?
-  highlights           String[]           // admin-curated praise points (replaces star reviews)
-  googleChannelId      String?            // Google Calendar push-notification channel
-  googleChannelToken   String?            // secret token validated on webhook calls
-  googleResourceId     String?
-  googleChannelExpiry  DateTime?
+  id                  String             @id @default(uuid())
+  slug                String             @unique
+  name                String
+  phone               String             @unique
+  email               String?
+  category            Category           @default(PHOTOGRAPHER)
+  bioHe               String?            @db.Text
+  city                String?
+  serviceAreas        String[]
+  supportedEventTypes String[]           @default(["wedding"])
+  basePriceFrom       Int?
+  basePriceTo         Int?
+  ratingAvg           Float              @default(0)
+  ratingCount         Int                @default(0)
+  isVerified          Boolean            @default(false)
+  isActive            Boolean            @default(false)
+  googleCalendarId    String?
+  googleRefreshToken  String?
+  googleAccessToken   String?
+  googleTokenExpiry   DateTime?
+  responseRate        Float?
+  sessionToken        String?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  affiliateCode       String?            @unique
+  warningCount        Int                @default(0)
+  subscriptionStatus  SubscriptionStatus @default(INACTIVE)
+  subscriptionStartAt DateTime?
+  highlights          String[] // admin-curated praise points (replaces star reviews)
+  googleChannelId     String? // Google Calendar push-notification channel
+  googleChannelToken  String? // secret token validated on webhook calls
+  googleResourceId    String?
+  googleChannelExpiry DateTime?
 
   photos             SupplierPhoto[]
   packages           SupplierPackage[]
   availability       AvailabilitySlot[]
-  meetings           Meeting[]          @relation("SupplierMeetings")
+  meetings           Meeting[]              @relation("SupplierMeetings")
   reviews            Review[]
   savedBy            SavedSupplier[]
   notifications      Notification[]
   profileViews       ProfileView[]
-  earningsAsReferrer AffiliateEarning[] @relation("EarningsAsReferrer")
-  earningsAsReceiver AffiliateEarning[] @relation("EarningsAsReceiver")
+  earningsAsReferrer AffiliateEarning[]     @relation("EarningsAsReferrer")
+  earningsAsReceiver AffiliateEarning[]     @relation("EarningsAsReceiver")
   warnings           SupplierWarning[]
   payments           PaymentTransaction[]
   payoutRequests     PayoutRequest[]
   referrals          Referral[]
+  planItems          EventPlanItem[]
+  relationshipsFrom  SupplierRelationship[] @relation("RelFrom")
+  relationshipsTo    SupplierRelationship[] @relation("RelTo")
 
   @@index([category])
   @@index([isActive, isVerified])
@@ -110,9 +114,9 @@ model PaymentTransaction {
   type        PaymentType
   amountIls   Int
   status      PaymentStatus @default(PENDING)
-  provider    String?       // e.g. "payplus"
-  providerRef String?       // gateway transaction id
-  meetingId   String?       // for deposit charges
+  provider    String? // e.g. "payplus"
+  providerRef String? // gateway transaction id
+  meetingId   String? // for deposit charges
   note        String?
   createdAt   DateTime      @default(now())
   settledAt   DateTime?
@@ -166,11 +170,11 @@ enum Category {
   FLORIST
   DJ
   CATERING
-  VENUE           // אולם/גני אירועים
-  HAIR_STYLIST    // מסרקות
-  MAKEUP_ARTIST   // מאפרות
-  PHOTO_BOOTH     // צלמי מגנטים
-  EVENT_PRODUCER  // הושבה/מפיקים
+  VENUE // אולם/גני אירועים
+  HAIR_STYLIST // מסרקות
+  MAKEUP_ARTIST // מאפרות
+  PHOTO_BOOTH // צלמי מגנטים
+  EVENT_PRODUCER // הושבה/מפיקים
 }
 
 enum SubscriptionStatus {
@@ -301,7 +305,7 @@ model AffiliateEarning {
   meetingId           String          @unique
   amountIls           Int
   status              AffiliateStatus @default(PENDING)
-  payoutRequestId     String?         // set when claimed by a payout request
+  payoutRequestId     String? // set when claimed by a payout request
   createdAt           DateTime        @default(now())
   paidAt              DateTime?
 
@@ -406,4 +410,93 @@ model ProfileView {
 
   @@index([supplierId, createdAt])
   @@index([createdAt])
+}
+
+// ─── Guided event planning ("plan an event with us" journey) ────────────────
+
+model Event {
+  id           String      @id @default(uuid())
+  userId       String
+  type         String      @default("wedding") // event type id (see lib/event-types)
+  date         DateTime?   @db.Date
+  dateFlexible Boolean     @default(false)
+  areas        String[]
+  city         String?
+  guestCount   Int?
+  budgetMode   BudgetMode  @default(TOTAL)
+  budgetAmount Int? // TOTAL: full event budget in ILS. PER_GUEST: ILS per guest.
+  vibeTags     String[]
+  kosher       Boolean     @default(false)
+  status       EventStatus @default(ACTIVE)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  user  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items EventPlanItem[]
+
+  @@index([userId, status])
+}
+
+model EventPlanItem {
+  id                 String         @id @default(uuid())
+  eventId            String
+  category           Category
+  sortOrder          Int            @default(0)
+  status             PlanItemStatus @default(PENDING)
+  allocatedBudget    Int? // recommended budget for this category (ILS)
+  selectedSupplierId String?
+  selectedPackageId  String? // SupplierPackage id (no FK; package list is mutable)
+  committedPrice     Int? // locked total once selected (per-guest categories = price x guests)
+  notes              String?        @db.Text
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  event            Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  selectedSupplier Supplier? @relation(fields: [selectedSupplierId], references: [id], onDelete: SetNull)
+
+  @@unique([eventId, category])
+  @@index([eventId])
+}
+
+// Placeholder for venue↔supplier (and cross-vendor) relationships. Empty at
+// launch; admin populates later. PREFERRED/RECOMMENDED float partners to the
+// top; EXCLUSIVE (future) would restrict the offering for that category.
+model SupplierRelationship {
+  id             String               @id @default(uuid())
+  fromSupplierId String
+  toSupplierId   String
+  category       Category // the category the "to" supplier fills for the "from" supplier
+  type           SupplierRelationType @default(PREFERRED)
+  createdAt      DateTime             @default(now())
+
+  fromSupplier Supplier @relation("RelFrom", fields: [fromSupplierId], references: [id], onDelete: Cascade)
+  toSupplier   Supplier @relation("RelTo", fields: [toSupplierId], references: [id], onDelete: Cascade)
+
+  @@unique([fromSupplierId, toSupplierId])
+  @@index([fromSupplierId, category])
+}
+
+enum EventStatus {
+  ACTIVE
+  ARCHIVED
+  COMPLETED
+}
+
+enum PlanItemStatus {
+  PENDING // not started
+  BROWSING // opened the category, not yet chosen
+  SELECTED // picked a supplier + package
+  SKIPPED // deferred for later
+  NOT_NEEDED // explicitly not required for this event
+}
+
+enum BudgetMode {
+  TOTAL
+  PER_GUEST
+}
+
+enum SupplierRelationType {
+  EXCLUSIVE
+  PREFERRED
+  RECOMMENDED
 }

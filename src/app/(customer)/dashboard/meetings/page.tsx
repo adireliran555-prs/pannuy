@@ -3,22 +3,23 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Calendar, Video, Phone, Users, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { Calendar, Video, Phone, Users, Clock, CheckCircle, XCircle, AlertCircle, ClipboardList } from "lucide-react";
 import DashboardLayout from "@/components/common/DashboardLayout";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import EmptyState from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useMeetings } from "@/hooks/useMeetings";
+import { useEvent } from "@/hooks/useEvent";
 import { formatHebrewDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
 type Tab = "upcoming" | "past" | "cancelled";
 
 const MEETING_TYPE_ICONS: Record<string, React.ElementType> = {
-  video: Video,
-  phone: Phone,
-  "in-person": Users,
+  VIDEO: Video,
+  PHONE: Phone,
+  IN_PERSON: Users,
 };
 
 const MEETING_TYPE_LABELS: Record<string, string> = {
@@ -60,6 +61,8 @@ export default function MeetingsPage() {
   const [cancelError, setCancelError] = useState("");
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const { upcoming, past, cancelled, isLoading, mutate } = useMeetings();
+  const { event } = useEvent();
+  const hasActivePlan = event != null;
 
   const tabs: { id: Tab; label: string; count?: number }[] = [
     { id: "upcoming", label: "קרובות", count: upcoming.length },
@@ -106,6 +109,20 @@ export default function MeetingsPage() {
           </p>
         </div>
 
+        {/* Back to the active event plan */}
+        {hasActivePlan && (
+          <Link
+            href="/plan"
+            className="flex items-center justify-between gap-3 bg-primary-light border border-primary/20 rounded-2xl px-4 py-3.5 transition-colors hover:bg-primary-light/70"
+          >
+            <span className="flex items-center gap-2.5 text-primary-dark font-semibold">
+              <ClipboardList className="h-5 w-5 flex-shrink-0" />
+              חזרה לתוכנית האירוע
+            </span>
+            <span className="text-primary-dark text-sm">‹</span>
+          </Link>
+        )}
+
         {/* Cancel error */}
         {cancelError && (
           <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-700 text-sm font-semibold">
@@ -114,7 +131,9 @@ export default function MeetingsPage() {
           </div>
         )}
 
-        {/* Tabs */}
+        {/* Tabs — sticky. Solid opaque background so scrolled list content
+            never bleeds through, with a subtle bottom border + shadow. */}
+        <div className="sticky top-0 sm:top-16 z-30 -mx-4 border-b border-border bg-surface px-4 pb-3 pt-2 shadow-sm sm:-mx-6 sm:px-6">
         <div className="flex gap-1 bg-gray-100 rounded-2xl p-1">
           {tabs.map(({ id, label, count }) => (
             <button
@@ -142,6 +161,7 @@ export default function MeetingsPage() {
               )}
             </button>
           ))}
+        </div>
         </div>
 
         {/* Meetings list */}
@@ -281,19 +301,33 @@ export default function MeetingsPage() {
           </div>
         )}
 
-        {/* CTA if no upcoming meetings */}
+        {/* CTA if no upcoming meetings. With an active plan the search box is
+            demoted to a small secondary line — the plan is the main path.
+            Without a plan, keep the big central discovery card. */}
         {activeTab === "upcoming" && !isLoading && meetings.length === 0 && (
-          <div className="bg-gradient-to-br from-rose-50 to-amber-50 rounded-2xl p-6 text-center border border-border">
-            <p className="text-text-main font-semibold mb-2">
-              מוכנים להתחיל לחפש? 📸
+          hasActivePlan ? (
+            <p className="text-center text-sm text-text-muted">
+              רוצים להוסיף ספק?{" "}
+              <Link
+                href="/search"
+                className="font-semibold text-primary hover:text-primary-dark"
+              >
+                גלו ספקים פנויים
+              </Link>
             </p>
-            <p className="text-text-muted text-sm mb-4">
-              גלו ספקים פנויים בתאריך ובאזור שלכם
-            </p>
-            <Link href="/search">
-              <Button>גלו ספקים</Button>
-            </Link>
-          </div>
+          ) : (
+            <div className="bg-gradient-to-br from-rose-50 to-amber-50 rounded-2xl p-6 text-center border border-border">
+              <p className="text-text-main font-semibold mb-2">
+                מוכנים להתחיל לחפש? 📸
+              </p>
+              <p className="text-text-muted text-sm mb-4">
+                גלו ספקים פנויים בתאריך ובאזור שלכם
+              </p>
+              <Link href="/search">
+                <Button>גלו ספקים</Button>
+              </Link>
+            </div>
+          )
         )}
       </div>
     </DashboardLayout>

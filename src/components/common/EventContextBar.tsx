@@ -111,7 +111,7 @@ export default function EventContextBar() {
 
   return (
     <>
-      <div className="sticky top-0 sm:top-16 z-30 bg-primary/5 border-b border-primary/15">
+      <div className="sticky top-0 sm:top-16 z-30 bg-surface border-b border-primary/15 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2 flex items-center gap-2 flex-wrap text-sm">
           <span className="font-bold text-text-main text-xs uppercase tracking-wide text-primary">
             האירוע שלכם

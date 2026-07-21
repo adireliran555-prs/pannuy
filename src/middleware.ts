@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const CUSTOMER_PROTECTED_PREFIXES = ["/dashboard", "/search"];
+const CUSTOMER_PROTECTED_PREFIXES = ["/dashboard", "/search", "/plan"];
 const SUPPLIER_PROTECTED_PREFIXES = [
   "/supplier/dashboard",
   "/supplier/bookings",

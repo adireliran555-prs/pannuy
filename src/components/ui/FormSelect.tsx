@@ -48,7 +48,7 @@ export default function FormSelect({
   const selected = options.find((o) => o.value === value);
 
   return (
-    <div ref={rootRef} className={cn(ghost ? "relative space-y-1" : "space-y-1.5", className)}>
+    <div ref={rootRef} className={cn("relative", ghost ? "space-y-1" : "space-y-1.5", className)}>
       {label && (
         <label
           id={`${id}-label`}
@@ -92,8 +92,8 @@ export default function FormSelect({
       {open && (
         <div
           className={cn(
-            "rounded-xl border border-border bg-white shadow-[var(--shadow-dropdown)] overflow-hidden z-50",
-            ghost && "absolute inset-x-0 top-full mt-2"
+            "absolute inset-x-0 top-full mt-2 z-50",
+            "rounded-xl border border-border bg-white shadow-[var(--shadow-dropdown)] overflow-hidden"
           )}
         >
           {options.map((opt) => {
