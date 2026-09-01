@@ -16,6 +16,7 @@ import { CATEGORY_LABELS } from "@/lib/categories";
 import TopEventsLogo from "@/components/common/TopEventsLogo";
 import EventTypePicker from "@/components/common/EventTypePicker";
 import { uploadToCloudinary, cloudinaryEnabled } from "@/lib/cloudinary";
+import { SUPPLIER_AGREEMENT_URL } from "@/lib/legal";
 
 // Categories offered when joining — legacy categories (FLORIST, BRIDAL_SUITE) are excluded.
 const JOIN_CATEGORIES = [
@@ -79,6 +80,10 @@ export default function SupplierJoinPage() {
   const [otp, setOtp] = useState("");
   const [otpError, setOtpError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [agreementAccepted, setAgreementAccepted] = useState(false);
+  const [commissionAccepted, setCommissionAccepted] = useState(false);
+  const [circumventionAccepted, setCircumventionAccepted] = useState(false);
+  const [agreementAttempted, setAgreementAttempted] = useState(false);
 
   // Step 2 state
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -205,7 +210,12 @@ export default function SupplierJoinPage() {
     resolver: zodResolver(step1Schema),
   });
 
+  const allAgreementsAccepted =
+    agreementAccepted && commissionAccepted && circumventionAccepted;
+
   const onStep1Submit = async (data: Step1Data) => {
+    setAgreementAttempted(true);
+    if (!allAgreementsAccepted) return;
     setIsLoading(true);
     try {
       const res = await fetch("/api/supplier/auth/send-otp", {
@@ -234,7 +244,13 @@ export default function SupplierJoinPage() {
         const res = await fetch("/api/supplier/auth/verify-otp", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ phone, otp: value, name, email }),
+          body: JSON.stringify({
+            phone,
+            otp: value,
+            name,
+            email,
+            agreementAccepted: allAgreementsAccepted,
+          }),
         });
         const json = await res.json();
         if (!res.ok) {
@@ -416,6 +432,58 @@ export default function SupplierJoinPage() {
                   error={errors.email?.message}
                   {...register("email")}
                 />
+                <div className="space-y-3 pt-2 border-t border-border">
+                  <p className="text-xs font-semibold text-text-muted">
+                    לפני ההצטרפות, יש לאשר את{" "}
+                    <Link
+                      href={SUPPLIER_AGREEMENT_URL}
+                      target="_blank"
+                      className="text-primary underline"
+                    >
+                      הסכם ההתקשרות עם ספקים
+                    </Link>
+                    :
+                  </p>
+                  <label className="flex items-start gap-2 text-sm text-text-main cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 rounded accent-primary"
+                      checked={agreementAccepted}
+                      onChange={(e) => setAgreementAccepted(e.target.checked)}
+                    />
+                    <span>קראתי ואני מאשר/ת את הסכם ההתקשרות עם ספקים במלואו.</span>
+                  </label>
+                  <label className="flex items-start gap-2 text-sm text-text-main cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 rounded accent-primary"
+                      checked={commissionAccepted}
+                      onChange={(e) => setCommissionAccepted(e.target.checked)}
+                    />
+                    <span>
+                      קראתי ואני מאשר/ת במיוחד את סעיף העמלות: דמי מנוי חודשיים
+                      אחרי תקופת ניסיון חינם, ועמלת הצלחה מכל עסקה שמקורה בפנייה
+                      מהפלטפורמה.
+                    </span>
+                  </label>
+                  <label className="flex items-start gap-2 text-sm text-text-main cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 rounded accent-primary"
+                      checked={circumventionAccepted}
+                      onChange={(e) => setCircumventionAccepted(e.target.checked)}
+                    />
+                    <span>
+                      קראתי ואני מאשר/ת את סעיף איסור עקיפת הפלטפורמה, לרבות
+                      פיצוי מוסכם במקרה הפרה.
+                    </span>
+                  </label>
+                  {agreementAttempted && !allAgreementsAccepted && (
+                    <p className="text-red-500 text-xs font-medium">
+                      יש לאשר את שלושת התיבות כדי להמשיך
+                    </p>
+                  )}
+                </div>
                 <Button type="submit" fullWidth size="lg" isLoading={isLoading}>
                   המשיכו
                 </Button>

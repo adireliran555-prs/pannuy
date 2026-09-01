@@ -70,6 +70,9 @@ model Supplier {
   subscriptionStatus  SubscriptionStatus @default(INACTIVE)
   subscriptionStartAt DateTime?
   highlights          String[] // admin-curated praise points (replaces star reviews)
+  agreementVersion    String? // supplier agreement version accepted at signup
+  agreementAcceptedAt DateTime?
+  agreementAcceptedIp String?
   googleChannelId     String? // Google Calendar push-notification channel
   googleChannelToken  String? // secret token validated on webhook calls
   googleResourceId    String?

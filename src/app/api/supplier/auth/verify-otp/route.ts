@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { verifyOtp, signSupplierToken } from "@/lib/auth";
 import { normalizeIsraeliPhone } from "@/lib/utils";
 import { SupplierSession } from "@/types";
+import { SUPPLIER_AGREEMENT_VERSION } from "@/lib/legal";
 
 const SESSION_COOKIE_MAX_AGE = 7 * 24 * 60 * 60;
 const MAX_OTP_ATTEMPTS = 5;
@@ -18,10 +19,11 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const phone = normalizeIsraeliPhone(String(body.phone ?? ""));
-    const { otp, name, email } = body as {
+    const { otp, name, email, agreementAccepted } = body as {
       otp?: string;
       name?: string;
       email?: string;
+      agreementAccepted?: boolean;
     };
 
     if (!phone || !otp) {
@@ -30,6 +32,20 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    const existingSupplierCheck = await prisma.supplier.findUnique({
+      where: { phone },
+      select: { id: true },
+    });
+    if (!existingSupplierCheck && !agreementAccepted) {
+      return NextResponse.json(
+        { success: false, error: "יש לאשר את הסכם ההתקשרות עם ספקים" },
+        { status: 400 }
+      );
+    }
+
+    const forwardedFor = request.headers.get("x-forwarded-for");
+    const ip = forwardedFor?.split(",")[0]?.trim() ?? null;
 
     const skipOtpCheck =
       process.env.NODE_ENV !== "production" &&
@@ -63,6 +79,9 @@ export async function POST(request: NextRequest) {
             name: supplierName,
             slug,
             ...(email ? { email } : {}),
+            agreementVersion: SUPPLIER_AGREEMENT_VERSION,
+            agreementAcceptedAt: new Date(),
+            agreementAcceptedIp: ip,
           },
         });
       });
