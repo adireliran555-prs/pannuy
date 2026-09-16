@@ -461,9 +461,8 @@ export default function SupplierJoinPage() {
                       onChange={(e) => setCommissionAccepted(e.target.checked)}
                     />
                     <span>
-                      קראתי ואני מאשר/ת במיוחד את סעיף העמלות: דמי מנוי חודשיים
-                      אחרי תקופת ניסיון חינם, ועמלת הצלחה מכל עסקה שמקורה בפנייה
-                      מהפלטפורמה.
+                      קראתי ואני מאשר/ת במיוחד את סעיף העמלות: עמלת הצלחה בלבד
+                      מכל עסקה שמקורה בפנייה מהפלטפורמה — ללא דמי מנוי חודשיים.
                     </span>
                   </label>
                   <label className="flex items-start gap-2 text-sm text-text-main cursor-pointer">
@@ -474,8 +473,9 @@ export default function SupplierJoinPage() {
                       onChange={(e) => setCircumventionAccepted(e.target.checked)}
                     />
                     <span>
-                      קראתי ואני מאשר/ת את סעיף איסור עקיפת הפלטפורמה, לרבות
-                      פיצוי מוסכם במקרה הפרה.
+                      קראתי ואני מאשר/ת את סעיף איסור עקיפת הפלטפורמה ואת תקופת
+                      ההתקשרות (שנה, מתחדשת אוטומטית אלא בהודעה של 90 יום
+                      מראש), לרבות פיצוי מוסכם בסך 40,000 ₪ במקרה הפרה.
                     </span>
                   </label>
                   {agreementAttempted && !allAgreementsAccepted && (
