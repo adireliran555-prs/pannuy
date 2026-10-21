@@ -66,7 +66,7 @@ export default function MeetingsPage() {
 
   const tabs: { id: Tab; label: string; count?: number }[] = [
     { id: "upcoming", label: "קרובות", count: upcoming.length },
-    { id: "past", label: "עבר", count: past.length },
+    { id: "past", label: "הסתיימו", count: past.length },
     { id: "cancelled", label: "בוטלו", count: cancelled.length },
   ];
 

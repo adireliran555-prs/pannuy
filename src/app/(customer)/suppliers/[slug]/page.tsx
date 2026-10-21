@@ -68,7 +68,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const title = `${raw.name} — ${category}${raw.city ? ` · ${raw.city}` : ""}`;
   const description =
     raw.bioHe?.slice(0, 155) ||
-    `${raw.name}, ${category}${raw.city ? ` ב-${raw.city}` : ""}. בדקו זמינות וקבעו פגישה ב-${BRAND_NAME}.`;
+    `${raw.name}, ${category}${raw.city ? ` ב־${raw.city}` : ""}. בדקו זמינות וקבעו פגישה ב־${BRAND_NAME}.`;
   const ogImage = raw.photos[0]?.cloudinaryUrl ?? OG_IMAGE_PATH;
   const url = `${APP_URL}/suppliers/${slug}`;
 
@@ -136,7 +136,7 @@ export default async function SupplierProfilePage({
       addressCountry: "IL",
     },
     ...(raw.basePriceFrom
-      ? { priceRange: `₪${raw.basePriceFrom}+` }
+      ? { priceRange: `החל מ־₪${raw.basePriceFrom}` }
       : {}),
     ...(raw.ratingCount && raw.ratingCount > 0
       ? {

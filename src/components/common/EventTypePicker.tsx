@@ -49,7 +49,7 @@ export default function EventTypePicker({
               type="button"
               onClick={() => toggle(id)}
               className={cn(
-                "flex items-center gap-2 p-3 rounded-xl border-2 text-right text-sm font-semibold transition-all",
+                "flex items-center gap-2 p-3 rounded-xl border-2 text-start text-sm font-semibold transition-all",
                 selected
                   ? "border-primary bg-primary text-white"
                   : "border-border text-text-main hover:border-primary/40 bg-white"

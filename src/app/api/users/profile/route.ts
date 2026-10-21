@@ -3,6 +3,14 @@ import prisma from "@/lib/prisma";
 import { requireCustomerSession, getCustomerSession } from "@/lib/api-auth";
 import { signCustomerToken } from "@/lib/auth";
 import { CustomerSession } from "@/types";
+import { z } from "zod";
+
+const patchSchema = z.object({
+  name: z.string().trim().min(1).max(100).optional(),
+  weddingDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  weddingArea: z.string().max(200).optional(),
+  email: z.string().email().max(200).optional(),
+});
 
 const SESSION_COOKIE_MAX_AGE = 7 * 24 * 60 * 60;
 
@@ -32,20 +40,18 @@ export async function PATCH(request: NextRequest) {
     const { session, error } = requireCustomerSession(request);
     if (error) return error;
 
-    const body = await request.json();
-    const { name, weddingDate, weddingArea, email } = body as {
-      name?: string;
-      weddingDate?: string;
-      email?: string;
-      weddingArea?: string;
-    };
+    const parsed = patchSchema.safeParse(await request.json().catch(() => null));
+    if (!parsed.success) {
+      return NextResponse.json({ success: false, error: "נתונים לא תקינים" }, { status: 400 });
+    }
+    const { name, weddingDate, weddingArea, email } = parsed.data;
 
     const updated = await prisma.user.update({
       where: { id: session.id },
       data: {
         ...(name ? { name } : {}),
         ...(email ? { email } : {}),
-        ...(weddingDate ? { weddingDate: new Date(weddingDate) } : {}),
+        ...(weddingDate ? { weddingDate: new Date(`${weddingDate}T00:00:00Z`) } : {}),
         ...(weddingArea ? { weddingArea } : {}),
       },
     });

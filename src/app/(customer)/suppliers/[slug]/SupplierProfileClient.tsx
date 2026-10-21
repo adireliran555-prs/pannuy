@@ -29,15 +29,11 @@ import ProfilePlanPicker from "@/components/plan/PlanSupplierCard";
 import { pushRecentlyViewed } from "@/lib/recently-viewed";
 import { EVENT_CONTEXT_CHANGED, getEventContext } from "@/lib/event-context";
 import { withReturnTo } from "@/lib/return-to";
+import { REGIONS } from "@/lib/regions";
 
-const MARKET_PRICE_RANGES: Record<string, { min: number; max: number; avg: number }> = {
-  PHOTOGRAPHER: { min: 3000, max: 15000, avg: 8500 },
-  VIDEOGRAPHER: { min: 4000, max: 18000, avg: 9000 },
-  BRIDAL_SUITE: { min: 800, max: 5000, avg: 2500 },
-  DJ: { min: 2500, max: 8000, avg: 4500 },
-  FLORIST: { min: 3000, max: 20000, avg: 9000 },
-  CATERING: { min: 150, max: 500, avg: 280 },
-};
+const REGION_LABEL: Record<string, string> = Object.fromEntries(
+  REGIONS.map((r) => [r.id, r.label])
+);
 
 export default function SupplierProfileClient({
   supplier,
@@ -171,7 +167,7 @@ export default function SupplierProfileClient({
 
   const handleShare = async () => {
     const url = window.location.href;
-    const text = `בדקו את ${supplier.name} ב-${BRAND_NAME} 💍`;
+    const text = `בדקו את ${supplier.name} ב־${BRAND_NAME} 💍`;
     if (navigator.share) {
       await navigator.share({ title: supplier.name, text, url }).catch(() => {});
     } else {
@@ -182,6 +178,7 @@ export default function SupplierProfileClient({
   };
 
   const handleWhatsApp = () => {
+    if (!waPhone) return;
     // Record this as a referral (lead) so we can follow it up — fire-and-forget
     // so it never blocks opening WhatsApp.
     fetch("/api/referrals", {
@@ -190,7 +187,7 @@ export default function SupplierProfileClient({
       body: JSON.stringify({ supplierId: supplier.id, channel: "WHATSAPP" }),
       keepalive: true,
     }).catch(() => {});
-    const msg = encodeURIComponent(`היי ${supplier.name}, ראיתי את הפרופיל שלך ב-${BRAND_NAME} ואשמח לשמוע פרטים 🎉`);
+    const msg = encodeURIComponent(`היי ${supplier.name}, ראיתי את הפרופיל שלך ב־${BRAND_NAME} ואשמח לשמוע פרטים 🎉`);
     window.open(`https://wa.me/${waPhone}?text=${msg}`, "_blank");
   };
 
@@ -210,7 +207,7 @@ export default function SupplierProfileClient({
     <div className="min-h-screen bg-surface pb-28 lg:pb-8">
       {/* ── Sticky top bar (shows on scroll) ── */}
       <div className={cn(
-        "fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-border shadow-sm transition-all duration-300",
+        "fixed top-0 inset-x-0 z-50 bg-white/95 backdrop-blur-sm border-b border-border shadow-sm transition-all duration-300",
         showStickyBar ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"
       )}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
@@ -246,17 +243,33 @@ export default function SupplierProfileClient({
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
 
+        {/* Supplier name — bottom-anchored overlay on the cover gradient */}
+        <div className="absolute inset-x-0 bottom-0 pointer-events-none">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-20 sm:pb-24">
+            <h1 className="font-black text-3xl sm:text-4xl text-white [text-shadow:0_2px_8px_rgba(0,0,0,0.6)] leading-tight">
+              {supplier.name}
+            </h1>
+          </div>
+        </div>
+
         {/* Back button */}
         <button
-          onClick={() => router.back()}
-          className="absolute top-4 right-4 p-2.5 bg-white/90 backdrop-blur-sm rounded-full text-text-main hover:bg-white transition-colors shadow-md"
+          type="button"
+          aria-label="חזרה"
+          onClick={() => {
+            if (window.history.length > 1) router.back();
+            else router.push("/search");
+          }}
+          className="absolute top-4 end-4 p-2.5 bg-white/90 backdrop-blur-sm rounded-full text-text-main hover:bg-white transition-colors shadow-md"
         >
           <ChevronRight className="h-5 w-5" />
         </button>
 
         {/* Share + Save */}
-        <div className="absolute top-4 left-4 flex gap-2">
+        <div className="absolute top-4 start-4 flex gap-2">
           <button
+            type="button"
+            aria-label={shareSuccess ? "הקישור הועתק" : "שתפו"}
             onClick={handleShare}
             title={shareSuccess ? "הקישור הועתק!" : "שתפו"}
             className={cn(
@@ -269,6 +282,9 @@ export default function SupplierProfileClient({
             <Share2 className="h-5 w-5" />
           </button>
           <button
+            type="button"
+            aria-label={isSaved ? "הסירו מהשמורים" : "שמרו"}
+            aria-pressed={isSaved}
             onClick={handleToggleSave}
             disabled={savePending}
             title={isSaved ? "הסירו מהשמורים" : "שמרו"}
@@ -285,9 +301,6 @@ export default function SupplierProfileClient({
           <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-white shadow-xl flex-shrink-0 bg-primary-light">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={cld(supplier.profilePhoto, CLD_AVATAR)} alt={supplier.name} decoding="async" className="w-full h-full object-cover" />
-          </div>
-          <div className="pb-2 flex-1">
-            <h1 className="font-black text-3xl sm:text-4xl text-white [text-shadow:0_2px_8px_rgba(0,0,0,0.6)]">{supplier.name}</h1>
           </div>
         </div>
 
@@ -349,7 +362,7 @@ export default function SupplierProfileClient({
                     onClick={() => setBioExpanded((v) => !v)}
                     className="mt-2 text-primary font-semibold text-sm hover:text-primary-dark"
                   >
-                    {bioExpanded ? "הצג פחות" : "קראו עוד"}
+                    {bioExpanded ? "הציגו פחות" : "קראו עוד"}
                   </button>
                 )}
                 <div className="mt-4 pt-4 border-t border-border">
@@ -357,7 +370,7 @@ export default function SupplierProfileClient({
                   <div className="flex flex-wrap gap-2">
                     {(supplier.areas as string[]).map((area) => (
                       <span key={area} className="text-xs font-medium bg-surface text-text-muted border border-border px-3 py-1 rounded-full">
-                        {area}
+                        {REGION_LABEL[area] ?? area}
                       </span>
                     ))}
                   </div>
@@ -396,7 +409,7 @@ export default function SupplierProfileClient({
                 <div className="bg-white rounded-2xl border border-border p-6">
                   <AvailabilityCalendar supplierId={supplier.id} />
                   <p className="mt-4 text-xs text-text-muted text-center">
-                    פגישה כוללת 60 דקות · וידאו, טלפון, או פנים אל פנים
+                    הפגישה נמשכת כ־60 דקות · וידאו, טלפון או פנים אל פנים
                   </p>
                 </div>
               </section>
@@ -427,12 +440,6 @@ export default function SupplierProfileClient({
                   )}
                 </p>
                 <p className="text-xs text-text-muted mt-0.5">מחיר לחבילת בסיס</p>
-                {MARKET_PRICE_RANGES[supplier.category] && (
-                  <p className="text-xs text-text-muted mt-1">
-                    טווח שוק: {formatPrice(MARKET_PRICE_RANGES[supplier.category].min)}–{formatPrice(MARKET_PRICE_RANGES[supplier.category].max)}
-                    <span className="text-text-main font-semibold"> · ממוצע {formatPrice(MARKET_PRICE_RANGES[supplier.category].avg)}</span>
-                  </p>
-                )}
               </div>
 
               {/* Availability indicator */}
@@ -477,14 +484,17 @@ export default function SupplierProfileClient({
                     קבעו פגישה
                   </Button>
 
-                  {/* WhatsApp */}
-                  <button
-                    onClick={handleWhatsApp}
-                    className="w-full flex items-center justify-center gap-2 py-3 rounded-full border-2 border-[#25D366] text-[#25D366] hover:bg-[#25D366] hover:text-white font-semibold text-sm transition-all"
-                  >
-                    <Phone className="h-4 w-4" />
-                    שלחו הודעת WhatsApp
-                  </button>
+                  {/* WhatsApp — only when the supplier has a phone on file */}
+                  {waPhone && (
+                    <button
+                      type="button"
+                      onClick={handleWhatsApp}
+                      className="w-full flex items-center justify-center gap-2 py-3 rounded-full border-2 border-[#25D366] text-[#25D366] hover:bg-[#25D366] hover:text-white font-semibold text-sm transition-all"
+                    >
+                      <Phone className="h-4 w-4" />
+                      שלחו הודעת WhatsApp
+                    </button>
+                  )}
 
                   <button
                     onClick={handleToggleSave}
@@ -513,20 +523,23 @@ export default function SupplierProfileClient({
       <SimilarSuppliers currentSupplierId={supplier.id} category={supplier.category} />
 
       {/* ── Mobile sticky CTA ── */}
-      <div className="lg:hidden fixed bottom-16 left-0 right-0 z-40 bg-white/95 backdrop-blur-sm border-t border-border px-4 py-3 flex gap-3 safe-area-pb">
+      <div className="lg:hidden fixed bottom-16 inset-x-0 z-40 bg-white/95 backdrop-blur-sm border-t border-border px-4 py-3 flex gap-3">
         {planMode ? (
           <Button size="lg" fullWidth onClick={scrollToPicker}>
             בחרו חבילה לאירוע
           </Button>
         ) : (
           <>
-            <button
-              onClick={handleWhatsApp}
-              className="flex items-center justify-center gap-2 px-4 py-3 rounded-full border-2 border-[#25D366] text-[#25D366] font-semibold text-sm transition-all hover:bg-[#25D366] hover:text-white flex-shrink-0"
-            >
-              <Phone className="h-4 w-4" />
-              WhatsApp
-            </button>
+            {waPhone && (
+              <button
+                type="button"
+                onClick={handleWhatsApp}
+                className="flex items-center justify-center gap-2 px-4 py-3 rounded-full border-2 border-[#25D366] text-[#25D366] font-semibold text-sm transition-all hover:bg-[#25D366] hover:text-white flex-shrink-0"
+              >
+                <Phone className="h-4 w-4" />
+                WhatsApp
+              </button>
+            )}
             <Button
               size="lg"
               fullWidth
@@ -534,7 +547,7 @@ export default function SupplierProfileClient({
                 router.push(withReturnTo(`/book/${supplier.id}`, `/suppliers/${supplier.slug}`))
               }
             >
-              קבעו פגישה · {formatPrice(supplier.priceFrom)}+
+              קבעו פגישה · החל מ־{formatPrice(supplier.priceFrom)}
             </Button>
           </>
         )}

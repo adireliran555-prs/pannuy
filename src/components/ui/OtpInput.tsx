@@ -84,6 +84,9 @@ export default function OtpInput({
             type="text"
             inputMode="numeric"
             pattern="\d*"
+            autoComplete={index === 0 ? "one-time-code" : "off"}
+            aria-label={`ספרה ${index + 1} מתוך ${length}`}
+            aria-invalid={error ? true : undefined}
             maxLength={1}
             value={digit}
             disabled={disabled}
@@ -107,7 +110,7 @@ export default function OtpInput({
         ))}
       </div>
       {error && (
-        <p className="text-sm text-red-500 font-medium">{error}</p>
+        <p role="alert" className="text-sm text-red-500 font-medium">{error}</p>
       )}
     </div>
   );

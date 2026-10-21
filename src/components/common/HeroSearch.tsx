@@ -26,7 +26,7 @@ export default function HeroSearch() {
   };
 
   return (
-    <div className="bg-white rounded-3xl shadow-xl border border-border p-5 sm:p-6 max-w-md mx-auto w-full text-right">
+    <div className="bg-white rounded-3xl shadow-xl border border-border p-5 sm:p-6 max-w-md mx-auto w-full text-start">
       <div className="space-y-5">
         {/* Event type — dropdown */}
         <FormSelect
@@ -43,7 +43,7 @@ export default function HeroSearch() {
           <DatePickerField
             value={date}
             onChange={setDate}
-            placeholder="בחרו תאריך האירוע"
+            placeholder="בחרו את תאריך האירוע"
             modalTitle="מתי האירוע?"
           />
         </div>

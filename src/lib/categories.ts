@@ -4,7 +4,7 @@
 
 export const CATEGORY_LABELS: Record<string, string> = {
   PHOTOGRAPHER: "צלמי סטילס",
-  VIDEOGRAPHER: "צלמי וידיאו",
+  VIDEOGRAPHER: "צלמי וידאו",
   PHOTO_BOOTH: "צלמי מגנטים",
   DJ: "תקליטנים",
   CATERING: "קייטרינג ושפים",
@@ -20,7 +20,7 @@ export const CATEGORY_LABELS: Record<string, string> = {
 // Singular form for a single supplier (cards, profile header).
 export const CATEGORY_LABELS_SINGULAR: Record<string, string> = {
   PHOTOGRAPHER: "צלם סטילס",
-  VIDEOGRAPHER: "צלם וידיאו",
+  VIDEOGRAPHER: "צלם וידאו",
   PHOTO_BOOTH: "צלם מגנטים",
   DJ: "תקליטן",
   CATERING: "קייטרינג ושפים",

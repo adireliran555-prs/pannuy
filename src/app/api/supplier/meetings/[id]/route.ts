@@ -3,7 +3,15 @@ import prisma from "@/lib/prisma";
 import { requireSupplierSession } from "@/lib/api-auth";
 import { createCalendarEvent, deleteCalendarEvent } from "@/lib/google-calendar";
 import { invalidateAvailabilityCache } from "@/lib/availability";
-import { chargeDeposit, PLATFORM_COMMISSION_ILS } from "@/lib/payments";
+import { PLATFORM_COMMISSION_ILS, REFERRAL_COMMISSION_ILS } from "@/lib/payments";
+import { israelWallClockToInstant } from "@/lib/timezone";
+import { formatHebrewDate } from "@/lib/utils";
+import { z } from "zod";
+
+const patchSchema = z.object({
+  action: z.enum(["confirm", "reject", "complete"]),
+  notes: z.string().max(2000).optional(),
+});
 
 export async function PATCH(
   request: NextRequest,
@@ -14,18 +22,14 @@ export async function PATCH(
     if (error) return error;
 
     const { id } = await params;
-    const body = await request.json();
-    const { action, notes } = body as {
-      action?: "confirm" | "reject" | "complete";
-      notes?: string;
-    };
-
-    if (!action || !["confirm", "reject", "complete"].includes(action)) {
+    const parsed = patchSchema.safeParse(await request.json().catch(() => null));
+    if (!parsed.success) {
       return NextResponse.json(
         { success: false, error: "action חייב להיות confirm, reject או complete" },
         { status: 400 }
       );
     }
+    const { action, notes } = parsed.data;
 
     const meeting = await prisma.meeting.findUnique({
       where: { id },
@@ -55,6 +59,17 @@ export async function PATCH(
       if (meeting.status !== "CONFIRMED") {
         return NextResponse.json(
           { success: false, error: "ניתן לסמן כהושלם רק אירוע מאושר" },
+          { status: 400 }
+        );
+      }
+      // The event must actually be over before commission is released.
+      const eventEnd = israelWallClockToInstant(
+        meeting.requestedDate.toISOString().slice(0, 10),
+        meeting.endTime
+      );
+      if (eventEnd.getTime() >= Date.now()) {
+        return NextResponse.json(
+          { success: false, error: "לא ניתן לסמן כהושלם לפני מועד האירוע" },
           { status: 400 }
         );
       }
@@ -103,7 +118,7 @@ export async function PATCH(
               supplierId: earning.referringSupplierId,
               type: "AFFILIATE_EARNED",
               titleHe: "עמלת הפניה זמינה למשיכה 💰",
-              bodyHe: `האירוע שהפנית התקיים — ₪${earning.amountIls} נזקפו ליתרה שלך`,
+              bodyHe: `האירוע שהפניתם התקיים — ₪${earning.amountIls} נזקפו ליתרה שלכם`,
               metadata: { meetingId: id },
             },
           });
@@ -136,24 +151,6 @@ export async function PATCH(
       }
     }
 
-    // Attempt to charge the deposit on confirm. Non-fatal: a failure must not
-    // block confirmation — we record the PaymentTransaction as PENDING instead.
-    // Package price is not reliably known here, so we use 0 as a placeholder.
-    const depositAmountIls = 0;
-    let depositResult: { ok: boolean; providerRef?: string } = { ok: false };
-    if (action === "confirm") {
-      try {
-        depositResult = await chargeDeposit({
-          amountIls: depositAmountIls,
-          meetingId: meeting.id,
-          customerName: meeting.customer.name,
-        });
-      } catch (payErr) {
-        console.warn("[supplier/meetings/[id]] chargeDeposit failed:", payErr);
-        // Non-fatal — record as PENDING below.
-      }
-    }
-
     const updated = await prisma.$transaction(async (tx) => {
       const updatedMeeting = await tx.meeting.update({
         where: { id },
@@ -165,16 +162,25 @@ export async function PATCH(
       });
 
       // On reject, free the time back up: delete the MANUAL slot the customer's
-      // booking created so it can be rebooked. (GOOGLE slots are owned by sync.)
+      // booking created so it can be rebooked, plus any GOOGLE mirror of it.
       if (action === "reject") {
         await tx.availabilitySlot.deleteMany({
           where: {
             supplierId: meeting.supplierId,
             date: meeting.requestedDate,
             startTime: meeting.startTime,
-            source: "MANUAL",
+            endTime: meeting.endTime,
+            OR: [
+              { source: "MANUAL" },
+              { source: "GOOGLE" },
+            ],
           },
         });
+        if (meeting.googleEventId) {
+          await tx.availabilitySlot.deleteMany({
+            where: { supplierId: meeting.supplierId, googleEventId: meeting.googleEventId },
+          });
+        }
       }
 
       // Notify customer
@@ -185,8 +191,8 @@ export async function PATCH(
           titleHe: action === "confirm" ? "הפגישה אושרה!" : "הפגישה נדחתה",
           bodyHe:
             action === "confirm"
-              ? `הפגישה שלכם ב-${meeting.requestedDate.toISOString().slice(0, 10)} אושרה`
-              : `הפגישה שלכם ב-${meeting.requestedDate.toISOString().slice(0, 10)} נדחתה`,
+              ? `הפגישה שלכם ב־${formatHebrewDate(meeting.requestedDate)} אושרה`
+              : `הפגישה שלכם ב־${formatHebrewDate(meeting.requestedDate)} נדחתה`,
           metadata: { meetingId: id },
         },
       });
@@ -200,24 +206,8 @@ export async function PATCH(
             referringSupplierId: meeting.referredBySupplierId,
             receivingSupplierId: session.id,
             meetingId: meeting.id,
-            amountIls: 300,
+            amountIls: REFERRAL_COMMISSION_ILS,
             status: "PENDING",
-          },
-        });
-      }
-
-      // Record a deposit payment transaction on confirm
-      if (action === "confirm") {
-        await tx.paymentTransaction.create({
-          data: {
-            supplierId: session.id,
-            type: "DEPOSIT",
-            amountIls: depositAmountIls,
-            status: depositResult.ok ? "COMPLETED" : "PENDING",
-            provider: "PAYPLUS",
-            providerRef: depositResult.providerRef ?? null,
-            meetingId: meeting.id,
-            ...(depositResult.ok ? { settledAt: new Date() } : {}),
           },
         });
       }

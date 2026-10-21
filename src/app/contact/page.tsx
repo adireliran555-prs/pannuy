@@ -15,7 +15,7 @@ export default function ContactPage() {
         בעיות טכניות.
       </p>
       <div className="rounded-2xl border border-border bg-white p-6 space-y-2">
-        <p className="text-sm text-text-muted">דוא&quot;ל</p>
+        <p className="text-sm text-text-muted">דוא״ל</p>
         <a
           href={`mailto:${SUPPORT_EMAIL}`}
           className="text-lg font-bold text-primary hover:underline"

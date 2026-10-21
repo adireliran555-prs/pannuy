@@ -13,7 +13,7 @@ export const VIBE_TAGS = [
   { id: "boho", label: "בוהו", emoji: "🌾" },
   { id: "nature", label: "טבע", emoji: "🌿" },
   { id: "modern", label: "מודרני", emoji: "🖤" },
-  { id: "intimate", label: "צנוע", emoji: "🕊️" },
+  { id: "intimate", label: "אינטימי", emoji: "🕊️" },
 ] as const;
 
 export type VibeId = (typeof VIBE_TAGS)[number]["id"];

@@ -15,7 +15,7 @@ import { BRAND_NAME } from "@/lib/branding";
 const schema = z.object({
   phone: z
     .string()
-    .refine(validateIsraeliPhone, "מספר חייב להתחיל ב-05 ולהכיל 10 ספרות"),
+    .refine(validateIsraeliPhone, "מספר חייב להתחיל ב־05 ולהכיל 10 ספרות"),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -159,7 +159,7 @@ export default function SupplierLoginPage() {
                   inputMode="tel"
                   autoComplete="tel"
                   ltr
-                  helperText="ישלח קוד אימות ב-SMS"
+                  helperText="יישלח אליכם קוד אימות"
                   error={errors.phone?.message ?? otpError}
                   {...register("phone")}
                 />
@@ -172,7 +172,7 @@ export default function SupplierLoginPage() {
               <p className="text-center text-sm text-text-muted">
                 עדיין לא נרשמתם?{" "}
                 <Link href="/supplier/join" className="text-primary font-semibold">
-                  הצטרפו ל-{BRAND_NAME}
+                  הצטרפו ל־{BRAND_NAME}
                 </Link>
               </p>
             </>
@@ -191,11 +191,10 @@ export default function SupplierLoginPage() {
               <div className="flex flex-col items-center gap-4 py-4">
                 {devOtp && (
                   <div className="w-full text-center bg-amber-50 border-2 border-amber-300 rounded-xl px-4 py-3 text-sm text-amber-900 space-y-1">
-                    <p className="font-bold">קוד אימות (ללא SMS כרגע)</p>
+                    <p className="font-bold">הקוד שלכם:</p>
                     <p dir="ltr" className="font-black tracking-[0.3em] text-2xl">
                       {devOtp}
                     </p>
-                    <p className="text-xs">העתיקו את הקוד לשדות למטה</p>
                   </div>
                 )}
                 <OtpInput
@@ -207,7 +206,7 @@ export default function SupplierLoginPage() {
                   autoFocus
                 />
                 {isLoading && (
-                  <p className="text-sm text-text-muted animate-pulse">מאמת...</p>
+                  <p className="text-sm text-text-muted animate-pulse">מאמת…</p>
                 )}
               </div>
 
@@ -245,9 +244,9 @@ export default function SupplierLoginPage() {
         </div>
 
         <p className="text-center text-xs text-text-muted mt-6">
-          אתם זוג?{" "}
+          לקוחות?{" "}
           <Link href="/start" className="text-primary font-semibold">
-            כניסה לפלטפורמת הזוגות
+            כניסה ללקוחות
           </Link>
         </p>
       </div>

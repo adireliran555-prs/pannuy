@@ -9,6 +9,9 @@ export const MONTHLY_FEE_ILS = 1000;
 // platform. Placeholder until booking captures a job price (then make it a %).
 export const PLATFORM_COMMISSION_ILS = 200;
 
+// Flat referral commission paid to the referring supplier per completed job.
+export const REFERRAL_COMMISSION_ILS = 300;
+
 // Payplus REST API base. When PAYPLUS_API_KEY is configured these functions would
 // POST to the relevant endpoints under this base.
 const PAYPLUS_API_BASE = "https://restapi.payplus.co.il/api/v1.0/";

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Search, Check, X, ExternalLink, LogIn, AlertTriangle, ChevronDown, Save, Trash2 } from "lucide-react";
 import { cn, formatRelativeHebrew } from "@/lib/utils";
+import Modal from "@/components/ui/Modal";
 
 interface Row {
   id: string;
@@ -31,6 +32,8 @@ export default function SuppliersTable({ initialRows }: { initialRows: Row[] }) 
   const [filter, setFilter] = useState<"all" | "verified" | "unverified" | "inactive">("all");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const filtered = rows.filter((r) => {
     if (q && !`${r.name} ${r.city} ${r.phone}`.toLowerCase().includes(q.toLowerCase())) return false;
@@ -100,14 +103,8 @@ export default function SuppliersTable({ initialRows }: { initialRows: Row[] }) 
     }
   };
 
-  const removeSupplier = async (id: string, name: string) => {
-    if (
-      !window.confirm(
-        `למחוק לצמיתות את הספק "${name}"?\n\nיפוגו גם פגישות, ביקורות ונתונים קשורים. לא ניתן לשחזר.`
-      )
-    ) {
-      return;
-    }
+  const removeSupplier = async (id: string) => {
+    setDeleteError(null);
     setBusyId(id);
     const res = await fetch(`/api/admin/suppliers/${id}`, { method: "DELETE" });
     const j = await res.json().catch(() => ({}));
@@ -115,10 +112,11 @@ export default function SuppliersTable({ initialRows }: { initialRows: Row[] }) 
     if (res.ok) {
       setRows((rs) => rs.filter((r) => r.id !== id));
       setExpandedId(null);
+      setDeleteTarget(null);
       router.refresh();
       return;
     }
-    window.alert(typeof j.error === "string" ? j.error : "מחיקה נכשלה");
+    setDeleteError(typeof j.error === "string" ? j.error : "מחיקה נכשלה");
   };
 
   return (
@@ -129,7 +127,7 @@ export default function SuppliersTable({ initialRows }: { initialRows: Row[] }) 
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="חיפוש לפי שם, עיר, טלפון..."
+            placeholder="חיפוש לפי שם, עיר, טלפון…"
             className="w-full ps-4 pe-9 py-2.5 rounded-xl border-2 border-border focus:border-primary outline-none text-sm bg-white"
           />
         </div>
@@ -237,7 +235,7 @@ export default function SuppliersTable({ initialRows }: { initialRows: Row[] }) 
                           busy={busyId === r.id}
                           onWarn={() => issueWarning(r.id)}
                           onSaveHighlights={(lines) => saveHighlights(r.id, lines)}
-                          onDelete={() => removeSupplier(r.id, r.name)}
+                          onDelete={() => { setDeleteError(null); setDeleteTarget({ id: r.id, name: r.name }); }}
                         />
                       </td>
                     </tr>
@@ -249,6 +247,44 @@ export default function SuppliersTable({ initialRows }: { initialRows: Row[] }) 
           </table>
         </div>
       </div>
+
+      <Modal
+        open={deleteTarget !== null}
+        onClose={() => { if (busyId === null) setDeleteTarget(null); }}
+        title="מחיקת ספק"
+        size="sm"
+      >
+        {deleteTarget && (
+          <div className="space-y-4">
+            <p className="text-sm text-text-main leading-relaxed">
+              למחוק לצמיתות את הספק &quot;{deleteTarget.name}&quot;? יימחקו גם פגישות, ביקורות ונתונים קשורים. לא ניתן לשחזר.
+            </p>
+            {deleteError && (
+              <p role="alert" className="rounded-xl bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
+                {deleteError}
+              </p>
+            )}
+            <div className="flex gap-3">
+              <button
+                type="button"
+                disabled={busyId === deleteTarget.id}
+                onClick={() => setDeleteTarget(null)}
+                className="flex-1 rounded-xl border-2 border-border bg-white px-4 py-2.5 text-sm font-bold text-text-main hover:border-primary disabled:opacity-50"
+              >
+                ביטול
+              </button>
+              <button
+                type="button"
+                disabled={busyId === deleteTarget.id}
+                onClick={() => removeSupplier(deleteTarget.id)}
+                className="flex-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                {busyId === deleteTarget.id ? "מוחק…" : "מחיקה לצמיתות"}
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
@@ -324,7 +360,7 @@ function SupplierDetail({
           className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold border-2 border-red-200 bg-red-50 text-red-700 hover:bg-red-100 disabled:opacity-50"
         >
           <AlertTriangle className="h-4 w-4" />
-          הוצא אזהרה
+          הוצאת אזהרה
         </button>
       </div>
 
@@ -362,7 +398,7 @@ function SupplierDetail({
           className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold border-2 border-red-300 bg-white text-red-700 hover:bg-red-50 disabled:opacity-50"
         >
           <Trash2 className="h-4 w-4" />
-          מחק ספק
+          מחיקת ספק
         </button>
       </div>
     </div>

@@ -34,6 +34,22 @@ function workingSlotsCoveredBy(startDec: number, endDec: number): string[] {
   });
 }
 
+/**
+ * Shared "fully blocked" rule (used by search + availability so they agree):
+ * a day is unavailable when the blocked intervals cover every working slot.
+ */
+export function isDayFullyBlocked(
+  blocks: Array<{ startTime: string; endTime: string }>
+): boolean {
+  const covered = new Set<string>();
+  for (const b of blocks) {
+    for (const t of workingSlotsCoveredBy(toDecimalHour(b.startTime), toDecimalHour(b.endTime))) {
+      covered.add(t);
+    }
+  }
+  return ALL_WORKING_SLOTS.every((t) => covered.has(t));
+}
+
 // ─── Cache key helper ─────────────────────────────────────────────────────────
 
 function cacheKey(supplierId: string, year: number, month: number): string {

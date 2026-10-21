@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ShieldAlert, ArrowLeft } from "lucide-react";
+import { ShieldAlert, ArrowRight } from "lucide-react";
 
 interface Status {
   impersonating: boolean;
@@ -50,7 +50,7 @@ export default function ImpersonationBanner() {
         className="inline-flex items-center gap-1.5 bg-white/95 hover:bg-white text-amber-700 font-bold text-xs px-3 py-1.5 rounded-full whitespace-nowrap disabled:opacity-50 transition-colors"
       >
         חזרה לפאנל ניהול
-        <ArrowLeft className="h-3 w-3" />
+        <ArrowRight className="h-3 w-3" />
       </button>
     </div>
   );

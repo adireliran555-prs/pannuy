@@ -12,20 +12,7 @@ import AvailabilityCalendar from "@/components/common/AvailabilityCalendar";
 import { formatHebrewDate, formatPrice } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { withReturnTo } from "@/lib/return-to";
-
-const CATEGORY_LABELS: Record<string, string> = {
-  PHOTOGRAPHER: "צלם סטילס",
-  VIDEOGRAPHER: "צלם וידיאו",
-  BRIDAL_SUITE: "חדרי כלה",
-  DJ: "תקליטן",
-  FLORIST: "עיצוב פרחוני",
-  CATERING: "קייטרינג ושפים",
-  VENUE: "אולם/גן אירועים",
-  HAIR_STYLIST: "מסרקת",
-  MAKEUP_ARTIST: "מאפרת",
-  PHOTO_BOOTH: "צלם מגנטים",
-  EVENT_PRODUCER: "מפיק/הושבה",
-};
+import { CATEGORY_LABELS_SINGULAR as CATEGORY_LABELS } from "@/lib/categories";
 
 // UI meeting-type id → Prisma MeetingType enum
 const MEETING_TYPE_ENUM: Record<string, string> = {
@@ -228,13 +215,13 @@ export default function BookPage({ params }: PageProps) {
             <CheckCircle className="h-10 w-10 text-green-500" />
           </div>
           <h1 className="text-2xl font-black text-text-main">
-            הפגישה נקבעה! 🎉
+            הבקשה נשלחה! 🎉
           </h1>
           <p className="text-text-muted">
-            הבקשה נשלחה — נאשר לכם בהקדם.
+            הספק יאשר את הפגישה בהקדם.
           </p>
           <p className="text-sm text-text-muted animate-pulse">
-            מעבירים לפגישות שלכם...
+            מעבירים לפגישות שלכם…
           </p>
         </div>
       </div>
@@ -263,7 +250,7 @@ export default function BookPage({ params }: PageProps) {
             </p>
             {supplier.priceFrom != null && (
               <p className="text-sm font-semibold text-primary">
-                החל מ-{formatPrice(supplier.priceFrom)}
+                החל מ־{formatPrice(supplier.priceFrom)}
               </p>
             )}
           </div>
@@ -273,6 +260,15 @@ export default function BookPage({ params }: PageProps) {
         <div className="bg-white rounded-2xl border border-border p-6 mb-6">
           <StepProgress steps={STEPS} currentStep={step} />
         </div>
+
+        {error && step !== 3 && (
+          <div
+            role="alert"
+            className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700 mb-6"
+          >
+            {error}
+          </div>
+        )}
 
         {/* Step content */}
         <div className="bg-white rounded-2xl border border-border p-6">
@@ -322,7 +318,7 @@ export default function BookPage({ params }: PageProps) {
                     type="button"
                     onClick={() => setMeetingType(id)}
                     className={cn(
-                      "w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all duration-200 text-right",
+                      "w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all duration-200 text-start",
                       meetingType === id
                         ? "border-primary bg-primary-light/30"
                         : "border-border hover:border-primary/40 hover:bg-surface"
@@ -345,12 +341,12 @@ export default function BookPage({ params }: PageProps) {
               {/* Notes */}
               <div>
                 <label className="text-sm font-semibold text-text-main block mb-2">
-                  הערות (אופציונלי)
+                  הערות (לא חובה)
                 </label>
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="ספרו לנו על האירוע שלכם, ואיזה קונספט אתם מחפשים..."
+                  placeholder="ספרו לנו על האירוע שלכם, ואיזה קונספט אתם מחפשים…"
                   rows={4}
                   className="w-full rounded-xl border-2 border-border px-4 py-3 text-base text-text-main placeholder:text-text-muted focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 resize-none"
                 />
@@ -431,7 +427,7 @@ export default function BookPage({ params }: PageProps) {
               </div>
 
               <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-sm text-green-700">
-                <CheckCircle className="h-4 w-4 inline ml-2" />
+                <CheckCircle className="h-4 w-4 inline me-2" />
                 הפגישה חינמית ואינה מחייבת בחירה בספק
               </div>
 

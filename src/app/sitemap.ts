@@ -5,7 +5,6 @@ import { APP_URL } from "@/lib/branding";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     "",
-    "/search",
     "/for-suppliers",
     "/terms",
     "/privacy",

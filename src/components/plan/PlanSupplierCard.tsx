@@ -158,7 +158,7 @@ export default function ProfilePlanPicker({
               }
               className={cn(!sidebar && "sm:min-w-56")}
             >
-              {alreadySelected ? "נבחר לאירוע" : "בחר לאירוע"}
+              {alreadySelected ? "נבחר לאירוע" : "בחרו לאירוע"}
             </Button>
             {selectedPkg && allocated != null && (
               <span className="text-xs text-text-muted">

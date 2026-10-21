@@ -21,7 +21,7 @@ const schema = z.object({
   phone: z
     .string()
     .min(10, "מספר טלפון לא תקין")
-    .refine((v) => validateIsraeliPhone(v), "מספר חייב להתחיל ב-05 ולהכיל 10 ספרות"),
+    .refine((v) => validateIsraeliPhone(v), "מספר חייב להתחיל ב־05 ולהכיל 10 ספרות"),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -71,6 +71,7 @@ function StartPageContent() {
 
   const onSubmit = async (data: FormData) => {
     setIsLoading(true);
+    setOtpError("");
     try {
       const res = await fetch("/api/auth/send-otp", {
         method: "POST",
@@ -85,7 +86,9 @@ function StartPageContent() {
       setFormData(data);
       setStage("otp");
       setResendCooldown(RESEND_COOLDOWN);
-      if (json.devOtp) setDevOtp(json.devOtp);
+      setDevOtp(json.devOtp ?? null);
+    } catch {
+      setOtpError("שגיאת תקשורת. נסו שוב.");
     } finally {
       setIsLoading(false);
     }
@@ -217,7 +220,7 @@ function StartPageContent() {
                     error={errors.name?.message}
                     {...register("name")}
                   />
-                  <User className="absolute left-3 top-9 h-4 w-4 text-text-muted pointer-events-none" />
+                  <User className="absolute start-3 top-9 h-4 w-4 text-text-muted pointer-events-none" />
                 </div>
 
                 <div className="relative">
@@ -227,12 +230,12 @@ function StartPageContent() {
                     type="text"
                     inputMode="tel"
                     ltr
-                    className="pl-10"
+                    className="ps-10"
                     error={errors.phone?.message}
-                    helperText="ישלח קוד אימות ב-SMS"
+                    helperText="יישלח אליכם קוד אימות"
                     {...register("phone")}
                   />
-                  <Phone className="absolute left-3 top-9 h-4 w-4 text-text-muted pointer-events-none" />
+                  <Phone className="absolute start-3 top-9 h-4 w-4 text-text-muted pointer-events-none" />
                 </div>
 
                 <Button
@@ -244,6 +247,11 @@ function StartPageContent() {
                 >
                   המשיכו
                 </Button>
+                {otpError && (
+                  <p role="alert" className="text-sm text-red-600 text-center font-medium">
+                    {otpError}
+                  </p>
+                )}
               </form>
 
               <p className="text-center text-sm text-text-muted">
@@ -270,7 +278,7 @@ function StartPageContent() {
               <div className="flex flex-col items-center gap-4 py-4">
                 {devOtp && (
                   <div className="w-full text-center bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 text-sm text-amber-800">
-                    מצב פיתוח · קוד אימות:{" "}
+                    הקוד שלכם:{" "}
                     <span dir="ltr" className="font-black tracking-widest">{devOtp}</span>
                   </div>
                 )}
@@ -284,7 +292,7 @@ function StartPageContent() {
                 />
                 {isLoading && (
                   <p className="text-sm text-text-muted animate-pulse">
-                    מאמת...
+                    מאמת…
                   </p>
                 )}
               </div>
@@ -311,6 +319,8 @@ function StartPageContent() {
                 onClick={() => {
                   setStage("form");
                   setOtp("");
+                  setOtpError("");
+                  setDevOtp(null);
                   setResendCooldown(0);
                 }}
               >

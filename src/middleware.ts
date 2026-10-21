@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifyJwtEdge } from "@/lib/edge-jwt";
 
 const CUSTOMER_PROTECTED_PREFIXES = ["/dashboard", "/search", "/plan"];
 const SUPPLIER_PROTECTED_PREFIXES = [
@@ -12,18 +13,11 @@ const SUPPLIER_PROTECTED_PREFIXES = [
 // /admin protected, but /admin/login is not.
 const ADMIN_PROTECTED_PREFIX = "/admin";
 
-function decodeJwtPayload(token: string): Record<string, unknown> | null {
-  try {
-    const parts = token.split(".");
-    if (parts.length !== 3) return null;
-    const payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-    return JSON.parse(atob(payload));
-  } catch {
-    return null;
-  }
+async function decodeJwtPayload(token: string): Promise<Record<string, unknown> | null> {
+  return verifyJwtEdge(token);
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
 
   // Affiliate referral tracking: ?ref=CODE sets a 30-day cookie
@@ -48,7 +42,7 @@ export function middleware(request: NextRequest) {
 
     const token = request.cookies.get("pannuy_session")?.value;
     if (!token) return NextResponse.redirect(startUrl);
-    const payload = decodeJwtPayload(token);
+    const payload = await decodeJwtPayload(token);
     if (!payload || payload.type !== "customer") {
       const res = NextResponse.redirect(startUrl);
       res.cookies.delete("pannuy_session");
@@ -61,7 +55,7 @@ export function middleware(request: NextRequest) {
   if (pathname.startsWith(ADMIN_PROTECTED_PREFIX) && !pathname.startsWith("/admin/login")) {
     const token = request.cookies.get("pannuy_admin_session")?.value;
     if (!token) return NextResponse.redirect(new URL("/admin/login", request.url));
-    const payload = decodeJwtPayload(token);
+    const payload = await decodeJwtPayload(token);
     if (!payload || payload.type !== "admin") {
       const res = NextResponse.redirect(new URL("/admin/login", request.url));
       res.cookies.delete("pannuy_admin_session");
@@ -76,9 +70,9 @@ export function middleware(request: NextRequest) {
 
     // If the user has a customer session but no valid supplier session,
     // they landed here by accident (e.g. stale cookie). Redirect to customer area.
-    const supplierPayload = supplierToken ? decodeJwtPayload(supplierToken) : null;
+    const supplierPayload = supplierToken ? await decodeJwtPayload(supplierToken) : null;
     if ((!supplierToken || !supplierPayload || supplierPayload.type !== "supplier") && customerToken) {
-      const customerPayload = decodeJwtPayload(customerToken);
+      const customerPayload = await decodeJwtPayload(customerToken);
       if (customerPayload && customerPayload.type === "customer") {
         const res = NextResponse.redirect(new URL("/dashboard/meetings", request.url));
         res.cookies.delete("pannuy_supplier_session");

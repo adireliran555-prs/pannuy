@@ -12,7 +12,7 @@ export default async function HomePage() {
   const supplierCount = await prisma.supplier.count({ where: { isActive: true } });
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen pb-16 sm:pb-0">
       <Navbar />
 
       {/* ══════════════════════════════════════
@@ -48,7 +48,7 @@ export default async function HomePage() {
           {/* ── PRIMARY path: plan with us ── */}
           <Link
             href="/plan"
-            className="group flex items-center gap-4 text-right rounded-2xl bg-gradient-to-br from-primary to-primary-dark p-5 text-white shadow-[var(--shadow-card-hover)] transition-all hover:-translate-y-0.5"
+            className="group flex items-center gap-4 text-start rounded-2xl bg-gradient-to-br from-primary to-primary-dark p-5 text-white shadow-[var(--shadow-card-hover)] transition-all hover:-translate-y-0.5"
           >
             <div className="w-12 h-12 shrink-0 rounded-2xl bg-white/20 flex items-center justify-center">
               <Sparkles className="h-6 w-6 text-white" />
@@ -71,6 +71,9 @@ export default async function HomePage() {
 
           {/* ── SECONDARY path: quick search ── */}
           <HeroSearch />
+          <p className="mt-2 text-xs text-text-muted">
+            נרשמים בקוד אימות תוך דקה ורואים מי פנוי
+          </p>
 
           <p className="mt-4 text-sm text-text-muted">
             כבר רשומים?{" "}
@@ -177,7 +180,7 @@ export default async function HomePage() {
               <ul className="space-y-2 text-sm text-white/60">
                 <li><Link href="/search" className="hover:text-white transition-colors">חפשו ספקים</Link></li>
                 <li><Link href="/dashboard/meetings" className="hover:text-white transition-colors">הפגישות שלי</Link></li>
-                <li><Link href="/dashboard/saved" className="hover:text-white transition-colors">שמורות</Link></li>
+                <li><Link href="/dashboard/saved" className="hover:text-white transition-colors">שמורים</Link></li>
               </ul>
             </div>
             <div>
@@ -185,7 +188,7 @@ export default async function HomePage() {
                 לספקים
               </h4>
               <ul className="space-y-2 text-sm text-white/60">
-                <li><Link href="/for-suppliers" className="hover:text-white transition-colors">הצטרפו ל-{BRAND_NAME}</Link></li>
+                <li><Link href="/for-suppliers" className="hover:text-white transition-colors">הצטרפו ל־{BRAND_NAME}</Link></li>
                 <li><Link href="/supplier/dashboard" className="hover:text-white transition-colors">פאנל ספקים</Link></li>
               </ul>
             </div>
@@ -193,9 +196,10 @@ export default async function HomePage() {
 
           <div className="border-t border-white/10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-white/40">
             <span>© {new Date().getFullYear()} {BRAND_NAME}. כל הזכויות שמורות.</span>
-            <div className="flex gap-4">
+            <div className="flex flex-wrap justify-center gap-4">
               <Link href="/privacy" className="hover:text-white/70 transition-colors">פרטיות</Link>
               <Link href="/terms" className="hover:text-white/70 transition-colors">תנאי שימוש</Link>
+              <Link href="/legal/supplier-agreement" className="hover:text-white/70 transition-colors">הסכם ספקים</Link>
               <Link href="/accessibility" className="hover:text-white/70 transition-colors">נגישות</Link>
               <Link href="/contact" className="hover:text-white/70 transition-colors">יצירת קשר</Link>
             </div>

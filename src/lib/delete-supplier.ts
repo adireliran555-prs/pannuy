@@ -35,6 +35,7 @@ export async function deleteSupplierPermanently(supplierId: string): Promise<{ s
       },
     });
     await tx.review.deleteMany({ where: { supplierId } });
+    await tx.referral.deleteMany({ where: { supplierId } });
     await tx.savedSupplier.deleteMany({ where: { supplierId } });
     await tx.notification.deleteMany({ where: { supplierId } });
     await tx.meeting.updateMany({

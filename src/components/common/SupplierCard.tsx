@@ -5,6 +5,7 @@ import { Heart, MapPin, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatPrice } from "@/lib/utils";
 import { CATEGORY_LABELS_SINGULAR } from "@/lib/categories";
+import Stars from "@/components/ui/Stars";
 import { cld, CLD_CARD } from "@/lib/cloudinary-image";
 import { useEffect, useState } from "react";
 import { useSWRConfig } from "swr";
@@ -36,6 +37,8 @@ export default function SupplierCard({
   city,
   profilePhoto,
   coverPhoto,
+  rating = 0,
+  ratingCount = 0,
   priceFrom,
   priceTo,
   category,
@@ -124,8 +127,8 @@ export default function SupplierCard({
         {/* Save button */}
         <button
           onClick={handleSave}
-          aria-label={saved ? "הסר משמורות" : "שמרו"}
-          className="absolute top-1.5 left-1.5 w-11 h-11 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-md hover:scale-110 transition-transform duration-200"
+          aria-label={saved ? "הסירו מהשמורים" : "שמרו"}
+          className="absolute top-1.5 start-1.5 w-11 h-11 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-md hover:scale-110 transition-transform duration-200"
         >
           <Heart
             className={cn(
@@ -137,7 +140,7 @@ export default function SupplierCard({
         </button>
 
         {/* Badges top-right */}
-        <div className="absolute top-3 right-3 flex flex-col gap-1 items-end">
+        <div className="absolute top-3 end-3 flex flex-col gap-1 items-end">
           {isVerified && (
             <span className="inline-flex items-center gap-1 bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
               מהטופ של ישראל
@@ -175,6 +178,10 @@ export default function SupplierCard({
           <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
           <span>{city}</span>
         </div>
+
+        {ratingCount > 0 && (
+          <Stars rating={rating} count={ratingCount} size="sm" />
+        )}
 
         {/* Price */}
         <div className="pt-1 border-t border-border/50">

@@ -1,3 +1,5 @@
+import { safeFetch } from "@/lib/safe-fetch";
+
 // Server-side Cloudinary upload (unsigned preset). Used to mirror remote landing-page
 // images so they render reliably in the app instead of hotlinking supplier sites.
 
@@ -8,6 +10,24 @@ const UPLOAD_PRESET =
 
 export function cloudinaryServerEnabled(): boolean {
   return Boolean(CLOUD_NAME && UPLOAD_PRESET);
+}
+
+/**
+ * True only for a delivery URL on OUR Cloudinary account that references the
+ * given publicId — prevents a client from registering an arbitrary image URL
+ * (which would bypass the OCR phone scan).
+ */
+export function isOwnCloudinaryUrl(url: string, publicId: string): boolean {
+  try {
+    const u = new URL(url);
+    if (u.protocol !== "https:" || u.hostname !== "res.cloudinary.com") return false;
+    const path = decodeURIComponent(u.pathname);
+    if (!path.startsWith(`/${CLOUD_NAME}/`)) return false;
+    if (!publicId || /[?#\s]/.test(publicId)) return false;
+    return path.includes(`/${publicId}`) || path.includes(`/${publicId}.`);
+  } catch {
+    return false;
+  }
 }
 
 export interface MirroredImage {
@@ -42,7 +62,8 @@ export async function mirrorImageToCloudinary(
 
   try {
     const origin = new URL(remoteUrl).origin;
-    const imgRes = await fetch(remoteUrl, {
+    // SSRF guard: same host/DNS/redirect checks as the landing-page fetch.
+    const fetched = await safeFetch(remoteUrl, {
       headers: {
         "User-Agent": "Mozilla/5.0 (compatible; PannuyBot/1.0)",
         Accept: "image/*",
@@ -50,7 +71,8 @@ export async function mirrorImageToCloudinary(
       },
       signal: AbortSignal.timeout(12_000),
     });
-    if (!imgRes.ok) return null;
+    if (!fetched || !fetched.res.ok) return null;
+    const imgRes = fetched.res;
 
     const contentType = imgRes.headers.get("content-type") ?? "";
     if (!contentType.startsWith("image/")) return null;

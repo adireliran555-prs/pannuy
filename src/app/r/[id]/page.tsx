@@ -38,8 +38,8 @@ export default async function ReferralFollowUpPage({
                 </h1>
                 <p className="text-text-muted">
                   {referral.supplier?.name
-                    ? `רצינו לוודא שהצלחתם להתחבר עם ${referral.supplier.name}.`
-                    : "רצינו לוודא שהצלחתם להתחבר עם הספק."}
+                    ? `רצינו לוודא שהצלחתם ליצור קשר עם ${referral.supplier.name}.`
+                    : "רצינו לוודא שהצלחתם ליצור קשר עם הספק."}
                 </p>
               </div>
               <RespondButtons referralId={referral.id} initialStatus={referral.status} />

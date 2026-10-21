@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Heebo } from "next/font/google";
 import "./globals.css";
 import ImpersonationBanner from "@/components/common/ImpersonationBanner";
@@ -41,16 +41,22 @@ export const metadata: Metadata = {
     locale: "he_IL",
     type: "website",
     images: [
-      { url: OG_IMAGE_PATH, width: 1200, height: 630, alt: BRAND_NAME },
+      { url: OG_IMAGE_PATH, width: 512, height: 512, alt: BRAND_NAME },
     ],
   },
   twitter: {
-    card: "summary_large_image",
+    card: "summary",
     title: `${BRAND_NAME} | ${BRAND_TAGLINE}`,
     description: BRAND_DESCRIPTION,
     images: [OG_IMAGE_PATH],
   },
   robots: { index: true, follow: true },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#FAFAF8",
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({
@@ -73,8 +79,16 @@ export default function RootLayout({
         suppressHydrationWarning
         className={`${heebo.className} min-h-full flex flex-col bg-surface antialiased`}
       >
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:start-3 focus:z-[100] focus:rounded-full focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-text-main focus:shadow-lg"
+        >
+          דלגו לתוכן
+        </a>
         <ImpersonationBanner />
-        {children}
+        <div id="main" tabIndex={-1} className="flex flex-1 flex-col outline-none">
+          {children}
+        </div>
       </body>
     </html>
   );

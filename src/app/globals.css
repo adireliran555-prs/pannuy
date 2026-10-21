@@ -1,9 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 
 @theme {
   /* Brand Colors */
   --color-primary: #C4956A;
+  /* Darker brand tone for filled CTAs / focus rings — passes AA with white text */
+  --color-primary-strong: #8F6844;
   --color-primary-dark: #A67B52;
   --color-primary-light: #F0E0CC;
   --color-surface: #FAFAF8;
@@ -84,13 +85,18 @@ body {
 
 /* Focus ring */
 :focus-visible {
-  outline: 2px solid #C4956A;
+  outline: 2px solid #8F6844;
   outline-offset: 2px;
 }
 
 /* Smooth transitions for interactive elements */
 a, button {
   transition: all 200ms ease;
+}
+
+/* iOS home-indicator safe area for fixed bottom bars */
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 /* RTL number display */

@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { Category } from "@prisma/client";
 import { isValidEventTypeId } from "@/lib/event-types";
+import { isDayFullyBlocked } from "@/lib/availability";
 
 export interface SearchFilters {
   areas?: string[];
@@ -13,22 +14,6 @@ export interface SearchFilters {
   page?: number;
   limit?: number;
 }
-
-// Israeli standard working hours: 09:00–18:00 (10 one-hour slots).
-// A day counts as unavailable when every working slot is blocked, or an
-// all-day block exists for that date. Kept in sync with src/lib/availability.ts.
-const WORK_START_HOUR = 9;
-const WORK_END_HOUR = 19;
-
-function workingSlotTimes(): string[] {
-  const slots: string[] = [];
-  for (let h = WORK_START_HOUR; h < WORK_END_HOUR; h++) {
-    slots.push(`${String(h).padStart(2, "0")}:00`);
-  }
-  return slots;
-}
-
-const ALL_WORKING_SLOTS = workingSlotTimes();
 
 export interface SearchResult {
   suppliers: Array<{
@@ -94,28 +79,19 @@ export async function searchSuppliers(filters: SearchFilters): Promise<SearchRes
       select: { supplierId: true, startTime: true, endTime: true },
     });
 
-    const blockedTimesBySupplier = new Map<string, Set<string>>();
-    const allDayBlocked = new Set<string>();
+    const blocksBySupplier = new Map<string, { startTime: string; endTime: string }[]>();
     for (const slot of blockedSlots) {
-      // Treat a slot spanning the entire working window as an all-day block.
-      const start = parseInt(slot.startTime.slice(0, 2), 10);
-      const end = parseInt(slot.endTime.slice(0, 2), 10);
-      if (start <= WORK_START_HOUR && end >= WORK_END_HOUR) {
-        allDayBlocked.add(slot.supplierId);
+      let list = blocksBySupplier.get(slot.supplierId);
+      if (!list) {
+        list = [];
+        blocksBySupplier.set(slot.supplierId, list);
       }
-      let set = blockedTimesBySupplier.get(slot.supplierId);
-      if (!set) {
-        set = new Set();
-        blockedTimesBySupplier.set(slot.supplierId, set);
-      }
-      set.add(slot.startTime);
+      list.push({ startTime: slot.startTime, endTime: slot.endTime });
     }
 
-    blockedSupplierIds = [...blockedTimesBySupplier.entries()]
-      .filter(([supplierId, blockedTimes]) =>
-        allDayBlocked.has(supplierId) ||
-        ALL_WORKING_SLOTS.every((t) => blockedTimes.has(t))
-      )
+    // Same rule as src/lib/availability.ts so search and the calendar agree.
+    blockedSupplierIds = [...blocksBySupplier.entries()]
+      .filter(([, blocks]) => isDayFullyBlocked(blocks))
       .map(([supplierId]) => supplierId);
   }
 

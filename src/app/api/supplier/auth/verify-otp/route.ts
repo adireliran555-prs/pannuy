@@ -5,6 +5,16 @@ import { verifyOtp, signSupplierToken } from "@/lib/auth";
 import { normalizeIsraeliPhone } from "@/lib/utils";
 import { SupplierSession } from "@/types";
 import { SUPPLIER_AGREEMENT_VERSION } from "@/lib/legal";
+import { checkOtpIpLimit, clientIp } from "@/lib/otp-ip-limit";
+import { z } from "zod";
+
+const verifySchema = z.object({
+  phone: z.string().min(9).max(20),
+  otp: z.string().regex(/^\d{6}$/),
+  name: z.string().trim().min(1).max(100).optional(),
+  email: z.string().email().max(200).optional(),
+  agreementAccepted: z.boolean().optional(),
+});
 
 const SESSION_COOKIE_MAX_AGE = 7 * 24 * 60 * 60;
 const MAX_OTP_ATTEMPTS = 5;
@@ -17,21 +27,23 @@ function generateSlug(name: string, phone: string): string {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const phone = normalizeIsraeliPhone(String(body.phone ?? ""));
-    const { otp, name, email, agreementAccepted } = body as {
-      otp?: string;
-      name?: string;
-      email?: string;
-      agreementAccepted?: boolean;
-    };
-
-    if (!phone || !otp) {
+    const parsed = verifySchema.safeParse(await request.json().catch(() => null));
+    const phone = parsed.success ? normalizeIsraeliPhone(parsed.data.phone) : null;
+    if (!parsed.success || !phone) {
       return NextResponse.json(
         { success: false, error: "טלפון וקוד חובה" },
         { status: 400 }
       );
     }
+    const { otp, name, email, agreementAccepted } = parsed.data;
+
+    if (!(await checkOtpIpLimit(clientIp(request), 30, "verify"))) {
+      return NextResponse.json(
+        { success: false, error: "יותר מדי ניסיונות. נסו שוב מאוחר יותר" },
+        { status: 429 }
+      );
+    }
+
 
     const existingSupplierCheck = await prisma.supplier.findUnique({
       where: { phone },
@@ -56,13 +68,9 @@ export async function POST(request: NextRequest) {
         const existing = await tx.supplier.findUnique({ where: { phone } });
 
         if (existing) {
-          return tx.supplier.update({
-            where: { phone },
-            data: {
-              ...(name ? { name } : {}),
-              ...(email ? { email } : {}),
-            },
-          });
+          // `name`/`email` are accepted only on account creation — a login must
+          // never rename an existing supplier.
+          return existing;
         }
 
         const supplierName = name ?? "ספק חדש";
@@ -134,10 +142,18 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      [, supplier] = await Promise.all([
-        prisma.otp.update({ where: { id: otpRecord.id }, data: { used: true } }),
-        upsertSupplier(),
-      ]);
+      // Atomically claim the code so two concurrent verifies can't both win.
+      const claimed = await prisma.otp.updateMany({
+        where: { id: otpRecord.id, used: false },
+        data: { used: true },
+      });
+      if (claimed.count !== 1) {
+        return NextResponse.json(
+          { success: false, error: "קוד שגוי או פג תוקף" },
+          { status: 401 }
+        );
+      }
+      supplier = await upsertSupplier();
     }
 
     const payload: SupplierSession = {

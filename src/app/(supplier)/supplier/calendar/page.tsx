@@ -51,9 +51,9 @@ function GoogleCalendarBanner({ onSynced }: { onSynced?: () => void }) {
         window.location.assign(json.data.authUrl);
         return;
       }
-      setConnectError(json.error ?? "לא ניתן להתחבר ל-Google. נסו שוב מ-Safari או Chrome.");
+      setConnectError(json.error ?? "לא ניתן להתחבר ל־Google. נסו שוב מ־Safari או Chrome.");
     } catch {
-      setConnectError("שגיאת רשת. נסו שוב מ-Safari או Chrome.");
+      setConnectError("שגיאת רשת. נסו שוב מ־Safari או Chrome.");
     } finally {
       setIsConnecting(false);
     }
@@ -97,7 +97,7 @@ function GoogleCalendarBanner({ onSynced }: { onSynced?: () => void }) {
         <div className="flex items-center gap-3 flex-wrap">
           <CheckCircle className="h-5 w-5 text-green-600 shrink-0" />
           <span className="font-semibold text-green-700 text-sm">
-            מחובר ל-Google Calendar ✓
+            מחובר ל־Google Calendar ✓
           </span>
         </div>
         <Button
@@ -109,10 +109,10 @@ function GoogleCalendarBanner({ onSynced }: { onSynced?: () => void }) {
           className="shadow-lg ring-2 ring-green-400/60 bg-green-600 hover:bg-green-700 border-green-600"
         >
           <RefreshCw className={cn("h-5 w-5", isSyncing && "animate-spin")} />
-          {isSyncing ? "מסנכרן יומן..." : "סנכרן יומן עכשיו"}
+          {isSyncing ? "מסנכרנים יומן…" : "סנכרנו יומן עכשיו"}
         </Button>
         <p className="text-xs text-green-700/90 leading-relaxed">
-          יצרנו עבורכם יומן בשם <span className="font-bold">&quot;{BRAND_CALENDAR_NAME}&quot;</span> ב-Google Calendar.
+          יצרנו עבורכם יומן בשם <span className="font-bold">&quot;{BRAND_CALENDAR_NAME}&quot;</span> ב־Google Calendar.
           כדי לחסום תאריך, צרו אירוע ובחרו את היומן הזה — רק אירועים ביומן זה נמשכים לאתר,
           שאר היומנים הפרטיים שלכם נשארים פרטיים.
         </p>
@@ -134,7 +134,7 @@ function GoogleCalendarBanner({ onSynced }: { onSynced?: () => void }) {
           סנכרון אוטומטי של הזמינות שלכם — כשיש לכם אירוע, {BRAND_NAME} תסמן אותו אוטומטית
         </p>
         <p className="text-text-muted text-xs mt-1">
-          פתחו את האתר ב-Safari או Chrome (לא מתוך WhatsApp).
+          פתחו את האתר ב־Safari או Chrome (לא מתוך WhatsApp).
         </p>
         {connectError && (
           <p className="text-sm text-red-600 font-medium mt-2">{connectError}</p>
@@ -293,7 +293,17 @@ export default function SupplierCalendarPage() {
         </div>
 
         {/* Google Calendar connection */}
-        <Suspense fallback={null}>
+        <Suspense
+          fallback={
+            <div className="bg-white rounded-2xl border border-border p-5 flex items-center gap-4" aria-busy="true">
+              <div className="h-10 w-10 rounded-xl skeleton-shimmer flex-shrink-0" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 w-40 rounded-full skeleton-shimmer" />
+                <div className="h-3 w-64 max-w-full rounded-full skeleton-shimmer" />
+              </div>
+            </div>
+          }
+        >
           <GoogleCalendarBanner onSynced={() => loadData(year, month)} />
         </Suspense>
 

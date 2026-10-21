@@ -41,8 +41,15 @@ export default function FormSelect({
         setOpen(false);
       }
     };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
     document.addEventListener("mousedown", onClickOutside);
-    return () => document.removeEventListener("mousedown", onClickOutside);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onClickOutside);
+      document.removeEventListener("keydown", onKey);
+    };
   }, []);
 
   const selected = options.find((o) => o.value === value);
@@ -66,9 +73,10 @@ export default function FormSelect({
         type="button"
         aria-labelledby={`${id}-label`}
         aria-expanded={open}
+        aria-haspopup="listbox"
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "flex w-full items-center justify-between gap-2 text-right",
+          "flex w-full items-center justify-between gap-2 text-start",
           ghost
             ? "border-0 bg-transparent px-0 py-1.5 text-lg font-medium focus:outline-none"
             : cn(
@@ -91,6 +99,7 @@ export default function FormSelect({
 
       {open && (
         <div
+          role="listbox"
           className={cn(
             "absolute inset-x-0 top-full mt-2 z-50",
             "rounded-xl border border-border bg-white shadow-[var(--shadow-dropdown)] overflow-hidden"
@@ -102,12 +111,14 @@ export default function FormSelect({
               <button
                 key={opt.value}
                 type="button"
+                role="option"
+                aria-selected={isSelected}
                 onClick={() => {
                   onChange(opt.value);
                   setOpen(false);
                 }}
                 className={cn(
-                  "flex w-full items-center justify-between gap-3 px-4 py-3 text-sm text-right transition-colors",
+                  "flex w-full items-center justify-between gap-3 px-4 py-3 text-sm text-start transition-colors",
                   "hover:bg-surface border-b border-border/60 last:border-b-0",
                   isSelected && "bg-primary-light/40"
                 )}

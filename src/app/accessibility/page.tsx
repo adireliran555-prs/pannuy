@@ -20,10 +20,10 @@ export default function AccessibilityPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-xl font-bold">2. התקן שלפיו הונגש האתר</h2>
+        <h2 className="text-xl font-bold">2. התקן שלפיו מונגש האתר</h2>
         <p>
-          הנגשת האתר בוצעה בהתאם לתקנות שוויון זכויות לאנשים עם מוגבלות (התאמות
-          נגישות לשירות), התשע&quot;ג‑2013, ולתקן הישראלי ת&quot;י 5568 בדבר
+          האתר נמצא בתהליך הנגשה מתמשך, בהתאם לתקנות שוויון זכויות לאנשים עם מוגבלות (התאמות
+          נגישות לשירות), התשע״ג־2013, ולתקן הישראלי ת״י 5568 בדבר
           נגישות תכנים באינטרנט, המבוסס על הנחיות{" "}
           <span dir="ltr">WCAG 2.0</span> ברמת <span dir="ltr">AA</span>.
         </p>
@@ -32,14 +32,14 @@ export default function AccessibilityPage() {
       <section className="space-y-3">
         <h2 className="text-xl font-bold">3. הסדרי הנגישות באתר</h2>
         <ul className="list-disc pe-5 space-y-2">
-          <li>האתר בנוי במבנה סמנטי תקני התומך בקוראי מסך.</li>
-          <li>ניתן לנווט באתר באמצעות מקלדת בלבד (מקש Tab וחיצים).</li>
+          <li>האתר בנוי במבנה סמנטי התומך בקוראי מסך, ואנו ממשיכים לשפר אותו.</li>
+          <li>ניתן לנווט ברוב דפי האתר באמצעות מקלדת (מקש Tab וחיצים), כולל קישור דילוג לתוכן.</li>
           <li>
-            שמירה על ניגודיות צבעים מספקת בין הטקסט לרקע לשיפור הקריאוּת.
+            שיפור מתמשך של ניגודיות הצבעים בין הטקסט לרקע.
           </li>
           <li>טקסט חלופי (alt) לתמונות בעלות משמעות.</li>
           <li>
-            תמיכה מלאה בכיווניות מימין לשמאל (עברית) ובהתאמה למסכים בגדלים שונים,
+            תמיכה בכיווניות מימין לשמאל (עברית) ובהתאמה למסכים בגדלים שונים,
             כולל מכשירים ניידים.
           </li>
           <li>
@@ -69,7 +69,7 @@ export default function AccessibilityPage() {
             <strong>רכז נגישות:</strong> צוות {BRAND_NAME}
           </li>
           <li>
-            <strong>דוא&quot;ל:</strong>{" "}
+            <strong>דוא״ל:</strong>{" "}
             <a
               href={`mailto:${SUPPORT_EMAIL}`}
               className="text-primary font-semibold hover:underline"

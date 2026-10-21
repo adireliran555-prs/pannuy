@@ -1,18 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { verifyOtp, signAdminToken, isAdminPhone } from "@/lib/auth";
+import { checkOtpIpLimit, clientIp } from "@/lib/otp-ip-limit";
+import { z } from "zod";
+
+const verifySchema = z.object({
+  phone: z.string().regex(/^05\d{8}$/),
+  otp: z.string().regex(/^\d{6}$/),
+});
 
 const SESSION_COOKIE_MAX_AGE = 7 * 24 * 60 * 60;
 const MAX_OTP_ATTEMPTS = 5;
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { phone, otp } = body as { phone?: string; otp?: string };
-
-    if (!phone || !otp) {
+    const parsed = verifySchema.safeParse(await request.json().catch(() => null));
+    if (!parsed.success) {
       return NextResponse.json({ success: false, error: "טלפון וקוד חובה" }, { status: 400 });
     }
+    const { phone, otp } = parsed.data;
+    if (!(await checkOtpIpLimit(clientIp(request), 30, "verify"))) {
+      return NextResponse.json(
+        { success: false, error: "יותר מדי ניסיונות. נסו שוב מאוחר יותר" },
+        { status: 429 }
+      );
+    }
+
     if (!isAdminPhone(phone)) {
       return NextResponse.json({ success: false, error: "אין הרשאה" }, { status: 403 });
     }
@@ -61,7 +74,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await prisma.otp.update({ where: { id: otpRecord.id }, data: { used: true } });
+    // Atomically claim the code so two concurrent verifies can't both win.
+    const claimed = await prisma.otp.updateMany({
+      where: { id: otpRecord.id, used: false },
+      data: { used: true },
+    });
+    if (claimed.count !== 1) {
+      return NextResponse.json(
+        { success: false, error: "קוד שגוי או פג תוקף" },
+        { status: 401 }
+      );
+    }
 
     const token = signAdminToken({ phone });
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { sendSms } from "@/lib/sms";
-import { APP_URL } from "@/lib/branding";
+import { APP_URL, BRAND_NAME } from "@/lib/branding";
 import { ReferralStatus } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +18,7 @@ function hoursAgo(h: number): Date {
 
 function followUpText(supplierName: string | null, link: string): string {
   const who = supplierName ? ` עם ${supplierName}` : "";
-  return `היי! רצינו לוודא שהצלחת ליצור קשר${who} דרך Top Eventer. עדכנו אותנו כאן: ${link}`;
+  return `היי! רצינו לוודא שהצלחת ליצור קשר${who} דרך ${BRAND_NAME}. עדכנו אותנו כאן: ${link}`;
 }
 
 /**
@@ -63,9 +63,12 @@ export async function GET(request: NextRequest) {
 
     for (const ref of dueForFollowUp) {
       const link = `${APP_URL}/r/${ref.id}`;
-      if (ref.customer?.phone) {
-        await sendSms(ref.customer.phone, followUpText(ref.supplier?.name ?? null, link));
-      }
+      // Only count a follow-up when the SMS was actually delivered — a logged
+      // (unsent) message must not advance the cadence or escalate to NO_ANSWER.
+      const sent = ref.customer?.phone
+        ? await sendSms(ref.customer.phone, followUpText(ref.supplier?.name ?? null, link))
+        : false;
+      if (!sent) continue;
       await prisma.referral.update({
         where: { id: ref.id },
         data: {
@@ -100,8 +103,14 @@ export async function GET(request: NextRequest) {
       escalated++;
     }
 
+    // Housekeeping: purge expired OTP rows older than a day.
+    const purged = await prisma.otp.deleteMany({
+      where: { expiresAt: { lt: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
+    });
+
     return NextResponse.json({
       success: true,
+      otpPurged: purged.count,
       firstSent,
       repeatSent,
       escalated,

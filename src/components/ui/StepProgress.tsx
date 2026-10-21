@@ -17,7 +17,7 @@ export default function StepProgress({
   className,
 }: StepProgressProps) {
   return (
-    <div className={cn("flex items-center gap-0", className)}>
+    <ol className={cn("flex items-start gap-0 list-none p-0 m-0", className)}>
       {steps.map((step, index) => {
         const stepNum = index + 1;
         const isDone = stepNum < currentStep;
@@ -25,7 +25,11 @@ export default function StepProgress({
         const isUpcoming = stepNum > currentStep;
 
         return (
-          <div key={index} className="flex items-center flex-1 last:flex-none">
+          <li
+            key={index}
+            aria-current={isActive ? "step" : undefined}
+            className="flex items-center flex-1 last:flex-none min-w-0"
+          >
             <div className="flex flex-col items-center gap-1.5">
               <div
                 className={cn(
@@ -41,7 +45,7 @@ export default function StepProgress({
               </div>
               <span
                 className={cn(
-                  "text-xs font-medium text-center whitespace-nowrap",
+                  "text-xs font-medium text-center leading-tight max-w-[4.5rem] sm:max-w-none",
                   isActive && "text-primary",
                   isUpcoming && "text-text-muted",
                   isDone && "text-primary"
@@ -55,14 +59,14 @@ export default function StepProgress({
             {index < steps.length - 1 && (
               <div
                 className={cn(
-                  "flex-1 h-0.5 mx-2 mb-5 transition-all duration-300",
+                  "flex-1 h-0.5 mx-2 mt-4 self-start transition-all duration-300",
                   isDone ? "bg-primary" : "bg-border"
                 )}
               />
             )}
-          </div>
+          </li>
         );
       })}
-    </div>
+    </ol>
   );
 }

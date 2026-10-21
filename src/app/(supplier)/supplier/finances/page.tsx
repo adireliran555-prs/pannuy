@@ -106,7 +106,7 @@ const REFERRAL_STATUS_MAP: Record<
   { label: string; variant: "warning" | "info" | "success" | "error" | "default" }
 > = {
   PENDING: { label: "ממתין לאירוע", variant: "warning" },
-  CONFIRMED: { label: "מגיע לך — זמין למשיכה", variant: "success" },
+  CONFIRMED: { label: "מגיע לכם — זמין למשיכה", variant: "success" },
   PAID: { label: "שולם", variant: "info" },
   CANCELLED: { label: "בוטל", variant: "default" },
 };
@@ -180,7 +180,7 @@ export default function SupplierFinancesPage() {
       <div className="space-y-8" dir="rtl">
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-black text-text-main">פיננסים</h1>
+          <h1 className="text-2xl font-black text-text-main">כספים</h1>
           <p className="text-text-muted text-sm mt-1">
             עמלות ההפניה שלכם ויתרה למשיכה
           </p>
@@ -304,19 +304,19 @@ export default function SupplierFinancesPage() {
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 border-b border-border">
                   <tr>
-                    <th className="px-6 py-3 text-right font-semibold text-text-muted">
+                    <th className="px-6 py-3 text-start font-semibold text-text-muted">
                       תאריך
                     </th>
-                    <th className="px-6 py-3 text-right font-semibold text-text-muted">
+                    <th className="px-6 py-3 text-start font-semibold text-text-muted">
                       סוג
                     </th>
-                    <th className="px-6 py-3 text-right font-semibold text-text-muted">
+                    <th className="px-6 py-3 text-start font-semibold text-text-muted">
                       ספק
                     </th>
-                    <th className="px-6 py-3 text-right font-semibold text-text-muted">
+                    <th className="px-6 py-3 text-start font-semibold text-text-muted">
                       סכום
                     </th>
-                    <th className="px-6 py-3 text-right font-semibold text-text-muted">
+                    <th className="px-6 py-3 text-start font-semibold text-text-muted">
                       סטטוס
                     </th>
                   </tr>
@@ -406,7 +406,7 @@ function ReferralsTab({
   const cards = [
     { label: "סה״כ הפניות", value: stats?.total ?? 0, color: "text-text-main" },
     { label: "ממתינות לאירוע", value: stats?.awaitingEvent ?? 0, color: "text-amber-600" },
-    { label: "מגיע לך", value: stats?.dueToYou ?? 0, color: "text-green-600" },
+    { label: "מגיע לכם", value: stats?.dueToYou ?? 0, color: "text-green-600" },
     { label: "שולמו", value: stats?.paid ?? 0, color: "text-blue-600" },
   ];
 
@@ -446,18 +446,18 @@ function ReferralsTab({
           <EmptyState
             emoji="🔗"
             title="עדיין אין הפניות"
-            description="שתפו את הלינק האישי שלכם מהדשבורד כדי להתחיל להרוויח"
+            description="שתפו את הלינק האישי שלכם מהפאנל כדי להתחיל להרוויח"
           />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b border-border">
                 <tr>
-                  <th className="px-5 py-3 text-right font-semibold text-text-muted">הספק שסגר</th>
-                  <th className="px-5 py-3 text-right font-semibold text-text-muted">קטגוריה</th>
-                  <th className="px-5 py-3 text-right font-semibold text-text-muted">תאריך האירוע</th>
-                  <th className="px-5 py-3 text-right font-semibold text-text-muted">עמלה</th>
-                  <th className="px-5 py-3 text-right font-semibold text-text-muted">סטטוס</th>
+                  <th className="px-5 py-3 text-start font-semibold text-text-muted">הספק שסגר</th>
+                  <th className="px-5 py-3 text-start font-semibold text-text-muted">קטגוריה</th>
+                  <th className="px-5 py-3 text-start font-semibold text-text-muted">תאריך האירוע</th>
+                  <th className="px-5 py-3 text-start font-semibold text-text-muted">עמלה</th>
+                  <th className="px-5 py-3 text-start font-semibold text-text-muted">סטטוס</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">

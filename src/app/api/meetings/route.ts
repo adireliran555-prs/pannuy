@@ -4,6 +4,19 @@ import { requireCustomerSession } from "@/lib/api-auth";
 import { invalidateAvailabilityCache } from "@/lib/availability";
 import { createOrUpdateReferral } from "@/lib/referrals";
 import { MeetingType, MeetingStatus, ReferralChannel, Prisma } from "@prisma/client";
+import { z } from "zod";
+
+const timeRe = /^([01]\d|2[0-3]):[0-5]\d$/;
+const createSchema = z
+  .object({
+    supplierId: z.string().min(1),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    startTime: z.string().regex(timeRe),
+    endTime: z.string().regex(timeRe),
+    meetingType: z.enum(MeetingType).optional(),
+    notes: z.string().max(2000).optional().nullable(),
+  })
+  .refine((v) => v.endTime > v.startTime, { path: ["endTime"] });
 
 // Sentinel used to bail out of the booking transaction when the requested slot
 // is already taken. Caught below and translated to a 409.
@@ -14,43 +27,16 @@ export async function POST(request: NextRequest) {
     const { session, error } = requireCustomerSession(request);
     if (error) return error;
 
-    const body = await request.json();
-    const {
-      supplierId,
-      date,
-      startTime,
-      endTime,
-      meetingType,
-      notes,
-    } = body as {
-      supplierId?: string;
-      date?: string;
-      startTime?: string;
-      endTime?: string;
-      meetingType?: string;
-      notes?: string;
-    };
-
-    if (!supplierId || !date || !startTime || !endTime) {
+    const parsed = createSchema.safeParse(await request.json().catch(() => null));
+    if (!parsed.success) {
+      const missing = parsed.error.issues.some((i) => i.code === "invalid_type");
       return NextResponse.json(
-        { success: false, error: "שדות חסרים" },
+        { success: false, error: missing ? "שדות חסרים" : "זמני הפגישה לא תקינים" },
         { status: 400 }
       );
     }
-
-    // Validate time format and ordering server-side (don't trust the client).
-    const timeRe = /^([01]\d|2[0-3]):[0-5]\d$/;
-    if (!timeRe.test(startTime) || !timeRe.test(endTime) || endTime <= startTime) {
-      return NextResponse.json(
-        { success: false, error: "זמני הפגישה לא תקינים" },
-        { status: 400 }
-      );
-    }
-
-    const validMeetingType =
-      meetingType && Object.values(MeetingType).includes(meetingType as MeetingType)
-        ? (meetingType as MeetingType)
-        : MeetingType.VIDEO;
+    const { supplierId, date, startTime, endTime, meetingType, notes } = parsed.data;
+    const validMeetingType = meetingType ?? MeetingType.VIDEO;
 
     // Verify supplier exists
     const supplier = await prisma.supplier.findUnique({
@@ -65,7 +51,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const dateObj = new Date(date);
+    const dateObj = new Date(`${date}T00:00:00Z`);
+    if (Number.isNaN(dateObj.getTime())) {
+      return NextResponse.json(
+        { success: false, error: "תאריך לא תקין" },
+        { status: 400 }
+      );
+    }
 
     // Resolve affiliate referral from cookie
     const refCode = request.cookies.get("pannuy_ref")?.value ?? null;
@@ -91,15 +83,15 @@ export async function POST(request: NextRequest) {
     try {
       meeting = await prisma.$transaction(
         async (tx) => {
-          // Re-check availability inside the tx with an OVERLAP test so a
-          // covering block — a full-day block (00:00–23:59) or a multi-hour
-          // block — also rejects the booking, not just an exact start-time match.
+          // Re-check availability inside the tx with a full INTERVAL overlap test
+          // (existing.start < req.end && existing.end > req.start) so covering,
+          // partial, and contained blocks all reject the booking.
           const existingBlock = await tx.availabilitySlot.findFirst({
             where: {
               supplierId,
               date: dateObj,
               isBlocked: true,
-              startTime: { lte: startTime },
+              startTime: { lt: endTime },
               endTime: { gt: startTime },
             },
           });
@@ -149,7 +141,7 @@ export async function POST(request: NextRequest) {
               supplierId,
               type: "MEETING_REQUEST",
               titleHe: "בקשת פגישה חדשה",
-              bodyHe: `${session.name} ביקש פגישה ב-${date} בשעה ${startTime}`,
+              bodyHe: `${session.name} ביקש פגישה ב־${date} בשעה ${startTime}`,
               metadata: { meetingId: newMeeting.id },
             },
           });

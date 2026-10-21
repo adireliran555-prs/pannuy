@@ -33,7 +33,7 @@ const STATUS_LABEL: Record<string, string> = {
   CONNECTED: "נוצר קשר",
   NO_ANSWER: "אין מענה — להתקשר",
   CONVERTED: "הומר להזמנה",
-  LOST: "אבוד",
+  LOST: "לא הבשיל",
 };
 
 const STATUS_COLOR: Record<string, string> = {
@@ -91,7 +91,7 @@ export default function ReferralsTable({ initialRows }: { initialRows: Row[] }) 
 
   return (
     <div className="bg-white rounded-2xl border border-border overflow-x-auto">
-      <table className="w-full text-sm text-right">
+      <table className="w-full text-sm text-start">
         <thead className="bg-surface text-text-muted text-xs">
           <tr>
             <th className="px-4 py-3 font-semibold">לקוח</th>

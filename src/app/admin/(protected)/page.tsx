@@ -150,7 +150,7 @@ export default function AdminDashboard() {
           <div>
             <h1 className="text-2xl font-black text-text-main">סקירה כללית</h1>
             <p className="text-sm text-text-muted mt-1">
-              {isLoading ? "טוען נתונים..." : `מתעדכן בכל דקה · תקופה: ${TF_LABEL[tf]}`}
+              {isLoading ? "טוען נתונים…" : `מתעדכן בכל דקה · תקופה: ${TF_LABEL[tf]}`}
             </p>
           </div>
           <div className="flex gap-1 bg-gray-100 rounded-2xl p-1">

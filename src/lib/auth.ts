@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import { randomInt } from "crypto";
 import bcrypt from "bcryptjs";
 import { CustomerSession, SupplierSession, AdminSession } from "@/types";
 
@@ -62,7 +63,7 @@ export function isAdminPhone(phone: string): boolean {
 // ─── OTP ──────────────────────────────────────────────────────────────────────
 
 export function generateOtp(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return randomInt(100000, 1000000).toString();
 }
 
 export async function hashOtp(otp: string): Promise<string> {

@@ -22,16 +22,20 @@ export function smsConfigured(): boolean {
  * auto-disabled the moment Telnyx is configured. NEVER active with real SMS.
  */
 export function devOtpEchoEnabled(): boolean {
-  // When SMS isn't wired up, show the code in the UI so login still works.
-  // Never echo once real Telnyx delivery is configured.
-  return !smsConfigured();
+  // Only outside production (or with an explicit OTP_ECHO=true opt-in), and
+  // never once real Telnyx delivery is configured.
+  const allowed =
+    process.env.NODE_ENV !== "production" || process.env.OTP_ECHO === "true";
+  return allowed && !smsConfigured();
 }
 
 /**
  * Generic SMS sender. When Telnyx isn't configured (current state), the message
  * is logged server-side instead of sent — so referral follow-ups and OTPs work in
  * dev and start delivering for real the moment the Telnyx number is SMS-capable.
- * Returns true if the message was sent (or successfully logged in dev).
+ * Returns true only if the message was actually delivered to the provider (or
+ * logged in dev). In production without Telnyx it logs and returns false, so
+ * callers never count a "sent" that only hit the logs.
  */
 export async function sendSms(phone: string, text: string): Promise<boolean> {
   const isDev = process.env.NODE_ENV !== "production";
@@ -39,7 +43,7 @@ export async function sendSms(phone: string, text: string): Promise<boolean> {
 
   if (isDev || !hasTelnyx) {
     console.log(`[SMS] to ${phone}: ${text}`);
-    return true;
+    return isDev;
   }
 
   try {
@@ -65,5 +69,7 @@ export async function sendSms(phone: string, text: string): Promise<boolean> {
 }
 
 export async function sendOtp(phone: string, otp: string): Promise<boolean> {
-  return sendSms(phone, `קוד האימות שלך ב-${BRAND_NAME}: ${otp}`);
+  // Always log server-side so the code can be read from Vercel logs while SMS is dormant.
+  console.log(`[OTP] ${phone}: ${otp}`);
+  return sendSms(phone, `קוד האימות שלך ב־${BRAND_NAME}: ${otp}`);
 }

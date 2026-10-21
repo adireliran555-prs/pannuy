@@ -87,7 +87,7 @@ export default function SelectablePackage({
                 </li>
               ))}
               {extra > 0 && (
-                <li className="text-xs text-text-muted">+{extra} נוספים</li>
+                <li className="text-xs text-text-muted">ועוד {extra}</li>
               )}
             </ul>
           )}

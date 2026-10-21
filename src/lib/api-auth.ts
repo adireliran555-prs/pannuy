@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { verifyToken } from "@/lib/auth";
 import { CustomerSession, SupplierSession, AdminSession } from "@/types";
 
@@ -96,4 +98,19 @@ export function requireAdminSession(
     };
   }
   return { session, error: null };
+}
+
+/**
+ * Server-component guard for admin pages/layouts. Verifies the signed admin
+ * cookie and redirects to /admin/login when missing/invalid.
+ * Usage (in src/app/admin/layout.tsx): `const admin = await requireAdminPage();`
+ */
+export async function requireAdminPage(): Promise<AdminSession & { type: "admin" }> {
+  const store = await cookies();
+  const token = store.get("pannuy_admin_session")?.value;
+  const decoded = token ? verifyToken(token) : null;
+  if (!decoded || (decoded as { type: string }).type !== "admin") {
+    redirect("/admin/login");
+  }
+  return decoded as AdminSession & { type: "admin" };
 }

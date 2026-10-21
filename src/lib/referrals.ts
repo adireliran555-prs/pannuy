@@ -65,8 +65,8 @@ export async function createOrUpdateReferral(
       type: "NEW_LEAD",
       titleHe: "ליד חדש 🎯",
       bodyHe: input.customerName
-        ? `${input.customerName} מתעניין/ת בשירות שלך. הקשר נעשה דרך האתר.`
-        : "לקוח/ה חדש/ה מתעניין/ת בשירות שלך. הקשר נעשה דרך האתר.",
+        ? `${input.customerName} מתעניין/ת בשירות שלכם. הקשר נעשה דרך האתר.`
+        : "לקוח/ה חדש/ה מתעניין/ת בשירות שלכם. הקשר נעשה דרך האתר.",
       metadata: { referralId: referral.id, channel },
     },
   });

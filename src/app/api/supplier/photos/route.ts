@@ -6,6 +6,7 @@ import { delCache } from "@/lib/redis";
 import { maybeActivateSupplierListing } from "@/lib/supplier-activation";
 import { scanImageForPhone, deleteCloudinaryAsset } from "@/lib/cloudinary-ocr";
 import { PhotoType } from "@prisma/client";
+import { isOwnCloudinaryUrl } from "@/lib/cloudinary-server";
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,7 +23,16 @@ export async function POST(request: NextRequest) {
 
     if (!url || !publicId) {
       return NextResponse.json(
-        { success: false, error: "url ו-publicId חובה" },
+        { success: false, error: "url ו־publicId חובה" },
+        { status: 400 }
+      );
+    }
+
+    // Only accept images uploaded to our own Cloudinary account — otherwise the
+    // OCR phone scan could be bypassed with an arbitrary external URL.
+    if (!isOwnCloudinaryUrl(url, publicId)) {
+      return NextResponse.json(
+        { success: false, error: "כתובת תמונה לא תקינה" },
         { status: 400 }
       );
     }

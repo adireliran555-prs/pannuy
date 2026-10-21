@@ -3,6 +3,15 @@ import prisma from "@/lib/prisma";
 import { requireSupplierSession } from "@/lib/api-auth";
 import { invalidateAvailabilityCache } from "@/lib/availability";
 import { createBlockEvent } from "@/lib/google-calendar";
+import { z } from "zod";
+
+const blockSchema = z
+  .object({
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+    endTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+  })
+  .refine((v) => v.endTime > v.startTime, { path: ["endTime"] });
 
 export async function GET(request: NextRequest) {
   try {
@@ -54,24 +63,19 @@ export async function POST(request: NextRequest) {
     const { session, error } = requireSupplierSession(request);
     if (error) return error;
 
-    const body = await request.json();
-    const { date, startTime, endTime } = body as {
-      date?: string;
-      startTime?: string;
-      endTime?: string;
-    };
-
-    if (!date || !startTime || !endTime) {
+    const parsed = blockSchema.safeParse(await request.json().catch(() => null));
+    if (!parsed.success) {
       return NextResponse.json(
         { success: false, error: "תאריך, שעת התחלה וסיום חובה" },
         { status: 400 }
       );
     }
+    const { date, startTime, endTime } = parsed.data;
 
     const slot = await prisma.availabilitySlot.create({
       data: {
         supplierId: session.id,
-        date: new Date(date),
+        date: new Date(`${date}T00:00:00Z`),
         startTime,
         endTime,
         isBlocked: true,

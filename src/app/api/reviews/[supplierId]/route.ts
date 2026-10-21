@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
 const DEFAULT_LIMIT = 10;
+const MAX_LIMIT = 50;
 
 export async function GET(
   request: NextRequest,
@@ -11,8 +12,11 @@ export async function GET(
     const { supplierId } = await params;
     const { searchParams } = request.nextUrl;
 
-    const page = parseInt(searchParams.get("page") ?? "1", 10);
-    const limit = parseInt(searchParams.get("limit") ?? String(DEFAULT_LIMIT), 10);
+    const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1);
+    const limit = Math.min(
+      MAX_LIMIT,
+      Math.max(1, parseInt(searchParams.get("limit") ?? String(DEFAULT_LIMIT), 10) || DEFAULT_LIMIT)
+    );
     const skip = (page - 1) * limit;
 
     const [reviews, total] = await Promise.all([

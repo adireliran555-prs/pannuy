@@ -161,7 +161,7 @@ export async function ensurePannuyCalendar(supplierId: string): Promise<string |
         requestBody: {
           summary: PANNUY_CALENDAR_NAME,
           description:
-            `צרו כאן אירועים כדי לחסום תאריכים ב-${BRAND_NAME}. רק אירועים ביומן זה נמשכים לאתר.`,
+            `צרו כאן אירועים כדי לחסום תאריכים ב־${BRAND_NAME}. רק אירועים ביומן זה נמשכים לאתר.`,
           timeZone: "Asia/Jerusalem",
         },
       });
@@ -236,7 +236,10 @@ export async function getSupplierBusyDays(
   supplierId: string,
   startDate: Date,
   endDate: Date
-): Promise<{ dates: string[]; timed: { start: string; end: string }[] }> {
+): Promise<{
+  dates: { date: string; eventId: string }[];
+  timed: { start: string; end: string; eventId: string }[];
+}> {
   const oauth2Client = await getSupplierOAuthClient(supplierId);
   const calendar = google.calendar({ version: "v3", auth: oauth2Client });
 
@@ -251,12 +254,14 @@ export async function getSupplierBusyDays(
     maxResults: 2500,
   });
 
-  const dates = new Set<string>();
-  const timed: { start: string; end: string }[] = [];
+  const dates: { date: string; eventId: string }[] = [];
+  const timed: { start: string; end: string; eventId: string }[] = [];
 
   for (const event of res.data.items ?? []) {
     // "transparent" = "free" in Google → must NOT block.
     if (event.transparency === "transparent") continue;
+    if (event.status === "cancelled" || !event.id) continue;
+    const eventId = event.id;
 
     const startDateStr = event.start?.date;
     const endDateStr = event.end?.date;
@@ -269,7 +274,7 @@ export async function getSupplierBusyDays(
         : new Date(cursor.getTime() + 24 * 60 * 60 * 1000);
 
       while (cursor < endExclusive) {
-        dates.add(cursor.toISOString().slice(0, 10));
+        dates.push({ date: cursor.toISOString().slice(0, 10), eventId });
         cursor.setUTCDate(cursor.getUTCDate() + 1);
       }
       continue;
@@ -278,11 +283,11 @@ export async function getSupplierBusyDays(
     const startDateTime = event.start?.dateTime;
     const endDateTime = event.end?.dateTime;
     if (startDateTime && endDateTime) {
-      timed.push({ start: startDateTime, end: endDateTime });
+      timed.push({ start: startDateTime, end: endDateTime, eventId });
     }
   }
 
-  return { dates: Array.from(dates), timed };
+  return { dates, timed };
 }
 
 // ─── Sync busy days into AvailabilitySlot (shared helper) ──────────────────────
@@ -301,10 +306,15 @@ export async function syncSupplierBusyDays(
   );
 
   let upsertedCount = 0;
+  // Real Google event ids we saw in this window; GOOGLE slots not in this set
+  // belong to events that were deleted/moved and must be removed below.
+  const seen = new Set<string>();
 
-  // All-day events block the entire day.
-  for (const date of dates) {
-    const googleEventId = `allday-${date}`;
+  // All-day events block the entire day (one row per covered date; the
+  // unique key is (supplierId, date, googleEventId) so a multi-day event is fine).
+  for (const { date, eventId } of dates) {
+    const googleEventId = eventId;
+    seen.add(googleEventId);
     await prisma.availabilitySlot.upsert({
       where: {
         supplierId_date_googleEventId: {
@@ -340,7 +350,8 @@ export async function syncSupplierBusyDays(
 
     const startTime = startParts.time;
     const endTime = endParts.time;
-    const googleEventId = `${dateStr}-${startTime}`;
+    const googleEventId = slot.eventId;
+    seen.add(googleEventId);
 
     await prisma.availabilitySlot.upsert({
       where: {
@@ -367,6 +378,20 @@ export async function syncSupplierBusyDays(
     });
     upsertedCount++;
   }
+
+  // Remove GOOGLE slots in the synced window whose event no longer exists
+  // (deleted or moved in Google Calendar). Also sweeps legacy synthetic ids.
+  await prisma.availabilitySlot.deleteMany({
+    where: {
+      supplierId,
+      source: AvailabilitySource.GOOGLE,
+      date: {
+        gte: new Date(jerusalemParts(now).date),
+        lte: new Date(jerusalemParts(threeMonthsLater).date),
+      },
+      OR: [{ googleEventId: null }, { googleEventId: { notIn: Array.from(seen) } }],
+    },
+  });
 
   await invalidateAvailabilityCache(supplierId);
 
@@ -457,6 +482,16 @@ export async function stopCalendarWatch(supplierId: string): Promise<void> {
 
 // ─── Meeting event details ─────────────────────────────────────────────────────
 
+const MEETING_TYPE_HE: Record<string, string> = {
+  VIDEO: "שיחת וידאו",
+  PHONE: "שיחת טלפון",
+  IN_PERSON: "פגישה פנים אל פנים",
+};
+
+function meetingTypeHe(type: string): string {
+  return MEETING_TYPE_HE[type] ?? type;
+}
+
 interface MeetingEventDetails {
   date: string; // YYYY-MM-DD
   startTime: string; // HH:mm
@@ -489,9 +524,9 @@ export async function createCalendarEvent(
   const res = await calendar.events.insert({
     calendarId,
     requestBody: {
-      summary: `סגור מהאתר: ${meeting.meetingType} - ${meeting.customerName} (טלפון: ${meeting.customerPhone})`,
+      summary: `סגור מהאתר: ${meetingTypeHe(meeting.meetingType)} — ${meeting.customerName} (טלפון: ${meeting.customerPhone})`,
       description: [
-        `סוג פגישה: ${meeting.meetingType}`,
+        `סוג פגישה: ${meetingTypeHe(meeting.meetingType)}`,
         `טלפון: ${meeting.customerPhone}`,
         meeting.notes ? `הערות: ${meeting.notes}` : null,
       ]

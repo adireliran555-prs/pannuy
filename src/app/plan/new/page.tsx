@@ -165,7 +165,7 @@ export default function PlanNewPage() {
         subtitle={current.subtitle}
         onBack={handleBack}
         onNext={handleNext}
-        nextLabel={step === STEP_COUNT - 1 ? "סיימו והתחילו לתכנן" : "המשך"}
+        nextLabel={step === STEP_COUNT - 1 ? "סיימו והתחילו לתכנן" : "המשיכו"}
         isLoading={isLoading}
         canSkip={canSkip}
         onSkip={canSkip ? handleNext : undefined}
@@ -230,10 +230,10 @@ export default function PlanNewPage() {
                 setStepError("");
               }}
               placeholder="לדוגמה: 250"
-              className="pl-16"
+              className="ps-16"
               aria-label="מספר אורחים"
             />
-            <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-sm text-text-muted">
+            <span className="pointer-events-none absolute inset-y-0 start-4 flex items-center text-sm text-text-muted">
               אורחים
             </span>
           </div>
@@ -275,7 +275,7 @@ export default function PlanNewPage() {
               <div className="relative">
                 <span
                   dir="ltr"
-                  className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-text-muted"
+                  className="pointer-events-none absolute inset-y-0 start-3 flex items-center text-text-muted"
                 >
                   ₪
                 </span>
@@ -290,7 +290,7 @@ export default function PlanNewPage() {
                   placeholder={
                     budgetMode === "TOTAL" ? "לדוגמה: 120,000" : "לדוגמה: 350"
                   }
-                  className="pl-8"
+                  className="ps-8"
                 />
               </div>
               {budgetMode === "PER_GUEST" && budget !== null && guests !== null && (

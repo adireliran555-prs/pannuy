@@ -88,7 +88,7 @@ export default function SupplierAnalyticsPage() {
         <div>
           <h1 className="text-2xl font-black text-text-main">אנליטיקה</h1>
           <p className="text-text-muted text-sm mt-1">
-            ראו כמה זוגות צפו בפרופיל ואיפה מגיעות הפניות
+            ראו כמה לקוחות צפו בפרופיל ואיפה מגיעות הפניות
           </p>
         </div>
 
@@ -142,7 +142,7 @@ export default function SupplierAnalyticsPage() {
                   <div className="w-full relative" style={{ height: "100px" }}>
                     <div
                       className={cn(
-                        "absolute bottom-0 left-0 right-0 rounded-t-lg transition-all duration-500",
+                        "absolute bottom-0 inset-x-0 rounded-t-lg transition-all duration-500",
                         heightPct > 70
                           ? "bg-primary"
                           : heightPct > 40
@@ -172,7 +172,7 @@ export default function SupplierAnalyticsPage() {
           </div>
           {stats.activity.length === 0 ? (
             <div className="px-6 py-10 text-center text-sm text-text-muted">
-              {isLoading ? "טוען..." : "אין פעילות עדיין"}
+              {isLoading ? "טוען…" : "אין פעילות עדיין"}
             </div>
           ) : (
             <ul className="divide-y divide-border">

@@ -86,7 +86,7 @@ export default function StepShell({
               disabled={nextDisabled}
               isLoading={isLoading}
             >
-              {nextLabel ?? "המשך"}
+              {nextLabel ?? "המשיכו"}
             </Button>
           </div>
           {canSkip && onSkip && (

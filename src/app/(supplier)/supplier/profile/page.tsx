@@ -7,6 +7,7 @@ import { Plus, X, Check, CheckCircle, LogOut, Upload, ExternalLink } from "lucid
 import SupplierDashboardLayout from "@/components/common/SupplierDashboardLayout";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import Modal from "@/components/ui/Modal";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { cn } from "@/lib/utils";
 import { cloudinaryEnabled, uploadToCloudinary } from "@/lib/cloudinary";
@@ -103,6 +104,7 @@ export default function SupplierProfilePage() {
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const [importMsg, setImportMsg] = useState<string | null>(null);
   const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
+  const [importConfirmOpen, setImportConfirmOpen] = useState(false);
 
   // Packages tab state
   const [packages, setPackages] = useState<PackageState[]>([]);
@@ -244,12 +246,22 @@ export default function SupplierProfilePage() {
     await fetch(`/api/supplier/photos/${photo.id}`, { method: "DELETE" }).catch(() => {});
   };
 
+  const requestImportLanding = () => {
+    if (!importUrl.trim() || importing) return;
+    if (photos.length > 0 || packages.some((p) => p.id)) {
+      setImportConfirmOpen(true);
+      return;
+    }
+    void handleImportLanding();
+  };
+
   const handleImportLanding = async () => {
     if (!importUrl.trim() || importing) return;
+    setImportConfirmOpen(false);
     setImporting(true);
     setImportMsg(null);
     setImportSummary(null);
-    setImportStatus("סורקים את האתר ומחלצים פרטים...");
+    setImportStatus("סורקים את האתר ומחלצים פרטים…");
     setActiveTab("info");
     try {
       const res = await fetch("/api/supplier/import-landing", {
@@ -265,7 +277,7 @@ export default function SupplierProfilePage() {
       }
 
       const imported = json.data as LandingImportData;
-      setImportStatus("שומרים את הפרופיל, התמונות והחבילות...");
+      setImportStatus("שומרים את הפרופיל, התמונות והחבילות…");
       const fields: string[] = [];
       const profilePatch: Record<string, string | number | string[] | null> = {};
 
@@ -475,13 +487,13 @@ export default function SupplierProfilePage() {
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-black text-text-main">הפרופיל שלי</h1>
-            <p className="text-text-muted text-sm mt-1">עדכנו את הפרטים שמוצגים לזוגות</p>
+            <p className="text-text-muted text-sm mt-1">עדכנו את הפרטים שמוצגים ללקוחות</p>
           </div>
           {slug && (
             <Link href={`/suppliers/${slug}`} target="_blank" rel="noopener noreferrer">
               <Button variant="secondary" size="sm" className="whitespace-nowrap">
                 <ExternalLink className="h-4 w-4" />
-                הצג את הפרופיל שלי בזוית של לקוח
+                הציגו את הפרופיל שלי מנקודת המבט של לקוח
               </Button>
             </Link>
           )}
@@ -510,15 +522,15 @@ export default function SupplierProfilePage() {
               value={importUrl}
               onChange={(e) => setImportUrl(e.target.value)}
               onKeyDown={(e) =>
-                e.key === "Enter" && (e.preventDefault(), handleImportLanding())
+                e.key === "Enter" && (e.preventDefault(), requestImportLanding())
               }
-              placeholder="https://..."
+              placeholder="https://…"
               dir="ltr"
               disabled={importing}
               className="flex-1 h-11 rounded-xl border border-border px-4 text-base text-text-main focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
             />
             <Button
-              onClick={handleImportLanding}
+              onClick={requestImportLanding}
               isLoading={importing}
               disabled={!importUrl.trim()}
               size="md"
@@ -576,7 +588,7 @@ export default function SupplierProfilePage() {
                 onChange={(e) => setCategory(e.target.value)}
                 className="w-full h-12 rounded-xl border border-border px-4 text-base text-text-main focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
               >
-                <option value="">בחרו תחום...</option>
+                <option value="">בחרו תחום…</option>
                 {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
                   <option key={value} value={value}>{label}</option>
                 ))}
@@ -586,8 +598,8 @@ export default function SupplierProfilePage() {
             <EventTypePicker
               value={selectedEventTypes}
               onChange={setSelectedEventTypes}
-              label="סוגי אירועים שאני מספק/ה"
-              hint="בחרו את כל סוגי האירועים שאתם מלווים — כמו שהזוגות בוחרים בחיפוש"
+              label="סוגי אירועים שאתם מלווים"
+              hint="בחרו את כל סוגי האירועים שאתם מלווים — כמו שהלקוחות בוחרים בחיפוש"
             />
 
             <div>
@@ -669,7 +681,7 @@ export default function SupplierProfilePage() {
               >
                 <Upload className="h-6 w-6 text-primary" />
                 <span className="text-sm font-semibold text-text-main">
-                  {uploading ? "מעלה..." : "העלו תמונות מהמכשיר"}
+                  {uploading ? "מעלה…" : "העלו תמונות מהמכשיר"}
                 </span>
                 <span className="text-xs text-text-muted">עד 20 תמונות · JPG/PNG</span>
                 <input
@@ -689,7 +701,7 @@ export default function SupplierProfilePage() {
                 value={photoUrl}
                 onChange={(e) => setPhotoUrl(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addPhoto())}
-                placeholder="https://... (הוספת תמונה בודדת)"
+                placeholder="https://… (הוספת תמונה בודדת)"
                 dir="ltr"
                 className="flex-1 h-11 rounded-xl border border-border px-4 text-base text-text-main focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
@@ -718,7 +730,7 @@ export default function SupplierProfilePage() {
                     <button
                       type="button"
                       onClick={() => removePhoto(photo)}
-                      className="absolute top-2 left-2 w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                      className="absolute top-2 start-2 w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                       aria-label="מחקו תמונה"
                     >
                       <X className="h-4 w-4" />
@@ -826,7 +838,7 @@ export default function SupplierProfilePage() {
                   <div className="flex gap-2">
                     <input
                       type="text"
-                      placeholder="הוסיפו פריט..."
+                      placeholder="הוסיפו פריט…"
                       value={pkg.includeInput}
                       onChange={(e) => {
                         const updated = [...packages];
@@ -899,6 +911,24 @@ export default function SupplierProfilePage() {
           התנתקות מהחשבון
         </button>
       </div>
+      <Modal
+        open={importConfirmOpen}
+        onClose={() => setImportConfirmOpen(false)}
+        title="ייבוא מדף נחיתה"
+        size="sm"
+      >
+        <p className="text-sm text-text-main leading-relaxed">
+          הייבוא יחליף {photos.length} תמונות ו־{packages.filter((p) => p.id).length} חבילות קיימות. להמשיך?
+        </p>
+        <div className="mt-5 flex gap-3">
+          <Button variant="secondary" fullWidth onClick={() => setImportConfirmOpen(false)}>
+            ביטול
+          </Button>
+          <Button fullWidth onClick={handleImportLanding}>
+            כן, ייבאו
+          </Button>
+        </div>
+      </Modal>
     </SupplierDashboardLayout>
   );
 }

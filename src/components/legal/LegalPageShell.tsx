@@ -30,7 +30,7 @@ export default function LegalPageShell({
         <p className="text-sm text-text-muted mb-8">
           {BRAND_NAME} · עודכן לאחרונה: {updated}
         </p>
-        <article className="prose-legal space-y-6 text-text-main leading-relaxed">
+        <article className="space-y-6 text-text-main leading-relaxed">
           {children}
         </article>
       </main>

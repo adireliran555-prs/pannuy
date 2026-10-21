@@ -99,7 +99,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               <ExternalLink className="h-3 w-3 opacity-50" />
             </Link>
             <p className="px-3 pt-2 text-[11px] text-text-muted/70 leading-relaxed">
-              לכניסה כלקוח/ספק ספציפי, לחצו על &quot;צפו כ...&quot; בטבלאות.
+              לכניסה כלקוח/ספק ספציפי, לחצו על &quot;צפו כ…&quot; בטבלאות.
             </p>
           </div>
         </nav>

@@ -12,6 +12,7 @@ import { SupplierCardSkeleton } from "@/components/ui/Skeleton";
 import EmptyState from "@/components/ui/EmptyState";
 import Button from "@/components/ui/Button";
 import DatePickerField from "@/components/ui/DatePickerField";
+import Modal from "@/components/ui/Modal";
 import { cn } from "@/lib/utils";
 import { setEventContext, getEventContext } from "@/lib/event-context";
 import { REGIONS } from "@/lib/regions";
@@ -36,6 +37,11 @@ interface Filters {
 }
 
 const ALL_CATEGORIES = "ALL";
+
+const REGION_LABEL: Record<string, string> = Object.fromEntries(
+  REGIONS.map((r) => [r.id, r.label])
+);
+const regionLabel = (id: string) => REGION_LABEL[id] ?? id;
 
 function SearchContent({ initialData }: { initialData?: InitialData }) {
   const searchParams = useSearchParams();
@@ -167,8 +173,10 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
     priceDesc: "מחיר יורד",
   };
 
-  const locationLabel = selectedAreas.length > 0 ? `ב${selectedAreas.join(", ")}` : "בכל הארץ";
-  const locationDisplay = selectedAreas.length > 0 ? selectedAreas.join(", ") : "";
+  const selectedAreaLabels = selectedAreas.map(regionLabel);
+  const locationLabel =
+    selectedAreas.length > 0 ? `באזור ${selectedAreaLabels.join(", ")}` : "בכל הארץ";
+  const locationDisplay = selectedAreas.length > 0 ? selectedAreaLabels.join(", ") : "";
 
   return (
     <div className="min-h-screen bg-surface">
@@ -225,9 +233,10 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
               <button
                 key={area}
                 onClick={() => setSelectedAreas((prev) => prev.filter((a) => a !== area))}
-                className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 bg-primary text-white rounded-full text-xs font-semibold whitespace-nowrap"
+                aria-label={`הסירו את האזור ${regionLabel(area)}`}
+                className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 bg-primary-strong text-white rounded-full text-xs font-semibold whitespace-nowrap"
               >
-                {area}
+                {regionLabel(area)}
                 <X className="h-3 w-3" />
               </button>
             ))}
@@ -276,7 +285,7 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
                           )}
                         >
                           {selected && (
-                            <span className="absolute top-1 left-1 w-3.5 h-3.5 bg-white/30 rounded-full flex items-center justify-center">
+                            <span className="absolute top-1 start-1 w-3.5 h-3.5 bg-white/30 rounded-full flex items-center justify-center">
                               <Check className="h-2 w-2 text-white" />
                             </span>
                           )}
@@ -332,7 +341,7 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
                   {[3000, 5000, 8000, 12000].map((price) => (
                     <button
                       key={price}
-                      className="block w-full text-right px-3 py-2 text-sm hover:bg-primary-light rounded-lg transition-colors"
+                      className="block w-full text-start px-3 py-2 text-sm hover:bg-primary-light rounded-lg transition-colors"
                       onClick={() => { setFilters((f) => ({ ...f, priceMax: price })); setShowPriceDropdown(false); }}
                     >
                       עד ₪{price.toLocaleString("he-IL")}
@@ -354,12 +363,12 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
                 <ChevronDown className="h-3.5 w-3.5" />
               </button>
               {showSortDropdown && (
-                <div className="absolute top-full left-0 mt-1 z-50 bg-white border border-border rounded-2xl shadow-xl overflow-hidden min-w-[160px]">
+                <div className="absolute top-full start-0 mt-1 z-50 bg-white border border-border rounded-2xl shadow-xl overflow-hidden min-w-[160px]">
                   {(Object.keys(SORT_LABELS) as Filters["sortBy"][]).map((key) => (
                     <button
                       key={key}
                       className={cn(
-                        "block w-full text-right px-4 py-3 text-sm transition-colors",
+                        "block w-full text-start px-4 py-3 text-sm transition-colors",
                         filters.sortBy === key
                           ? "bg-primary-light text-primary font-semibold"
                           : "hover:bg-gray-50 text-text-main"
@@ -413,7 +422,7 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
           )}
           {!isLoading && areaFallback && selectedAreas.length > 0 && (
             <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 inline-block">
-              לא נמצאו ספקים ב{selectedAreas.join(", ")} — מציגים את כל הספקים הזמינים
+              לא נמצאו ספקים באזור {selectedAreaLabels.join(", ")} — מציגים את כל הספקים הזמינים
             </p>
           )}
         </div>
@@ -489,22 +498,12 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
       </div>
 
       {/* ── Mobile filter drawer ── */}
-      {showFilterDrawer && (
-        <div className="fixed inset-0 z-50">
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={() => setShowFilterDrawer(false)}
-          />
-          <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl p-6 space-y-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold text-text-main">פילטרים</h3>
-              <button
-                onClick={() => setShowFilterDrawer(false)}
-                className="p-2 hover:bg-gray-100 rounded-full"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
+      <Modal
+        open={showFilterDrawer}
+        onClose={() => setShowFilterDrawer(false)}
+        title="פילטרים"
+      >
+          <div className="space-y-6 pb-2">
 
             {/* Date mobile */}
             <div>
@@ -525,11 +524,13 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
                 {REGIONS.map(({ id, label, emoji }) => (
                   <button
                     key={id}
+                    type="button"
+                    aria-pressed={selectedAreas.includes(id)}
                     onClick={() => setSelectedAreas((prev) =>
                       prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]
                     )}
                     className={cn(
-                      "flex flex-col items-center gap-0.5 py-2 px-1 rounded-xl border-2 text-xs font-semibold transition-colors",
+                      "flex flex-col items-center gap-0.5 py-2 px-1 rounded-xl border-2 text-xs font-semibold transition-colors min-h-11",
                       selectedAreas.includes(id)
                         ? "border-primary bg-primary text-white"
                         : "border-border text-text-main"
@@ -603,8 +604,7 @@ function SearchContent({ initialData }: { initialData?: InitialData }) {
               </Button>
             </div>
           </div>
-        </div>
-      )}
+      </Modal>
     </div>
   );
 }
@@ -613,7 +613,7 @@ export default function SearchClient({ initialData }: { initialData?: InitialDat
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-surface flex items-center justify-center">
-        <div className="text-text-muted">טוען...</div>
+        <div className="text-text-muted">טוען…</div>
       </div>
     }>
       <SearchContent initialData={initialData} />

@@ -12,8 +12,8 @@ export const metadata: Metadata = {
 
 const FAQS = [
   {
-    q: `האם ההצטרפות ל-${BRAND_NAME} כרוכה בתשלום?`,
-    a: `לא! ההצטרפות ל-${BRAND_NAME} חינמית לחלוטין. אין תשלום חודשי ואין עמלת רישום. אנחנו גובים עמלה רק על עבודות שאתם סוגרים בפועל דרך הפלטפורמה — אם לא סגרתם, לא שילמתם.`,
+    q: `האם ההצטרפות ל־${BRAND_NAME} כרוכה בתשלום?`,
+    a: `לא! ההצטרפות ל־${BRAND_NAME} חינמית לחלוטין. אין תשלום חודשי ואין עמלת רישום. אנחנו גובים עמלה רק על עבודות שאתם סוגרים בפועל דרך הפלטפורמה — אם לא סגרתם, לא שילמתם.`,
   },
   {
     q: "אפשר להרוויח על הפניה של ספקים נוספים?",
@@ -21,7 +21,7 @@ const FAQS = [
   },
   {
     q: "כמה זמן לוקח להקים פרופיל?",
-    a: "פחות מ-15 דקות. תמלאו פרטים בסיסיים, תעלו תמונות מתיק העבודות שלכם, ותגדירו חבילות ומחירים. נבצע אימות קצר ותהיו פעילים!",
+    a: "פחות מ־15 דקות. מלאו פרטים בסיסיים, העלו תמונות מתיק העבודות שלכם והגדירו חבילות ומחירים. אחרי אימות קצר תהיו פעילים!",
   },
   {
     q: "איך מנהלים את הזמינות?",
@@ -29,7 +29,7 @@ const FAQS = [
   },
   {
     q: "מה קורה כשזוג מבקש פגישה?",
-    a: "תקבלו התראה מיידית, תוכלו לאשר או לדחות תוך שניות, ותתקשרו עם הזוג ישירות דרך הפלטפורמה. ללא מתווכים.",
+    a: "תקבלו התראה מיידית, אשרו או דחו תוך שניות, ושוחחו עם הלקוח ישירות דרך הפלטפורמה. ללא מתווכים.",
   },
 ];
 
@@ -40,14 +40,14 @@ export default function ForSuppliersPage() {
       <section className="relative min-h-[70vh] flex items-center justify-center overflow-hidden">
         {/* Background */}
         <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900" />
-        <div
-          className="absolute inset-0 opacity-30"
-          style={{
-            backgroundImage:
-              "url('https://images.unsplash.com/photo-1519741497674-611481863552?w=1600')",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="https://images.unsplash.com/photo-1519741497674-611481863552?w=1600"
+          alt=""
+          aria-hidden="true"
+          loading="lazy"
+          decoding="async"
+          className="absolute inset-0 h-full w-full object-cover opacity-30"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 via-transparent to-gray-900/30" />
 
@@ -58,10 +58,10 @@ export default function ForSuppliersPage() {
           <h1 className="text-4xl sm:text-6xl font-black text-white leading-tight mb-4">
             הציגו את האמנות שלכם
             <br />
-            <span className="text-primary">לאלפי זוגות</span>
+            <span className="text-primary">לאלפי לקוחות</span>
           </h1>
           <p className="text-lg text-white/80 mb-8 max-w-xl mx-auto leading-relaxed">
-            הצטרפו ל-{BRAND_NAME} — הפלטפורמה לספקי החתונות מהטופ של ישראל. קבלו לידים איכותיים ונהלו פגישות בקלות.
+            הצטרפו ל־{BRAND_NAME} — הפלטפורמה לספקי האירועים מהטופ של ישראל. קבלו לידים איכותיים ונהלו פגישות בקלות.
           </p>
           <Link
             href="/supplier/join"
@@ -136,7 +136,7 @@ export default function ForSuppliersPage() {
               {
                 icon: Camera,
                 title: "ניהול עסקי",
-                desc: "כלים לניהול פגישות ואנליטיקה. ראו כמה זוגות צפו בפרופיל ומאיפה מגיעות הפניות.",
+                desc: "כלים לניהול פגישות ואנליטיקה. ראו כמה לקוחות צפו בפרופיל ומאיפה מגיעות הפניות.",
                 color: "bg-green-100 text-green-600",
               },
             ].map(({ icon: Icon, title, desc, color }) => (
@@ -175,13 +175,13 @@ export default function ForSuppliersPage() {
               {
                 step: "02",
                 title: "חברו לוח שנה",
-                desc: `סנכרנו את Google Calendar שלכם. כשאתם תפוסים, ${BRAND_NAME} יסמן תאריכים חסומים אוטומטית.`,
+                desc: `סנכרנו את Google Calendar שלכם. כשאתם תפוסים, ${BRAND_NAME} תסמן תאריכים חסומים אוטומטית.`,
                 time: "2 דקות",
               },
               {
                 step: "03",
                 title: "קבלו פניות",
-                desc: "זוגות יפנו אליכם ישירות, תאשרו פגישות, ותנהלו הכל מהפאנל שלכם.",
+                desc: "לקוחות פונים אליכם ישירות — אשרו פגישות ונהלו הכול מהפאנל שלכם.",
                 time: "מתמשך",
               },
             ].map(({ step, title, desc, time }, idx) => (
@@ -223,12 +223,12 @@ export default function ForSuppliersPage() {
               {
                 icon: ShieldCheck,
                 title: "ספקים מאומתים בלבד",
-                text: "כל ספק עובר אימות לפני שהוא עולה לפלטפורמה. הזוגות יודעים שהם פונים למקצוענים אמיתיים.",
+                text: "כל ספק עובר אימות לפני שהוא עולה לפלטפורמה. הלקוחות יודעים שהם פונים למקצוענים אמיתיים.",
               },
               {
                 icon: Calendar,
                 title: "זמינות אמיתית",
-                text: "הזוגות רואים מראש מתי אתם פנויים, כך שמגיעות אליכם רק פניות שמתאימות לתאריך שלכם.",
+                text: "הלקוחות רואים מראש מתי אתם פנויים, כך שמגיעות אליכם רק פניות שמתאימות לתאריך שלכם.",
               },
             ].map(({ icon: Icon, title, text }) => (
               <div
@@ -278,7 +278,7 @@ export default function ForSuppliersPage() {
             מוכנים להתחיל?
           </h2>
           <p className="text-lg text-text-muted mb-8">
-            הצטרפו לקהילת הספקים שלנו וקבלו גישה לזוגות חדשים — בלי עלות מראש
+            הצטרפו לקהילת הספקים שלנו וקבלו גישה ללקוחות חדשים — בלי עלות מראש
           </p>
           <Link
             href="/supplier/join"
@@ -288,7 +288,7 @@ export default function ForSuppliersPage() {
             <ChevronLeft className="h-5 w-5" />
           </Link>
           <div className="mt-6 flex items-center justify-center gap-6 text-sm text-text-muted">
-            {["הצטרפות חינם", "עמלה רק על עבודה שנסגרה", "ביטול בכל עת"].map((item) => (
+            {["הצטרפות חינם", "עמלה רק על עבודה שנסגרה", "ללא עלות מראש"].map((item) => (
               <span key={item} className="flex items-center gap-1.5">
                 <CheckCircle className="h-4 w-4 text-green-500" />
                 {item}
@@ -303,7 +303,7 @@ export default function ForSuppliersPage() {
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-white/50">
           <TopEventsLogo size="sm" />
           <div className="flex gap-6">
-            <Link href="/" className="hover:text-white/80 transition-colors">לזוגות</Link>
+            <Link href="/" className="hover:text-white/80 transition-colors">ללקוחות</Link>
             <Link href="/terms" className="hover:text-white/80 transition-colors">תנאי שימוש</Link>
             <Link href="/privacy" className="hover:text-white/80 transition-colors">פרטיות</Link>
             <Link href="/contact" className="hover:text-white/80 transition-colors">יצירת קשר</Link>

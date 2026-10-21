@@ -33,7 +33,6 @@ export async function GET(
         ratingAvg: true,
         ratingCount: true,
         isVerified: true,
-        responseRate: true,
         highlights: true,
         createdAt: true,
         photos: {

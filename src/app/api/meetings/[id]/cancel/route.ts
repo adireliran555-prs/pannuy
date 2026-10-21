@@ -26,6 +26,7 @@ export async function PATCH(
         status: true,
         requestedDate: true,
         startTime: true,
+        endTime: true,
         googleEventId: true,
         supplier: { select: { name: true } },
       },
@@ -62,7 +63,7 @@ export async function PATCH(
 
     if (hoursUntilMeeting < MIN_HOURS_BEFORE_CANCELLATION) {
       return NextResponse.json(
-        { success: false, error: "לא ניתן לבטל פחות מ-24 שעות לפני הפגישה" },
+        { success: false, error: "לא ניתן לבטל פחות מ־24 שעות לפני הפגישה" },
         { status: 400 }
       );
     }
@@ -74,15 +75,21 @@ export async function PATCH(
       });
 
       // Free the time back up: delete the MANUAL slot this booking created so
-      // the slot can be rebooked. (GOOGLE slots are owned by calendar sync.)
+      // the slot can be rebooked, plus the GOOGLE mirror of the calendar event.
       await tx.availabilitySlot.deleteMany({
         where: {
           supplierId: meeting.supplierId,
           date: meeting.requestedDate,
           startTime: meeting.startTime,
-          source: "MANUAL",
+          endTime: meeting.endTime,
+          OR: [{ source: "MANUAL" }, { source: "GOOGLE" }],
         },
       });
+      if (meeting.googleEventId) {
+        await tx.availabilitySlot.deleteMany({
+          where: { supplierId: meeting.supplierId, googleEventId: meeting.googleEventId },
+        });
+      }
 
       // If this booking carried a referral, void its still-PENDING earning so it
       // doesn't linger forever on the referrer's dashboard for a cancelled event.

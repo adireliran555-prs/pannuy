@@ -6,6 +6,25 @@ import { delCache } from "@/lib/redis";
 import { maybeActivateSupplierListing } from "@/lib/supplier-activation";
 import { normalizeEventTypes } from "@/lib/event-types";
 import { Category } from "@prisma/client";
+import { z } from "zod";
+
+const patchSchema = z
+  .object({
+    name: z.string().trim().min(1).max(100).optional(),
+    bioHe: z.string().max(5000).optional(),
+    city: z.string().max(100).optional(),
+    serviceAreas: z.array(z.string().max(100)).max(50).optional(),
+    supportedEventTypes: z.array(z.string().max(50)).max(20).optional(),
+    basePriceFrom: z.number().int().nonnegative().nullable().optional(),
+    basePriceTo: z.number().int().nonnegative().nullable().optional(),
+    email: z.string().email().max(200).or(z.literal("")).optional(),
+    category: z.string().optional(),
+  })
+  .refine(
+    (v) =>
+      v.basePriceFrom == null || v.basePriceTo == null || v.basePriceFrom <= v.basePriceTo,
+    { path: ["basePriceTo"], message: "טווח מחירים לא תקין" }
+  );
 
 export async function GET(request: NextRequest) {
   try {
@@ -32,7 +51,6 @@ export async function GET(request: NextRequest) {
         isVerified: true,
         isActive: true,
         googleCalendarId: true,
-        responseRate: true,
         createdAt: true,
         updatedAt: true,
         affiliateCode: true,
@@ -67,19 +85,16 @@ export async function PATCH(request: NextRequest) {
     const { session, error } = requireSupplierSession(request);
     if (error) return error;
 
-    const body = await request.json();
+    const parsed = patchSchema.safeParse(await request.json().catch(() => null));
+    if (!parsed.success) {
+      const priceIssue = parsed.error.issues.some((i) => String(i.path[0]).startsWith("basePrice"));
+      return NextResponse.json(
+        { success: false, error: priceIssue ? "טווח מחירים לא תקין" : "נתונים לא תקינים" },
+        { status: 400 }
+      );
+    }
     const { name, bioHe, city, serviceAreas, supportedEventTypes, basePriceFrom, basePriceTo, email, category } =
-      body as {
-        name?: string;
-        bioHe?: string;
-        city?: string;
-        serviceAreas?: string[];
-        supportedEventTypes?: string[];
-        basePriceFrom?: number;
-        basePriceTo?: number;
-        email?: string;
-        category?: string;
-      };
+      parsed.data;
 
     const nextSupportedEventTypes =
       supportedEventTypes !== undefined

@@ -22,9 +22,10 @@ export default function KosherToggle({ value, onChange }: KosherToggleProps) {
           <button
             key={String(opt.value)}
             type="button"
+            aria-pressed={active}
             onClick={() => onChange(opt.value)}
             className={cn(
-              "flex-1 rounded-lg py-2 text-sm font-semibold transition-colors duration-200",
+              "flex-1 min-h-11 rounded-lg py-2 text-sm font-semibold transition-colors duration-200",
               active ? "bg-primary text-white" : "text-text-muted"
             )}
           >

@@ -3,11 +3,12 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import useSWR from "swr";
-import { Calendar, Clock, Eye, CheckCircle, X, ArrowLeft, TrendingUp, ShieldCheck, Target } from "lucide-react";
+import { Calendar, Clock, Eye, CheckCircle, ArrowLeft, TrendingUp, ShieldCheck, Target } from "lucide-react";
 import SupplierDashboardLayout from "@/components/common/SupplierDashboardLayout";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import { formatHebrewDate } from "@/lib/utils";
+import { BRAND_NAME } from "@/lib/branding";
 
 const MEETING_TYPE_LABELS: Record<string, string> = {
   VIDEO: "וידאו",
@@ -95,7 +96,7 @@ export default function SupplierDashboardPage() {
       done: !!profile?.googleCalendarId,
     },
     {
-      label: "5+ תמונות הועלו",
+      label: "לפחות 5 תמונות הועלו",
       done: (profile?.photos?.length ?? 0) >= 5,
     },
     {
@@ -103,7 +104,7 @@ export default function SupplierDashboardPage() {
       done: (profile?.packages?.length ?? 0) > 0,
     },
     {
-      label: "ביו מלא",
+      label: "תיאור מלא",
       done: (profile?.bioHe?.length ?? 0) >= 20,
     },
   ];
@@ -140,11 +141,11 @@ export default function SupplierDashboardPage() {
     },
     {
       label: "סטטוס ספק",
-      value: "מאומת",
+      value: profile ? (profile.isVerified ? "מאומת" : "ממתין לאימות") : "—",
       icon: ShieldCheck,
-      bg: "bg-green-50",
-      iconColor: "text-green-600",
-      valueColor: "text-green-700",
+      bg: profile && !profile.isVerified ? "bg-amber-50" : "bg-green-50",
+      iconColor: profile && !profile.isVerified ? "text-amber-600" : "text-green-600",
+      valueColor: profile && !profile.isVerified ? "text-amber-700 text-xl" : "text-green-700",
     },
   ];
 
@@ -171,7 +172,7 @@ export default function SupplierDashboardPage() {
             <input
               readOnly
               dir="ltr"
-              value={affiliateUrl ?? "טוען..."}
+              value={affiliateUrl ?? "טוען…"}
               className="flex-1 rounded-xl border border-border bg-gray-50 px-3 py-2 text-sm text-text-main font-mono focus:outline-none truncate"
             />
             <button
@@ -184,7 +185,7 @@ export default function SupplierDashboardPage() {
               }}
               className="flex-shrink-0 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white hover:bg-primary-dark transition-colors"
             >
-              {copied ? "הועתק ✓" : "העתק"}
+              {copied ? "הועתק ✓" : "העתיקו"}
             </button>
           </div>
           <p className="text-xs text-text-muted">
@@ -200,7 +201,7 @@ export default function SupplierDashboardPage() {
               <h2 className="text-lg font-black text-text-main">לידים שהפנינו אליכם 🎯</h2>
             </div>
             <p className="text-sm text-text-muted mb-4">
-              לקוחות שהתעניינו בכם דרך Top Eventer. בקשות הפגישה מופיעות תחת &quot;בקשות&quot; — הקשר נעשה דרך המערכת בלבד.
+              לקוחות שהתעניינו בכם דרך {BRAND_NAME}. בקשות הפגישה שלהם מופיעות בלשונית ״בקשות״, והתקשורת מתבצעת דרך המערכת בלבד.
             </p>
             <div className="space-y-2">
               {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
@@ -281,18 +282,13 @@ export default function SupplierDashboardPage() {
                     </div>
                   </div>
 
-                  <div className="flex gap-2">
-                    <Link href="/supplier/bookings">
-                      <button className="w-9 h-9 rounded-full bg-green-100 text-green-600 flex items-center justify-center hover:bg-green-200 transition-colors">
-                        <CheckCircle className="h-4 w-4" />
-                      </button>
-                    </Link>
-                    <Link href="/supplier/bookings">
-                      <button className="w-9 h-9 rounded-full bg-red-100 text-red-500 flex items-center justify-center hover:bg-red-200 transition-colors">
-                        <X className="h-4 w-4" />
-                      </button>
-                    </Link>
-                  </div>
+                  <Link
+                    href="/supplier/bookings"
+                    className="flex-shrink-0 inline-flex items-center gap-1 rounded-full bg-primary-light px-4 py-2 text-sm font-bold text-primary-dark hover:bg-primary hover:text-white transition-colors"
+                  >
+                    לטיפול
+                    <ArrowLeft className="h-3.5 w-3.5" />
+                  </Link>
                 </div>
               ))}
             </div>
@@ -391,7 +387,7 @@ export default function SupplierDashboardPage() {
                       href="/supplier/profile"
                       className="ms-auto text-xs font-semibold text-primary hover:text-primary-dark"
                     >
-                      השלימו →
+                      השלימו ←
                     </Link>
                   )}
                 </li>

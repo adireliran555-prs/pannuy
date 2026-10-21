@@ -3,32 +3,28 @@ import { revalidatePath } from "next/cache";
 import prisma from "@/lib/prisma";
 import { requireCustomerSession } from "@/lib/api-auth";
 import { delCache } from "@/lib/redis";
+import { z } from "zod";
+
+const createSchema = z.object({
+  meetingId: z.string().min(1),
+  rating: z.number().int().min(1).max(5),
+  textHe: z.string().max(3000).nullable().optional(),
+});
 
 export async function POST(request: NextRequest) {
   try {
     const { session, error } = requireCustomerSession(request);
     if (error) return error;
 
-    const body = await request.json();
-    const { meetingId, rating, textHe } = body as {
-      meetingId?: string;
-      rating?: number;
-      textHe?: string;
-    };
-
-    if (!meetingId || rating === undefined) {
+    const parsed = createSchema.safeParse(await request.json().catch(() => null));
+    if (!parsed.success) {
+      const ratingIssue = parsed.error.issues.some((i) => i.path[0] === "rating" && i.code !== "invalid_type");
       return NextResponse.json(
-        { success: false, error: "meetingId ודירוג חובה" },
+        { success: false, error: ratingIssue ? "דירוג חייב להיות בין 1 ל־5" : "meetingId ודירוג חובה" },
         { status: 400 }
       );
     }
-
-    if (rating < 1 || rating > 5) {
-      return NextResponse.json(
-        { success: false, error: "דירוג חייב להיות בין 1 ל-5" },
-        { status: 400 }
-      );
-    }
+    const { meetingId, rating, textHe } = parsed.data;
 
     const meeting = await prisma.meeting.findUnique({
       where: { id: meetingId },

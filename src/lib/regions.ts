@@ -6,7 +6,7 @@ export const REGIONS = [
   { id: "גוש דן", label: "גוש דן", emoji: "🌆" },
   { id: "תל אביב", label: "תל אביב", emoji: "🌃" },
   { id: "השרון", label: "השרון", emoji: "🌊" },
-  { id: "ירושלים", label: "ירושלים", emoji: "🕌" },
+  { id: "ירושלים", label: "ירושלים", emoji: "🏛️" },
   { id: "חיפה", label: "חיפה", emoji: "⚓" },
   { id: "הצפון", label: "צפון", emoji: "🌿" },
   { id: "הדרום", label: "דרום", emoji: "🌵" },

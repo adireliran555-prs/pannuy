@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { CalendarDays, MapPin, Pencil, X, Check } from "lucide-react";
+import { CalendarDays, MapPin, Pencil, Check } from "lucide-react";
 import {
   EVENT_CONTEXT_CHANGED,
   getEventContext,
@@ -10,6 +10,7 @@ import {
   type EventContext,
 } from "@/lib/event-context";
 import CalendarPicker from "@/components/common/CalendarPicker";
+import Modal from "@/components/ui/Modal";
 import { cn, parseIsoDate, toIsoDate } from "@/lib/utils";
 import { REGIONS } from "@/lib/regions";
 
@@ -24,6 +25,10 @@ function formatEventDate(date: string): string {
 }
 
 const HIDDEN_PREFIXES = ["/start", "/supplier", "/admin", "/for-suppliers"];
+
+const REGION_LABEL: Record<string, string> = Object.fromEntries(
+  REGIONS.map((r) => [r.id, r.label])
+);
 
 export default function EventContextBar() {
   const pathname = usePathname();
@@ -123,7 +128,7 @@ export default function EventContextBar() {
           {ctx.areas.length > 0 && (
             <span className="inline-flex items-center gap-1.5 bg-white border border-border rounded-full px-3 py-1">
               <MapPin className="h-3.5 w-3.5 text-primary" />
-              {ctx.areas.join(" · ")}
+              {ctx.areas.map((a) => REGION_LABEL[a] ?? a).join(" · ")}
             </span>
           )}
           <button
@@ -137,15 +142,8 @@ export default function EventContextBar() {
         </div>
       </div>
 
-      {editing && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-5">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-black text-text-main">פרטי האירוע</h2>
-              <button type="button" onClick={() => setEditing(false)} aria-label="סגור">
-                <X className="h-5 w-5 text-text-muted" />
-              </button>
-            </div>
+      <Modal open={editing} onClose={() => setEditing(false)} title="פרטי האירוע">
+          <div className="space-y-5 pb-2">
 
             <div className="space-y-1.5">
               <label className="text-sm font-semibold text-text-main">תאריך</label>
@@ -166,9 +164,10 @@ export default function EventContextBar() {
                   <button
                     key={id}
                     type="button"
+                    aria-pressed={draftAreas.includes(id)}
                     onClick={() => toggleArea(id)}
                     className={cn(
-                      "px-3 py-1.5 rounded-full border-2 text-sm font-medium transition-all",
+                      "min-h-11 px-3 py-1.5 rounded-full border-2 text-sm font-medium transition-all",
                       draftAreas.includes(id)
                         ? "border-primary bg-primary text-white"
                         : "border-border text-text-main"
@@ -184,13 +183,12 @@ export default function EventContextBar() {
             <button
               type="button"
               onClick={applyChanges}
-              className="w-full bg-primary text-white font-bold py-3 rounded-xl hover:bg-primary-dark transition-colors"
+              className="w-full bg-primary-strong text-white font-bold py-3 rounded-xl hover:bg-primary-dark transition-colors"
             >
               עדכנו והמשיכו
             </button>
           </div>
-        </div>
-      )}
+      </Modal>
     </>
   );
 }

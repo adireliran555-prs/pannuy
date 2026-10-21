@@ -100,7 +100,8 @@ export default function CategoryStepPage() {
     busyKey: string,
     status: "SKIPPED" | "NOT_NEEDED"
   ) {
-    await commitStatus(busyKey, { status });
+    const ok = await commitStatus(busyKey, { status });
+    if (ok) router.push("/plan");
   }
 
   // ── No active plan (shouldn't happen behind the gate, but be graceful) ──

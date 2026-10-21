@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { generateOtp, hashOtp } from "@/lib/auth";
 import { sendOtp, devOtpEchoEnabled } from "@/lib/sms";
+import { checkOtpIpLimit, clientIp } from "@/lib/otp-ip-limit";
 import { normalizeIsraeliPhone } from "@/lib/utils";
 
 const OTP_EXPIRES_MINUTES = parseInt(
@@ -13,6 +14,13 @@ const RATE_LIMIT_MAX = 5;
 
 export async function POST(request: NextRequest) {
   try {
+    if (!(await checkOtpIpLimit(clientIp(request), 10, "send"))) {
+      return NextResponse.json(
+        { success: false, error: "יותר מדי ניסיונות. נסו שוב מאוחר יותר" },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     const phone = normalizeIsraeliPhone(String(body.phone ?? ""));
 
@@ -29,7 +37,7 @@ export async function POST(request: NextRequest) {
     });
     if (recent >= RATE_LIMIT_MAX) {
       return NextResponse.json(
-        { success: false, error: "יותר מדי ניסיונות. נסה שוב מאוחר יותר" },
+        { success: false, error: "יותר מדי ניסיונות. נסו שוב מאוחר יותר" },
         { status: 429 }
       );
     }

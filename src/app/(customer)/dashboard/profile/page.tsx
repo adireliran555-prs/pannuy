@@ -4,17 +4,21 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { MapPin, CheckCircle } from "lucide-react";
+import { CheckCircle } from "lucide-react";
 import DashboardLayout from "@/components/common/DashboardLayout";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import DatePickerField from "@/components/ui/DatePickerField";
-import { ISRAELI_CITIES } from "@/lib/utils";
+import MultiSelectDropdown from "@/components/ui/MultiSelectDropdown";
+import { REGIONS } from "@/lib/regions";
+import { getEventContext } from "@/lib/event-context";
+
+const REGION_OPTIONS = REGIONS.map((r) => ({ value: r.id, label: `${r.emoji} ${r.label}` }));
 
 const schema = z.object({
   name: z.string().min(2, "שם חייב להכיל לפחות 2 תווים"),
   weddingDate: z.string().optional(),
-  weddingCity: z.string().optional(),
+  weddingAreas: z.array(z.string()).optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -32,8 +36,12 @@ export default function ProfilePage() {
   const [isFetching, setIsFetching] = useState(true);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [cityInput, setCityInput] = useState("");
-  const [showCitySuggestions, setShowCitySuggestions] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [eventType, setEventType] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    setEventType(getEventContext()?.eventType);
+  }, []);
 
   const {
     register,
@@ -53,23 +61,21 @@ export default function ProfilePage() {
         if (json.success && json.user) {
           const u = json.user as UserProfile;
           setProfile(u);
-          setCityInput(u.weddingArea ?? "");
           reset({
             name: u.name,
             weddingDate: u.weddingDate ? u.weddingDate.split("T")[0] : "",
-            weddingCity: u.weddingArea ?? "",
+            weddingAreas: u.weddingArea
+              ? u.weddingArea.split(",").map((a) => a.trim()).filter(Boolean)
+              : [],
           });
         }
       })
       .finally(() => setIsFetching(false));
   }, [reset]);
 
-  const filteredCities = ISRAELI_CITIES.filter((c) =>
-    c.includes(cityInput)
-  ).slice(0, 8);
-
   const onSubmit = async (data: FormData) => {
     setIsLoading(true);
+    setSaveError(null);
     try {
       const res = await fetch("/api/users/profile", {
         method: "PATCH",
@@ -77,13 +83,20 @@ export default function ProfilePage() {
         body: JSON.stringify({
           name: data.name,
           weddingDate: data.weddingDate || undefined,
-          weddingArea: data.weddingCity || undefined,
+          weddingArea:
+            data.weddingAreas && data.weddingAreas.length > 0
+              ? data.weddingAreas.join(",")
+              : undefined,
         }),
       });
       if (res.ok) {
         setSaveSuccess(true);
         setTimeout(() => setSaveSuccess(false), 3000);
+      } else {
+        setSaveError("השמירה נכשלה. נסו שוב.");
       }
+    } catch {
+      setSaveError("שגיאת תקשורת. נסו שוב.");
     } finally {
       setIsLoading(false);
     }
@@ -120,8 +133,10 @@ export default function ProfilePage() {
               {initials}
             </div>
             <div>
-              <p className="font-bold text-text-main">{profile?.name ?? "..."}</p>
-              <p className="text-text-muted text-sm">זוג בדרך 💍</p>
+              <p className="font-bold text-text-main">{profile?.name ?? "…"}</p>
+              <p className="text-text-muted text-sm">
+                {eventType === undefined || eventType === "wedding" ? "זוג בדרך 💍" : "האירוע שלכם"}
+              </p>
             </div>
           </div>
 
@@ -162,51 +177,25 @@ export default function ProfilePage() {
                 <DatePickerField
                   value={watch("weddingDate") ?? ""}
                   onChange={(d) => setValue("weddingDate", d, { shouldValidate: true })}
-                  placeholder="בחרו תאריך האירוע"
+                  placeholder="בחרו את תאריך האירוע"
                   modalTitle="מתי האירוע?"
                 />
               </div>
 
-              {/* Wedding city */}
-              <div className="space-y-1.5 relative">
-                <label className="block text-sm font-semibold text-text-main">
-                  עיר האירוע
-                </label>
-                <input
-                  type="text"
-                  placeholder="הקלידו שם עיר..."
-                  value={cityInput}
-                  onChange={(e) => {
-                    setCityInput(e.target.value);
-                    setValue("weddingCity", "");
-                    setShowCitySuggestions(true);
-                  }}
-                  onFocus={() => setShowCitySuggestions(true)}
-                  onBlur={() => setTimeout(() => setShowCitySuggestions(false), 200)}
-                  className="w-full h-12 rounded-xl border border-border px-4 text-base text-text-main placeholder:text-text-muted focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                />
-                <input type="hidden" {...register("weddingCity")} />
+              {/* Event area — same region taxonomy the search filters use */}
+              <MultiSelectDropdown
+                label="אזור האירוע"
+                values={watch("weddingAreas") ?? []}
+                onChange={(vals) => setValue("weddingAreas", vals, { shouldDirty: true })}
+                options={REGION_OPTIONS}
+                placeholder="בחרו אזור או כמה אזורים"
+              />
 
-                {showCitySuggestions && cityInput && filteredCities.length > 0 && (
-                  <div className="absolute z-20 w-full bg-white border border-border rounded-2xl shadow-xl mt-1 overflow-hidden">
-                    {filteredCities.map((city) => (
-                      <button
-                        key={city}
-                        type="button"
-                        className="w-full text-right px-4 py-3 hover:bg-primary-light text-text-main text-sm font-medium transition-colors border-b border-border/50 last:border-0"
-                        onMouseDown={() => {
-                          setValue("weddingCity", city);
-                          setCityInput(city);
-                          setShowCitySuggestions(false);
-                        }}
-                      >
-                        <MapPin className="h-3.5 w-3.5 text-text-muted inline ml-2" />
-                        {city}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              {saveError && (
+                <p role="alert" className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+                  {saveError}
+                </p>
+              )}
 
               <Button
                 type="submit"
@@ -226,14 +215,9 @@ export default function ProfilePage() {
           <h3 className="font-bold text-text-main text-sm uppercase tracking-wide">
             הגדרות חשבון
           </h3>
-          <button className="w-full text-right text-sm text-text-muted hover:text-primary transition-colors py-2">
-            שינוי מספר טלפון
-          </button>
-          <button className="w-full text-right text-sm text-text-muted hover:text-primary transition-colors py-2">
-            התראות ועדכונים
-          </button>
           <button
-            className="w-full text-right text-sm text-red-500 hover:text-red-600 transition-colors py-2 mt-2 border-t border-border"
+            type="button"
+            className="w-full text-start text-sm text-red-500 hover:text-red-600 transition-colors py-2"
             onClick={async () => {
               await fetch("/api/auth/logout", { method: "POST" });
               window.location.href = "/start";

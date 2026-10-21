@@ -70,13 +70,13 @@ export default function Modal({
           )}
 
           <Dialog.Close
-            className="absolute top-4 left-4 p-1.5 rounded-full hover:bg-gray-100 transition-colors text-text-muted"
-            aria-label="סגור"
+            className="absolute top-4 start-4 p-1.5 rounded-full hover:bg-gray-100 transition-colors text-text-muted"
+            aria-label="סגירה"
           >
             <X className="h-5 w-5" />
           </Dialog.Close>
 
-          <div className="px-6 py-4 overflow-y-auto max-h-[80vh] sm:max-h-[70vh]">
+          <div className="px-6 py-4 overflow-y-auto max-h-[85dvh] sm:max-h-[70vh]">
             {children}
           </div>
         </Dialog.Content>

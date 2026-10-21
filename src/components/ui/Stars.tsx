@@ -33,30 +33,42 @@ export default function Stars({
   };
 
   return (
-    <div className={cn("flex items-center gap-1", className)}>
+    <div
+      className={cn("flex items-center gap-1", className)}
+      role={interactive ? "group" : "img"}
+      aria-label={interactive ? "דירוג" : `דירוג ${rating.toFixed(1)} מתוך 5`}
+    >
       <div className="flex items-center gap-0.5">
         {[1, 2, 3, 4, 5].map((star) => {
           const filled = star <= Math.round(rating);
+          const icon = (
+            <Star
+              className={cn(
+                sizes[size],
+                "transition-colors duration-100",
+                filled ? "star-filled" : "star-empty"
+              )}
+            />
+          );
+          if (!interactive) {
+            // Non-interactive stars are decorative (the group carries the
+            // label) — render spans so they can live inside links/cards.
+            return (
+              <span key={star} aria-hidden="true">
+                {icon}
+              </span>
+            );
+          }
           return (
             <button
               key={star}
               type="button"
-              onClick={() => interactive && onChange?.(star)}
-              disabled={!interactive}
-              className={cn(
-                "transition-transform duration-100",
-                interactive &&
-                  "hover:scale-110 cursor-pointer disabled:cursor-default",
-                !interactive && "cursor-default"
-              )}
+              onClick={() => onChange?.(star)}
+              aria-label={`${star} כוכבים`}
+              aria-pressed={filled}
+              className="transition-transform duration-100 hover:scale-110 cursor-pointer"
             >
-              <Star
-                className={cn(
-                  sizes[size],
-                  "transition-colors duration-100",
-                  filled ? "star-filled" : "star-empty"
-                )}
-              />
+              {icon}
             </button>
           );
         })}

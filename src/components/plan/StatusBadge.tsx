@@ -25,7 +25,7 @@ const STATUS_CONFIG: Record<
   SELECTED: { variant: "success", label: "נבחר", withIcon: true },
   SKIPPED: { variant: "warning", label: "דילגתם" },
   NOT_NEEDED: { variant: "default", label: "לא נחוץ" },
-  BROWSING: { variant: "primary", label: "בעיון" },
+  BROWSING: { variant: "primary", label: "בבדיקה" },
   PENDING: { variant: "default", label: "טרם נבחר" },
 };
 

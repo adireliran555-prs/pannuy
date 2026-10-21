@@ -7,13 +7,16 @@ import { LayoutDashboard, Calendar, BookOpen, BarChart3, User, LogOut, DollarSig
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
-  { href: "/supplier/dashboard", label: "ראשי", icon: LayoutDashboard },
-  { href: "/supplier/bookings", label: "פגישות", icon: BookOpen },
-  { href: "/supplier/calendar", label: "לוח זמנים", icon: Calendar },
-  { href: "/supplier/analytics", label: "אנליטיקה", icon: BarChart3 },
-  { href: "/supplier/finances", label: "פיננסים", icon: DollarSign },
-  { href: "/supplier/profile", label: "פרופיל", icon: User },
+  { href: "/supplier/dashboard", label: "ראשי", icon: LayoutDashboard, mobile: true },
+  { href: "/supplier/bookings", label: "פגישות", icon: BookOpen, mobile: true },
+  { href: "/supplier/calendar", label: "לוח זמנים", icon: Calendar, mobile: true },
+  // Analytics is reachable from the dashboard teaser; keep the mobile bar at 5 tabs.
+  { href: "/supplier/analytics", label: "אנליטיקה", icon: BarChart3, mobile: false },
+  { href: "/supplier/finances", label: "כספים", icon: DollarSign, mobile: true },
+  { href: "/supplier/profile", label: "פרופיל", icon: User, mobile: true },
 ];
+
+const MOBILE_NAV_ITEMS = NAV_ITEMS.filter((i) => i.mobile);
 
 interface SupplierDashboardLayoutProps {
   children: React.ReactNode;
@@ -87,21 +90,21 @@ export default function SupplierDashboardLayout({
           </aside>
 
           {/* Main content */}
-          <main className="flex-1 min-w-0 pb-20 sm:pb-0">
+          <main className="flex-1 min-w-0">
             {children}
           </main>
         </div>
       </div>
       <nav className="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-border shadow-[0_-8px_24px_rgba(15,23,42,0.08)]">
-        <div className="grid grid-cols-6 px-1 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
-          {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-            const isActive = pathname === href;
+        <div className="grid grid-cols-5 px-1 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
+          {MOBILE_NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+            const isActive = pathname === href || (href === "/supplier/dashboard" && pathname === "/supplier/analytics");
             return (
               <Link
                 key={href}
                 href={href}
                 className={cn(
-                  "min-w-0 flex flex-col items-center gap-1 rounded-xl px-1 py-1.5 text-[10px] font-bold transition-all",
+                  "min-w-0 flex flex-col items-center gap-1 rounded-xl px-1 py-1.5 text-[11px] font-bold transition-all",
                   isActive
                     ? "bg-primary-light text-primary-dark"
                     : "text-text-muted"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { X, ChevronRight, ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -16,6 +16,18 @@ export default function PhotoGallery({
   className,
 }: PhotoGalleryProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const lightboxRef = useRef<HTMLDivElement>(null);
+  const lastTileRef = useRef<HTMLButtonElement | null>(null);
+
+  // Focus the lightbox when it opens so Escape / arrow keys work immediately,
+  // and hand focus back to the tile that opened it on close.
+  useEffect(() => {
+    if (lightboxIndex !== null) {
+      lightboxRef.current?.focus();
+    } else {
+      lastTileRef.current?.focus();
+    }
+  }, [lightboxIndex]);
 
   const openLightbox = (index: number) => setLightboxIndex(index);
   const closeLightbox = () => setLightboxIndex(null);
@@ -30,6 +42,14 @@ export default function PhotoGallery({
     if (e.key === "ArrowRight") prev(); // RTL: right = prev
   };
 
+  if (photos.length === 0) {
+    return (
+      <div className={cn("rounded-2xl border border-dashed border-border bg-white px-6 py-10 text-center", className)}>
+        <p className="text-sm text-text-muted">אין תמונות עדיין</p>
+      </div>
+    );
+  }
+
   return (
     <>
       {/* Masonry Grid */}
@@ -37,10 +57,15 @@ export default function PhotoGallery({
         className={cn("masonry-grid", className)}
       >
         {photos.map((photo, index) => (
-          <div
+          <button
             key={index}
-            className="masonry-item cursor-pointer group relative overflow-hidden rounded-xl"
-            onClick={() => openLightbox(index)}
+            type="button"
+            aria-label={`פתחו תמונה ${index + 1} מתוך ${photos.length}`}
+            className="masonry-item block w-full cursor-pointer group relative overflow-hidden rounded-xl text-start focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-strong"
+            onClick={(e) => {
+              lastTileRef.current = e.currentTarget;
+              openLightbox(index);
+            }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -50,23 +75,27 @@ export default function PhotoGallery({
 
             />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200 rounded-xl" />
-          </div>
+          </button>
         ))}
       </div>
 
       {/* Lightbox */}
       {lightboxIndex !== null && (
         <div
-          className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center"
+          ref={lightboxRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${supplierName} — גלריית תמונות`}
+          className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center outline-none"
           onClick={closeLightbox}
           onKeyDown={handleKeyDown}
           tabIndex={-1}
         >
           {/* Close */}
           <button
-            className="absolute top-4 right-4 p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+            className="absolute top-4 end-4 p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors"
             onClick={closeLightbox}
-            aria-label="סגור"
+            aria-label="סגירה"
           >
             <X className="h-6 w-6" />
           </button>
@@ -78,7 +107,7 @@ export default function PhotoGallery({
 
           {/* Prev */}
           <button
-            className="absolute right-4 top-1/2 -translate-y-1/2 p-3 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+            className="absolute end-4 top-1/2 -translate-y-1/2 p-3 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors"
             onClick={(e) => { e.stopPropagation(); prev(); }}
             aria-label="הקודם"
           >
@@ -101,7 +130,7 @@ export default function PhotoGallery({
 
           {/* Next */}
           <button
-            className="absolute left-4 top-1/2 -translate-y-1/2 p-3 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+            className="absolute start-4 top-1/2 -translate-y-1/2 p-3 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors"
             onClick={(e) => { e.stopPropagation(); next(); }}
             aria-label="הבא"
           >

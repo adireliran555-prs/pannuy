@@ -35,6 +35,7 @@
     "date-fns": "^4.3.0",
     "framer-motion": "^12.40.0",
     "googleapis": "^172.0.0",
+    "jose": "^6.2.13",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^1.16.0",
     "next": "16.2.6",

@@ -2,9 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireSupplierSession } from "@/lib/api-auth";
 import { getAppUrl } from "@/lib/app-url";
+import { randomBytes } from "crypto";
 
+// 8 uppercase alphanumeric chars (must satisfy middleware's /^[A-Z0-9]{6,12}$/).
 function generateAffiliateCode(): string {
-  return Math.random().toString(36).slice(2, 10).toUpperCase();
+  return randomBytes(12)
+    .toString("base64url")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "")
+    .slice(0, 8)
+    .padEnd(8, "0");
 }
 
 export async function GET(request: NextRequest) {

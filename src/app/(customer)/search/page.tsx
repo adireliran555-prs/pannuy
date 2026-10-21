@@ -7,7 +7,8 @@ export const metadata: Metadata = {
   title: "חיפוש ספקי אירועים",
   description:
     "גלו ספקים מאומתים לאירוע שלכם לפי תאריך, אזור וקטגוריה — עם בדיקת זמינות בזמן אמת.",
-  alternates: { canonical: "/search" },
+  // Search is login-gated (product decision) — keep it out of the index.
+  robots: { index: false, follow: false },
 };
 
 interface PageProps {

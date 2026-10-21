@@ -3,6 +3,7 @@ import { requireSupplierSession } from "@/lib/api-auth";
 import { getAppUrl } from "@/lib/app-url";
 import { mirrorImagesParallel } from "@/lib/cloudinary-server";
 import { resolveSiteImport } from "@/lib/landing-import";
+import { parsePublicHttpUrl, safeFetch } from "@/lib/safe-fetch";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -14,38 +15,18 @@ function fetchHeaders(): Record<string, string> {
   };
 }
 
-function isSafeUrl(raw: string): URL | null {
-  try {
-    const u = new URL(raw);
-    if (u.protocol !== "http:" && u.protocol !== "https:") return null;
-    const host = u.hostname.toLowerCase();
-    if (
-      host === "localhost" ||
-      host === "127.0.0.1" ||
-      host === "0.0.0.0" ||
-      host.endsWith(".local") ||
-      /^(10\.|192\.168\.|169\.254\.|172\.(1[6-9]|2\d|3[01])\.)/.test(host)
-    ) {
-      return null;
-    }
-    return u;
-  } catch {
-    return null;
-  }
-}
-
 async function fetchHtml(url: string): Promise<{ html: string; finalUrl: string } | null> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 12_000);
   try {
-    const res = await fetch(url, {
+    // SSRF guard: DNS-checked, manual redirects (max 3), each hop re-validated.
+    const fetched = await safeFetch(url, {
       headers: fetchHeaders(),
       signal: controller.signal,
-      redirect: "follow",
     });
-    if (!res.ok) return null;
-    const html = (await res.text()).slice(0, 1_500_000);
-    return { html, finalUrl: res.url || url };
+    if (!fetched || !fetched.res.ok) return null;
+    const html = (await fetched.res.text()).slice(0, 1_500_000);
+    return { html, finalUrl: fetched.finalUrl || url };
   } catch {
     return null;
   } finally {
@@ -58,7 +39,7 @@ export async function POST(request: NextRequest) {
   if (error) return error;
 
   const body = await request.json().catch(() => ({}));
-  const url = isSafeUrl(String(body.url ?? ""));
+  const url = parsePublicHttpUrl(String(body.url ?? ""));
   if (!url) {
     return NextResponse.json(
       { success: false, error: "כתובת אתר לא תקינה" },

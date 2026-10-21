@@ -7,6 +7,7 @@ import SupplierDashboardLayout from "@/components/common/SupplierDashboardLayout
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import EmptyState from "@/components/ui/EmptyState";
+import Modal from "@/components/ui/Modal";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { formatHebrewDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
@@ -49,7 +50,7 @@ function getCountdownLabel(createdAt: string, now: number): { label: string; col
   const totalMinutes = Math.floor(msLeft / 60_000);
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
-  const label = `פג בעוד ${hours}ש ${minutes}ד`;
+  const label = `פג בעוד ${hours} שע׳ ${minutes} דק׳`;
   const color = hours < 2 ? "red" : "amber";
   return { label, color };
 }
@@ -64,6 +65,8 @@ async function fetcher(url: string) {
 export default function SupplierBookingsPage() {
   const [activeTab, setActiveTab] = useState<Tab>("pending");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<{ id: string; message: string } | null>(null);
+  const [confirmAction, setConfirmAction] = useState<{ id: string; action: "reject" | "complete" } | null>(null);
 
   const { data: meetings = [], mutate, isLoading } = useSWR(
     "/api/supplier/meetings",
@@ -87,22 +90,40 @@ export default function SupplierBookingsPage() {
 
   const handleAction = async (id: string, action: "confirm" | "reject" | "complete") => {
     setActionLoading(id + action);
+    setActionError(null);
     try {
       const res = await fetch(`/api/supplier/meetings/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action }),
       });
-      if (res.ok) mutate();
+      if (res.ok) {
+        setConfirmAction(null);
+        mutate();
+        return;
+      }
+      const j = await res.json().catch(() => ({}));
+      setActionError({
+        id,
+        message: typeof j.error === "string" ? j.error : "הפעולה נכשלה. נסו שוב.",
+      });
+    } catch {
+      setActionError({ id, message: "שגיאת תקשורת. בדקו את החיבור ונסו שוב." });
     } finally {
       setActionLoading(null);
     }
   };
 
+  const confirmTitle = confirmAction?.action === "reject" ? "דחיית בקשת פגישה" : "סיום האירוע";
+  const confirmBody =
+    confirmAction?.action === "reject"
+      ? "הלקוח יקבל הודעה שהבקשה נדחתה. לא ניתן לבטל פעולה זו. להמשיך?"
+      : "סימון האירוע כהתקיים משחרר עמלות הפניה לספקים שהפנו אליכם. לא ניתן לבטל פעולה זו. להמשיך?";
+
   const tabs: { id: Tab; label: string; count: number }[] = [
     { id: "pending", label: "ממתינות", count: pendingMeetings.length },
     { id: "confirmed", label: "מאושרות", count: confirmedMeetings.length },
-    { id: "past", label: "עבר", count: pastMeetings.length },
+    { id: "past", label: "הסתיימו", count: pastMeetings.length },
   ];
 
   const tabMeetings = getTabMeetings();
@@ -251,6 +272,12 @@ export default function SupplierBookingsPage() {
                     </div>
                   </div>
 
+                  {actionError && actionError.id === meeting.id && !confirmAction && (
+                    <p role="alert" className="rounded-xl bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
+                      {actionError.message}
+                    </p>
+                  )}
+
                   {meeting.status === "PENDING" && (
                     <div className="flex gap-3 pt-2 border-t border-border">
                       <Button
@@ -265,7 +292,7 @@ export default function SupplierBookingsPage() {
                       <Button
                         variant="danger"
                         size="sm"
-                        onClick={() => handleAction(meeting.id, "reject")}
+                        onClick={() => { setActionError(null); setConfirmAction({ id: meeting.id, action: "reject" }); }}
                         isLoading={actionLoading === meeting.id + "reject"}
                         className="flex-shrink-0"
                       >
@@ -280,7 +307,7 @@ export default function SupplierBookingsPage() {
                       <Button
                         size="sm"
                         variant="secondary"
-                        onClick={() => handleAction(meeting.id, "complete")}
+                        onClick={() => { setActionError(null); setConfirmAction({ id: meeting.id, action: "complete" }); }}
                         isLoading={actionLoading === meeting.id + "complete"}
                         fullWidth
                       >
@@ -298,6 +325,37 @@ export default function SupplierBookingsPage() {
           </div>
         )}
       </div>
+
+      <Modal
+        open={confirmAction !== null}
+        onClose={() => { if (!actionLoading) setConfirmAction(null); }}
+        title={confirmTitle}
+        size="sm"
+      >
+        {confirmAction && (
+          <div className="space-y-4">
+            <p className="text-sm text-text-main leading-relaxed">{confirmBody}</p>
+            {actionError?.id === confirmAction.id && (
+              <p role="alert" className="rounded-xl bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
+                {actionError.message}
+              </p>
+            )}
+            <div className="flex gap-3">
+              <Button variant="secondary" fullWidth onClick={() => setConfirmAction(null)} disabled={!!actionLoading}>
+                ביטול
+              </Button>
+              <Button
+                variant={confirmAction.action === "reject" ? "danger" : "primary"}
+                fullWidth
+                isLoading={actionLoading === confirmAction.id + confirmAction.action}
+                onClick={() => handleAction(confirmAction.id, confirmAction.action)}
+              >
+                {confirmAction.action === "reject" ? "כן, דחו" : "כן, סיימו"}
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </SupplierDashboardLayout>
   );
 }

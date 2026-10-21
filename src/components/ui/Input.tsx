@@ -14,6 +14,9 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, helperText, ltr = false, className, id, ...props }, ref) => {
     const generatedId = useId();
     const inputId = id || generatedId;
+    const errorId = `${inputId}-error`;
+    const helperId = `${inputId}-helper`;
+    const describedBy = error ? errorId : helperText ? helperId : undefined;
 
     return (
       <div className="flex flex-col gap-1.5 w-full">
@@ -29,6 +32,8 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           id={inputId}
           dir={ltr ? "ltr" : undefined}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy}
           className={cn(
             "w-full h-12 rounded-xl border px-4 text-base transition-all duration-200",
             "bg-white text-text-main placeholder:text-text-muted",
@@ -41,10 +46,10 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           {...props}
         />
         {error && (
-          <p className="text-sm text-red-500 font-medium">{error}</p>
+          <p id={errorId} role="alert" className="text-sm text-red-500 font-medium">{error}</p>
         )}
         {helperText && !error && (
-          <p className="text-sm text-text-muted">{helperText}</p>
+          <p id={helperId} className="text-sm text-text-muted">{helperText}</p>
         )}
       </div>
     );

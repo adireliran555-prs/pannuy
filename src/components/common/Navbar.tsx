@@ -106,7 +106,7 @@ export default function Navbar() {
                   size="sm"
                   onClick={() => { window.location.href = "/start"; }}
                 >
-                  הרשמה חינם
+                  הרשמה
                 </Button>
               </>
             )}
@@ -115,7 +115,7 @@ export default function Navbar() {
       </header>
 
       {/* Mobile Bottom Navbar */}
-      <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-border safe-area-pb">
+      <nav className="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-border safe-area-pb">
         <div className="flex items-center justify-around h-16">
           {MOBILE_NAV.map(({ href, label, icon: Icon }) => {
             const isActive = pathname === href || pathname.startsWith(href);
@@ -157,8 +157,8 @@ export function SupplierNavbar() {
   if (usesDashboardLayout) return null;
 
   const SUPPLIER_MOBILE_NAV = [
-    { href: "/supplier/dashboard", label: "בית", icon: Camera },
-    { href: "/supplier/bookings", label: "הזמנות", icon: Calendar },
+    { href: "/supplier/dashboard", label: "ראשי", icon: Camera },
+    { href: "/supplier/bookings", label: "הזמנות", icon: ClipboardList },
     { href: "/supplier/calendar", label: "יומן", icon: Calendar },
     { href: "/supplier/profile", label: "פרופיל", icon: User },
   ];
@@ -172,7 +172,7 @@ export function SupplierNavbar() {
             <TopEventsLogo href="/supplier/dashboard" size="md" />
             <nav className="flex items-center gap-6">
               {[
-                { href: "/supplier/dashboard", label: "דשבורד" },
+                { href: "/supplier/dashboard", label: "ראשי" },
                 { href: "/supplier/bookings", label: "הזמנות" },
                 { href: "/supplier/calendar", label: "יומן" },
                 { href: "/supplier/analytics", label: "סטטיסטיקות" },
@@ -200,7 +200,7 @@ export function SupplierNavbar() {
       </header>
 
       {/* Mobile Bottom Navbar */}
-      <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-border">
+      <nav className="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-border safe-area-pb">
         <div className="flex items-center justify-around h-16">
           {SUPPLIER_MOBILE_NAV.map(({ href, label, icon: Icon }) => {
             const isActive = pathname === href;

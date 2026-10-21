@@ -71,7 +71,7 @@ export default function AdminLoginPage() {
         </div>
         <h1 className="text-2xl font-black text-text-main text-center">פאנל ניהול</h1>
         <p className="text-text-muted text-sm text-center mt-1 mb-6">
-          {step === "phone" ? "התחברו עם הטלפון שלכם" : `הזינו את הקוד שנשלח ל-${phone}`}
+          {step === "phone" ? "התחברו עם הטלפון שלכם" : <>הזינו את הקוד שנשלח ל־<span dir="ltr">{phone}</span></>}
         </p>
 
         {step === "phone" ? (

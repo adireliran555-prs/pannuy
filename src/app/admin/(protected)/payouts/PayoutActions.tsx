@@ -44,7 +44,7 @@ export default function PayoutActions({ id, status }: { id: string; status: stri
         className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold border border-green-200 bg-green-50 text-green-700 hover:bg-green-100 disabled:opacity-50"
       >
         <CreditCard className="h-3 w-3" />
-        סמן כשולם
+        סימון כשולם
       </button>
       <button
         onClick={() => update("REJECTED")}

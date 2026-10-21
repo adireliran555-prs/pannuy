@@ -24,9 +24,10 @@ export default function VibeChips({ value, onChange }: VibeChipsProps) {
           <button
             key={tag.id}
             type="button"
+            aria-pressed={selected}
             onClick={() => toggle(tag.id)}
             className={cn(
-              "rounded-full border-2 px-4 py-2 text-sm font-semibold transition-colors duration-200",
+              "min-h-11 rounded-full border-2 px-4 py-2 text-sm font-semibold transition-colors duration-200",
               selected
                 ? "border-primary bg-primary text-white"
                 : "border-border bg-white text-text-main hover:border-primary/40"

@@ -67,7 +67,7 @@ const step1Schema = z.object({
   name: z.string().min(2, "שם חייב להכיל לפחות 2 תווים"),
   phone: z
     .string()
-    .refine((v) => validateIsraeliPhone(v), "מספר חייב להתחיל ב-05 ולהכיל 10 ספרות"),
+    .refine((v) => validateIsraeliPhone(v), "מספר חייב להתחיל ב־05 ולהכיל 10 ספרות"),
   email: z.string().email("כתובת מייל לא תקינה").optional().or(z.literal("")),
 });
 
@@ -80,6 +80,8 @@ export default function SupplierJoinPage() {
   const [otp, setOtp] = useState("");
   const [otpError, setOtpError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [coreSaved, setCoreSaved] = useState(false);
   const [agreementAccepted, setAgreementAccepted] = useState(false);
   const [commissionAccepted, setCommissionAccepted] = useState(false);
   const [circumventionAccepted, setCircumventionAccepted] = useState(false);
@@ -326,49 +328,88 @@ export default function SupplierJoinPage() {
     );
   };
 
+  const PARTIAL_SAVE_ERROR =
+    "חלק מהפרטים לא נשמרו. נסו שוב או עדכנו אותם מהפרופיל.";
+
   const handleFinalSubmit = async () => {
     setIsLoading(true);
+    setSubmitError(null);
+    let failed = false;
+    const safePost = async (url: string, body: unknown, method = "POST") => {
+      try {
+        const res = await fetch(url, {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) failed = true;
+        return res.ok;
+      } catch {
+        failed = true;
+        return false;
+      }
+    };
     try {
-      await fetch("/api/supplier/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          category: selectedCategory || undefined,
-          city: selectedCity || undefined,
-          serviceAreas: selectedAreas.length > 0 ? selectedAreas : undefined,
-          supportedEventTypes:
-            selectedEventTypes.length > 0 ? selectedEventTypes : undefined,
-          bioHe: bio || undefined,
-        }),
-      });
+      // Core: the supplier profile itself. Without it we don't move on.
+      const coreOk =
+        coreSaved ||
+        (await safePost(
+          "/api/supplier/profile",
+          {
+            category: selectedCategory || undefined,
+            city: selectedCity || undefined,
+            serviceAreas: selectedAreas.length > 0 ? selectedAreas : undefined,
+            supportedEventTypes:
+              selectedEventTypes.length > 0 ? selectedEventTypes : undefined,
+            bioHe: bio || undefined,
+          },
+          "PATCH"
+        ));
+      if (!coreOk) {
+        setSubmitError(PARTIAL_SAVE_ERROR);
+        return;
+      }
+      setCoreSaved(true);
 
+      const savedPackages: string[] = [];
       for (const pkg of packages) {
         if (pkg.name && pkg.price) {
-          await fetch("/api/supplier/packages", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              nameHe: pkg.name,
-              price: Number(pkg.price),
-              hours: Number(pkg.hours) || undefined,
-              includes: pkg.includes,
-              isPopular: pkg.isPopular,
-            }),
+          const ok = await safePost("/api/supplier/packages", {
+            nameHe: pkg.name,
+            price: Number(pkg.price),
+            hours: Number(pkg.hours) || undefined,
+            includes: pkg.includes,
+            isPopular: pkg.isPopular,
           });
+          if (ok) savedPackages.push(pkg.id);
         }
       }
+      // Don't re-create packages that already made it on a retry.
+      if (savedPackages.length > 0) {
+        setPackages((prev) =>
+          prev.map((p) => (savedPackages.includes(p.id) ? { ...p, name: "", price: "" } : p))
+        );
+      }
 
+      const savedPhotos: string[] = [];
       for (const [idx, photo] of photos.entries()) {
-        await fetch("/api/supplier/photos", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            url: photo.url,
-            publicId: photo.publicId || `join-${Date.now()}-${idx}`,
-            type: idx === 0 ? "COVER" : idx === 1 ? "PROFILE" : "PORTFOLIO",
-            sortOrder: idx,
-          }),
+        const ok = await safePost("/api/supplier/photos", {
+          url: photo.url,
+          publicId: photo.publicId || `join-${Date.now()}-${idx}`,
+          type: idx === 0 ? "COVER" : idx === 1 ? "PROFILE" : "PORTFOLIO",
+          sortOrder: idx,
         });
+        if (ok) savedPhotos.push(photo.url);
+      }
+      if (savedPhotos.length > 0) {
+        setPhotos((prev) => prev.filter((p) => !savedPhotos.includes(p.url)));
+      }
+
+      if (failed) {
+        // Core profile exists — surface the partial failure and let the
+        // supplier retry or continue to the dashboard.
+        setSubmitError(PARTIAL_SAVE_ERROR);
+        return;
       }
 
       router.push("/supplier/dashboard");
@@ -419,14 +460,13 @@ export default function SupplierJoinPage() {
                   type="text"
                   inputMode="tel"
                   ltr
-                  className="pl-10"
-                  helperText="ישלח קוד אימות ב-SMS"
+                  helperText="יישלח אליכם קוד אימות"
                   error={errors.phone?.message}
                   {...register("phone")}
                 />
                 <Input
-                  label="מייל (אופציונלי)"
-                  placeholder="tzalemet@gmail.com"
+                  label="מייל (לא חובה)"
+                  placeholder="example@gmail.com"
                   type="email"
                   ltr
                   error={errors.email?.message}
@@ -474,13 +514,13 @@ export default function SupplierJoinPage() {
                     />
                     <span>
                       קראתי ואני מאשר/ת את סעיף איסור עקיפת הפלטפורמה ואת תקופת
-                      ההתקשרות (שנה, מתחדשת אוטומטית אלא בהודעה של 90 יום
-                      מראש), לרבות פיצוי מוסכם בסך 40,000 ₪ במקרה הפרה.
+                      ההתקשרות (שנה, המתחדשת אוטומטית אלא אם נמסרה הודעה 90 יום
+                      מראש), לרבות פיצוי מוסכם בסך ₪40,000 במקרה של הפרה.
                     </span>
                   </label>
                   {agreementAttempted && !allAgreementsAccepted && (
                     <p className="text-red-500 text-xs font-medium">
-                      יש לאשר את שלושת התיבות כדי להמשיך
+                      יש לאשר את שלוש התיבות כדי להמשיך
                     </p>
                   )}
                 </div>
@@ -531,7 +571,7 @@ export default function SupplierJoinPage() {
                   הפרופיל שלי 📸
                 </h1>
                 <p className="text-text-muted text-sm mt-1">
-                  ספרו לזוגות מי אתם
+                  ספרו ללקוחות מי אתם
                 </p>
               </div>
 
@@ -548,7 +588,7 @@ export default function SupplierJoinPage() {
                         type="button"
                         onClick={() => setSelectedCategory(id)}
                         className={cn(
-                          "flex items-center gap-2 p-3 rounded-xl border-2 text-right text-sm font-semibold transition-all",
+                          "flex items-center gap-2 p-3 rounded-xl border-2 text-start text-sm font-semibold transition-all",
                           selectedCategory === id
                             ? "border-primary bg-primary text-white"
                             : "border-border text-text-main hover:border-primary/40"
@@ -570,7 +610,7 @@ export default function SupplierJoinPage() {
                     onChange={(e) => setSelectedCity(e.target.value)}
                     className="w-full h-12 rounded-xl border border-border px-4 text-base text-text-main focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                   >
-                    <option value="">בחרו עיר...</option>
+                    <option value="">בחרו עיר…</option>
                     {ISRAELI_CITIES.map((c) => (
                       <option key={c} value={c}>{c}</option>
                     ))}
@@ -580,7 +620,7 @@ export default function SupplierJoinPage() {
                 <EventTypePicker
                   value={selectedEventTypes}
                   onChange={setSelectedEventTypes}
-                  label="סוגי אירועים שאני מספק/ה"
+                  label="סוגי אירועים שאתם מלווים"
                   hint="בחרו את כל סוגי האירועים שאתם מלווים"
                 />
 
@@ -622,7 +662,7 @@ export default function SupplierJoinPage() {
                   <textarea
                     value={bio}
                     onChange={(e) => e.target.value.length <= 500 && setBio(e.target.value)}
-                    placeholder="ספרו לזוגות מי אתם, מה הסגנון שלכם, וכמה ניסיון יש לכם..."
+                    placeholder="ספרו ללקוחות מי אתם, מה הסגנון שלכם, וכמה ניסיון יש לכם…"
                     rows={5}
                     className={cn(
                       "w-full rounded-xl border px-4 py-3 text-base text-text-main placeholder:text-text-muted focus:outline-none focus:ring-2 resize-none",
@@ -698,7 +738,7 @@ export default function SupplierJoinPage() {
                 >
                   <Upload className="h-6 w-6 text-primary" />
                   <span className="text-sm font-semibold text-text-main">
-                    {uploading ? "מעלה..." : "העלו תמונות מהמכשיר"}
+                    {uploading ? "מעלה…" : "העלו תמונות מהמכשיר"}
                   </span>
                   <span className="text-xs text-text-muted">עד 20 תמונות · JPG/PNG</span>
                   <input
@@ -753,7 +793,7 @@ export default function SupplierJoinPage() {
                   value={photoUrl}
                   onChange={(e) => setPhotoUrl(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addPhoto())}
-                  placeholder="https://... (הוספת תמונה בודדת)"
+                  placeholder="https://… (הוספת תמונה בודדת)"
                   dir="ltr"
                   className="flex-1 h-11 rounded-xl border border-border px-4 text-base text-text-main focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                 />
@@ -784,7 +824,7 @@ export default function SupplierJoinPage() {
                       />
                       <button
                         onClick={() => removePhoto(idx)}
-                        className="absolute top-1 left-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="absolute top-1 start-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                       >
                         <X className="h-3.5 w-3.5" />
                       </button>
@@ -876,7 +916,7 @@ export default function SupplierJoinPage() {
                       </div>
                       <div>
                         <label className="text-sm font-semibold text-text-main block mb-1.5">
-                          שעות צילום
+                          שעות
                         </label>
                         <input
                           type="number"
@@ -954,9 +994,23 @@ export default function SupplierJoinPage() {
                   isLoading={isLoading}
                   onClick={handleFinalSubmit}
                 >
-                  שלחו לאישור 🎉
+                  {coreSaved ? "נסו שוב" : "שלחו לאישור 🎉"}
                 </Button>
               </div>
+              {submitError && (
+                <div role="alert" className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 space-y-2">
+                  <p>{submitError}</p>
+                  {coreSaved && (
+                    <button
+                      type="button"
+                      onClick={() => router.push("/supplier/dashboard")}
+                      className="font-bold underline underline-offset-2"
+                    >
+                      המשיכו לפאנל בכל זאת
+                    </button>
+                  )}
+                </div>
+              )}
             </>
           )}
         </div>

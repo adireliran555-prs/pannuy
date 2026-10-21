@@ -29,7 +29,6 @@ export function normalizeSupplier(s: any) {
     rating: s.ratingAvg ?? s.rating ?? 0,
     priceFrom: s.basePriceFrom ?? s.priceFrom ?? 0,
     priceTo: s.basePriceTo ?? s.priceTo,
-    responseRate: s.responseRate != null ? Math.round(s.responseRate * 100) : 95,
     responseTime: s.responseTime ?? 2,
     isAvailable: s.isAvailable ?? null,
     reviews: (s.reviews ?? []).map(
