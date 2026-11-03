@@ -8,6 +8,7 @@ import { SUPPLIER_AGREEMENT_VERSION } from "@/lib/legal";
 import { checkOtpIpLimit, clientIp } from "@/lib/otp-ip-limit";
 import { z } from "zod";
 import { resolveAgentReferral } from "@/lib/agents";
+import { logEventAsync, requestMeta, ActivityType } from "@/lib/activity";
 
 const verifySchema = z.object({
   phone: z.string().min(9).max(20),
@@ -157,6 +158,15 @@ export async function POST(request: NextRequest) {
       }
       supplier = await upsertSupplier();
     }
+
+    logEventAsync({
+      type: ActivityType.SUPPLIER_LOGIN,
+      actorType: "supplier",
+      actorId: supplier.id,
+      supplierId: supplier.id,
+      payload: { created: !existingSupplierCheck, phone, agreementAccepted: Boolean(agreementAccepted) },
+      meta: requestMeta(request),
+    });
 
     const payload: SupplierSession = {
       id: supplier.id,

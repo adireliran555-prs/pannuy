@@ -1,6 +1,9 @@
 import prisma from "@/lib/prisma";
 import TopEventsLogo from "@/components/common/TopEventsLogo";
 import RespondButtons from "./RespondButtons";
+import OutcomePrompt from "@/components/customer/OutcomePrompt";
+import { cookies } from "next/headers";
+import { verifyToken } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -15,8 +18,12 @@ export default async function ReferralFollowUpPage({
 
   const referral = await prisma.referral.findUnique({
     where: { id },
-    select: { id: true, status: true, supplier: { select: { name: true } } },
+    select: { id: true, status: true, customerId: true, customerOutcome: true, supplier: { select: { name: true } } },
   });
+
+  const token = (await cookies()).get("pannuy_session")?.value;
+  const session = token ? (verifyToken(token) as { id?: string; type?: string } | null) : null;
+  const isOwner = !!session && session.type === "customer" && session.id === referral?.customerId;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50 to-amber-50 flex items-center justify-center px-4 py-12">
@@ -42,7 +49,13 @@ export default async function ReferralFollowUpPage({
                     : "רצינו לוודא שהצלחתם ליצור קשר עם הספק."}
                 </p>
               </div>
-              <RespondButtons referralId={referral.id} initialStatus={referral.status} />
+              {isOwner && !referral.customerOutcome ? (
+                <OutcomePrompt referralId={referral.id} supplierName={referral.supplier?.name ?? "הספק"} />
+              ) : isOwner ? (
+                <p className="text-center text-green-700 font-semibold">תודה, העדכון שלכם נשמר 🙏</p>
+              ) : (
+                <RespondButtons referralId={referral.id} initialStatus={referral.status} />
+              )}
             </>
           )}
         </div>

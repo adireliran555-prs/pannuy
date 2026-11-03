@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAdminSession } from "@/lib/api-auth";
 import { signSupplierToken } from "@/lib/auth";
+import { logAdminAction } from "@/lib/activity-admin";
 
 const COOKIE_MAX_AGE = 7 * 24 * 60 * 60;
 
@@ -24,6 +25,7 @@ export async function POST(
     slug: supplier.slug,
   });
 
+  logAdminAction(request, { route: "/api/admin/impersonate/supplier/[id]", targetType: "supplier", targetId: id, supplierId: id });
   const res = NextResponse.json({ success: true, redirect: "/supplier/dashboard" });
   res.cookies.set("pannuy_supplier_session", token, {
     httpOnly: true,

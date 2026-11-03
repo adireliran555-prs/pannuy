@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Calendar, BookOpen, BarChart3, User, LogOut, DollarSign } from "lucide-react";
+import { LayoutDashboard, Calendar, BookOpen, BarChart3, User, LogOut, DollarSign, Receipt } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   // Analytics is reachable from the dashboard teaser; keep the mobile bar at 5 tabs.
   { href: "/supplier/analytics", label: "אנליטיקה", icon: BarChart3, mobile: false },
   { href: "/supplier/finances", label: "כספים", icon: DollarSign, mobile: true },
+  { href: "/supplier/deals", label: "עסקאות", icon: Receipt, mobile: false },
   { href: "/supplier/profile", label: "פרופיל", icon: User, mobile: true },
 ];
 

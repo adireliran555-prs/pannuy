@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { requireCustomerSession } from "@/lib/api-auth";
 import { delCache } from "@/lib/redis";
 import { z } from "zod";
+import { logEventAsync, requestMeta, ActivityType } from "@/lib/activity";
 
 const createSchema = z.object({
   meetingId: z.string().min(1),
@@ -93,6 +94,18 @@ export async function POST(request: NextRequest) {
 
     await delCache(`supplier:${meeting.supplier.slug}`);
     revalidatePath(`/suppliers/${meeting.supplier.slug}`);
+
+    logEventAsync({
+      type: ActivityType.REVIEW_CREATED,
+      actorType: "customer",
+      actorId: session.id,
+      customerId: session.id,
+      supplierId: meeting.supplierId,
+      targetType: "review",
+      targetId: review.id,
+      payload: { meetingId, rating, textHe: textHe ?? null },
+      meta: requestMeta(request),
+    });
 
     return NextResponse.json({ success: true, data: review }, { status: 201 });
   } catch (err) {

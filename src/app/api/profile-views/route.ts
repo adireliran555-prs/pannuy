@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCustomerSession } from "@/lib/api-auth";
 import { clientIp } from "@/lib/otp-ip-limit";
+import { logEventAsync, requestMeta, ActivityType } from "@/lib/activity";
 
 const SOURCE_ALLOWLIST = new Set(["profile", "search", "saved", "plan", "share", "referral"]);
 
@@ -18,7 +19,7 @@ export async function POST(request: NextRequest) {
 
     const supplier = await prisma.supplier.findUnique({
       where: { id: supplierId },
-      select: { id: true },
+      select: { id: true, name: true, slug: true, phone: true },
     });
     if (!supplier) {
       return NextResponse.json({ success: false, error: "ספק לא נמצא" }, { status: 404 });
@@ -48,6 +49,35 @@ export async function POST(request: NextRequest) {
         source: session?.id ? source : `${source ?? "unknown"}|ip:${ip}`,
       },
     });
+
+    const meta = requestMeta(request);
+    logEventAsync({
+      type: ActivityType.PROFILE_VIEW,
+      actorType: session?.id ? "customer" : "anonymous",
+      actorId: session?.id ?? null,
+      customerId: session?.id ?? null,
+      supplierId,
+      targetType: "supplier",
+      targetId: supplierId,
+      payload: { source, slug: supplier.slug },
+      meta,
+    });
+    // The public profile renders the supplier phone (WhatsApp CTA), so a
+    // logged-in view is a contact exposure. The page itself is ISR-cached and
+    // cannot read cookies, so the exposure is recorded here.
+    if (session?.id && supplier.phone) {
+      logEventAsync({
+        type: ActivityType.SUPPLIER_CONTACT_EXPOSED,
+        actorType: "customer",
+        actorId: session.id,
+        customerId: session.id,
+        supplierId,
+        targetType: "supplier",
+        targetId: supplierId,
+        payload: { supplierPhone: supplier.phone, supplierName: supplier.name, slug: supplier.slug },
+        meta,
+      });
+    }
 
     return NextResponse.json({ success: true });
   } catch (err) {

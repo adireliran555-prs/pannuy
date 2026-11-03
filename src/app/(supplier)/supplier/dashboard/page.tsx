@@ -160,6 +160,18 @@ export default function SupplierDashboardPage() {
           <p className="text-text-muted mt-1">הנה מה שמחכה לכם היום</p>
         </div>
 
+        {/* Off-platform deal reporting */}
+        <Link
+          href="/supplier/deals"
+          className="flex items-center justify-between gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3.5 hover:bg-amber-100/70 transition-colors"
+        >
+          <span className="text-sm">
+            <span className="font-bold text-text-main block">סגרתם עסקה עם לקוח מהאתר?</span>
+            <span className="text-text-muted">דיווח על עסקה בתוך 7 ימים — כפי שמוגדר בהסכם</span>
+          </span>
+          <span className="flex-shrink-0 rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-white">דיווח על עסקה</span>
+        </Link>
+
         {/* Affiliate link widget */}
         <div className="bg-white rounded-2xl border border-border p-5 space-y-3">
           <div>

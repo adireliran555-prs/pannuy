@@ -5,6 +5,7 @@ import { CustomerSession } from "@/types";
 import { checkOtpIpLimit, clientIp } from "@/lib/otp-ip-limit";
 import { z } from "zod";
 import { resolveAgentReferral } from "@/lib/agents";
+import { logEventAsync, requestMeta, ActivityType } from "@/lib/activity";
 
 const verifySchema = z.object({
   phone: z.string().regex(/^05\d{8}$/),
@@ -40,6 +41,7 @@ export async function POST(request: NextRequest) {
 
     const referredByAgentId = await resolveAgentReferral(request.cookies.get("pannuy_ref")?.value);
 
+    const existedBefore = await prisma.user.findUnique({ where: { phone }, select: { id: true } });
     const upsertUser = () =>
       prisma.user.upsert({
         where: { phone },
@@ -119,6 +121,15 @@ export async function POST(request: NextRequest) {
       }
       user = await upsertUser();
     }
+
+    logEventAsync({
+      type: ActivityType.CUSTOMER_LOGIN,
+      actorType: "customer",
+      actorId: user.id,
+      customerId: user.id,
+      payload: { created: !existedBefore, phone, referredByAgentId: referredByAgentId ?? null },
+      meta: requestMeta(request),
+    });
 
     const payload: CustomerSession = {
       id: user.id,

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireCustomerSession } from "@/lib/api-auth";
+import { logEventAsync, requestMeta, ActivityType } from "@/lib/activity";
 
 export async function GET(request: NextRequest) {
   try {
@@ -79,6 +80,17 @@ export async function POST(request: NextRequest) {
       },
       create: { customerId: session.id, supplierId },
       update: {},
+    });
+
+    logEventAsync({
+      type: ActivityType.SUPPLIER_SAVED,
+      actorType: "customer",
+      actorId: session.id,
+      customerId: session.id,
+      supplierId,
+      targetType: "supplier",
+      targetId: supplierId,
+      meta: requestMeta(request),
     });
 
     return NextResponse.json({ success: true, data: saved }, { status: 201 });

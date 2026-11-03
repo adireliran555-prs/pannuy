@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Phone, ExternalLink } from "lucide-react";
+import Link from "next/link";
+import { Phone, ExternalLink, FileSearch } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Row {
@@ -16,6 +17,8 @@ interface Row {
   supplierSlug: string;
   hasMeeting: boolean;
   adminNotes: string;
+  customerId: string;
+  supplierId: string;
 }
 
 const STATUS_OPTIONS = [
@@ -101,6 +104,7 @@ export default function ReferralsTable({ initialRows }: { initialRows: Row[] }) 
             <th className="px-4 py-3 font-semibold">תזכורות</th>
             <th className="px-4 py-3 font-semibold">תאריך</th>
             <th className="px-4 py-3 font-semibold">הערות</th>
+            <th className="px-4 py-3 font-semibold">ראיות</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
@@ -164,6 +168,15 @@ export default function ReferralsTable({ initialRows }: { initialRows: Row[] }) 
                   placeholder="הוסיפו הערה…"
                   className="w-full rounded-lg border border-border px-2 py-1.5 text-xs outline-none focus:border-primary"
                 />
+              </td>
+              <td className="px-4 py-3 whitespace-nowrap">
+                <Link
+                  href={`/admin/evidence?customerId=${r.customerId}&supplierId=${r.supplierId}`}
+                  className="inline-flex items-center gap-1 text-primary text-xs font-semibold hover:underline"
+                >
+                  <FileSearch className="h-3.5 w-3.5" />
+                  ציר זמן
+                </Link>
               </td>
             </tr>
           ))}

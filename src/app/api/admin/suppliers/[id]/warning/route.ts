@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAdminSession } from "@/lib/api-auth";
+import { logAdminAction } from "@/lib/activity-admin";
 
 export async function POST(
   request: NextRequest,
@@ -56,6 +57,7 @@ export async function POST(
       );
     }
 
+    logAdminAction(request, { route: "/api/admin/suppliers/[id]/warning", targetType: "supplier", targetId: id, supplierId: id, body: { ...body, ...result } });
     return NextResponse.json({
       success: true,
       warningCount: result.warningCount,

@@ -9,6 +9,7 @@ const SUPPLIER_PROTECTED_PREFIXES = [
   "/supplier/calendar",
   "/supplier/packages",
   "/supplier/finances",
+  "/supplier/deals",
 ];
 const AGENT_PROTECTED_PREFIXES = ["/agent/dashboard"];
 // /admin protected, but /admin/login is not.

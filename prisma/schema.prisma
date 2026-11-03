@@ -28,6 +28,7 @@ model User {
   profileViews    ProfileView[]
   referrals       Referral[]
   events          Event[]
+  dealReports     DealReport[]
 }
 
 model Otp {
@@ -103,6 +104,7 @@ model Supplier {
   planItems          EventPlanItem[]
   relationshipsFrom  SupplierRelationship[] @relation("RelFrom")
   relationshipsTo    SupplierRelationship[] @relation("RelTo")
+  dealReports        DealReport[]
 
   @@index([category])
   @@index([isActive, isVerified])
@@ -391,21 +393,23 @@ enum AffiliateStatus {
 // follow up with the customer, escalate to an admin call when there's no reply,
 // and know the outcome of every referral we make.
 model Referral {
-  id                  String          @id @default(uuid())
+  id                  String           @id @default(uuid())
   customerId          String
   supplierId          String
-  channel             ReferralChannel @default(IN_APP)
-  status              ReferralStatus  @default(NEW)
-  meetingId           String?         @unique // set when the contact was an in-app booking
-  customerNotes       String?         @db.Text
-  adminNotes          String?         @db.Text
-  followUpCount       Int             @default(0)
+  channel             ReferralChannel  @default(IN_APP)
+  status              ReferralStatus   @default(NEW)
+  meetingId           String?          @unique // set when the contact was an in-app booking
+  customerNotes       String?          @db.Text
+  adminNotes          String?          @db.Text
+  followUpCount       Int              @default(0)
   lastFollowUpAt      DateTime?
   customerConfirmedAt DateTime? // customer told us whether they connected
+  customerOutcome     CustomerOutcome? // what the customer said happened
+  customerReportedIls Int? // deal amount the customer reported (if closed)
   convertedAt         DateTime? // turned into a booking / deal
   closedAt            DateTime?
-  createdAt           DateTime        @default(now())
-  updatedAt           DateTime        @updatedAt
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
 
   customer User     @relation(fields: [customerId], references: [id])
   supplier Supplier @relation(fields: [supplierId], references: [id])
@@ -420,6 +424,14 @@ model Referral {
 enum ReferralChannel {
   IN_APP // booked a meeting through the app
   WHATSAPP // opened WhatsApp from the supplier profile
+}
+
+enum CustomerOutcome {
+  NOT_CONTACTED // never actually spoke
+  TALKING // still in conversation
+  CLOSED // closed a deal with this supplier
+  CLOSED_ELSEWHERE // chose another supplier
+  NOT_CLOSING // decided not to proceed
 }
 
 enum ReferralStatus {
@@ -562,4 +574,63 @@ enum SupplierRelationType {
   EXCLUSIVE
   PREFERRED
   RECOMMENDED
+}
+
+// ─── Evidence trail ───────────────────────────────────────────────────────────
+
+// Append-only audit log. Every customer↔supplier touchpoint, contact exposure
+// and admin edit is written here with request metadata and hash-chained so the
+// trail can be shown to be unmodified. UPDATE/DELETE are blocked by a DB trigger.
+model ActivityEvent {
+  id         String   @id @default(uuid())
+  seq        BigInt   @unique @default(autoincrement())
+  type       String // e.g. PROFILE_VIEW, CONTACT_EXPOSED, WHATSAPP_TAP, MEETING_CONFIRMED
+  actorType  String // customer | supplier | admin | agent | system | anonymous
+  actorId    String?
+  customerId String? // the customer↔supplier pair this event belongs to, when known
+  supplierId String?
+  targetType String?
+  targetId   String?
+  payload    Json?
+  ip         String?
+  userAgent  String?
+  sessionId  String? // hashed session cookie
+  prevHash   String?
+  hash       String
+  createdAt  DateTime @default(now())
+
+  @@index([customerId, supplierId, createdAt])
+  @@index([supplierId, createdAt])
+  @@index([customerId, createdAt])
+  @@index([type, createdAt])
+  @@index([createdAt])
+}
+
+// Off-platform deal reported by a supplier (no in-app meeting required).
+model DealReport {
+  id            String           @id @default(uuid())
+  supplierId    String
+  customerId    String? // matched platform customer, when known
+  customerName  String?
+  customerPhone String?
+  eventDate     DateTime?        @db.Date
+  amountIls     Int
+  commissionIls Int
+  note          String?          @db.Text
+  status        DealReportStatus @default(REPORTED)
+  referralId    String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  customer User?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  @@index([supplierId, createdAt])
+  @@index([customerId])
+}
+
+enum DealReportStatus {
+  REPORTED
+  VERIFIED
+  DISPUTED
 }

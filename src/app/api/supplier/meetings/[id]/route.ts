@@ -8,6 +8,7 @@ import { computeCommissionIls, computeAgentCommissionIls, commissionRateFor, for
 import { israelWallClockToInstant } from "@/lib/timezone";
 import { formatHebrewDate } from "@/lib/utils";
 import { z } from "zod";
+import { logEventAsync, requestMeta, ActivityType } from "@/lib/activity";
 
 const patchSchema = z.object({
   action: z.enum(["confirm", "reject", "complete"]),
@@ -101,6 +102,7 @@ export async function PATCH(
     // its AffiliateEarning from PENDING → CONFIRMED so it counts toward the
     // referrer's withdrawable balance. Notify the referrer.
     if (action === "complete") {
+      let agentEarningInfo: { agentId: string; amountIls: number } | null = null;
       const completed = await prisma.$transaction(async (tx) => {
         const deal = dealAmountIls ?? 0;
         const commissionIls = computeCommissionIls(meeting.supplier.category, deal);
@@ -136,6 +138,7 @@ export async function PATCH(
         const agentId = meeting.customer.referredByAgentId ?? meeting.supplier.referredByAgentId;
         const agentIls = computeAgentCommissionIls(deal);
         if (agentId && agentIls > 0) {
+          agentEarningInfo = { agentId, amountIls: agentIls };
           await tx.agentEarning.upsert({
             where: { meetingId: id },
             create: { agentId, meetingId: id, amountIls: agentIls, status: "CONFIRMED" },
@@ -166,6 +169,36 @@ export async function PATCH(
 
         return updatedMeeting;
       });
+
+      const meta = requestMeta(request);
+      logEventAsync({
+        type: ActivityType.MEETING_COMPLETED,
+        actorType: "supplier",
+        actorId: session.id,
+        customerId: meeting.customerId,
+        supplierId: session.id,
+        targetType: "meeting",
+        targetId: id,
+        payload: {
+          dealAmountIls: completed.dealAmountIls,
+          commissionIls: completed.commissionIls,
+          notes: notes ?? null,
+          customerPhone: meeting.customer.phone,
+        },
+        meta,
+      });
+      if (agentEarningInfo) {
+        logEventAsync({
+          type: ActivityType.AGENT_EARNING_CREATED,
+          actorType: "system",
+          customerId: meeting.customerId,
+          supplierId: session.id,
+          targetType: "meeting",
+          targetId: id,
+          payload: agentEarningInfo,
+          meta,
+        });
+      }
 
       return NextResponse.json({ success: true, data: completed });
     }
@@ -265,6 +298,25 @@ export async function PATCH(
     }
 
     await invalidateAvailabilityCache(session.id);
+
+    logEventAsync({
+      type: action === "confirm" ? ActivityType.MEETING_CONFIRMED : ActivityType.MEETING_REJECTED,
+      actorType: "supplier",
+      actorId: session.id,
+      customerId: meeting.customerId,
+      supplierId: session.id,
+      targetType: "meeting",
+      targetId: id,
+      payload: {
+        notes: notes ?? null,
+        requestedDate: meeting.requestedDate.toISOString().slice(0, 10),
+        startTime: meeting.startTime,
+        endTime: meeting.endTime,
+        // Confirming reveals the customer's phone to the supplier.
+        ...(action === "confirm" ? { customerPhone: meeting.customer.phone, customerName: meeting.customer.name } : {}),
+      },
+      meta: requestMeta(request),
+    });
 
     return NextResponse.json({ success: true, data: updated });
   } catch (err) {

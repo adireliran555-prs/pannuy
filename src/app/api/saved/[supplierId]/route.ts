@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireCustomerSession } from "@/lib/api-auth";
+import { logEventAsync, requestMeta, ActivityType } from "@/lib/activity";
 
 export async function DELETE(
   request: NextRequest,
@@ -35,6 +36,17 @@ export async function DELETE(
           supplierId,
         },
       },
+    });
+
+    logEventAsync({
+      type: ActivityType.SUPPLIER_UNSAVED,
+      actorType: "customer",
+      actorId: session.id,
+      customerId: session.id,
+      supplierId,
+      targetType: "supplier",
+      targetId: supplierId,
+      meta: requestMeta(request),
     });
 
     return NextResponse.json({ success: true });

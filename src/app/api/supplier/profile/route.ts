@@ -7,6 +7,7 @@ import { maybeActivateSupplierListing } from "@/lib/supplier-activation";
 import { normalizeEventTypes } from "@/lib/event-types";
 import { Category } from "@prisma/client";
 import { z } from "zod";
+import { logEventAsync, requestMeta, ActivityType } from "@/lib/activity";
 
 const patchSchema = z
   .object({
@@ -119,6 +120,11 @@ export async function PATCH(request: NextRequest) {
         ? (category as Category)
         : undefined;
 
+    const before = await prisma.supplier.findUnique({
+      where: { id: session.id },
+      select: { phone: true, name: true, email: true, category: true },
+    });
+
     const updated = await prisma.supplier.update({
       where: { id: session.id },
       data: {
@@ -143,6 +149,25 @@ export async function PATCH(request: NextRequest) {
     const fresh = await prisma.supplier.findUnique({
       where: { id: session.id },
       select: { isActive: true },
+    });
+
+    logEventAsync({
+      type: ActivityType.SUPPLIER_PROFILE_UPDATED,
+      actorType: "supplier",
+      actorId: session.id,
+      supplierId: session.id,
+      targetType: "supplier",
+      targetId: session.id,
+      payload: {
+        changedKeys: Object.keys(parsed.data).filter(
+          (k) => (parsed.data as Record<string, unknown>)[k] !== undefined
+        ),
+        ...(before && before.name !== updated.name ? { oldName: before.name, newName: updated.name } : {}),
+        ...(before && before.email !== updated.email ? { oldEmail: before.email, newEmail: updated.email } : {}),
+        ...(before && before.category !== updated.category ? { oldCategory: before.category, newCategory: updated.category } : {}),
+        phone: updated.phone,
+      },
+      meta: requestMeta(request),
     });
 
     return NextResponse.json({

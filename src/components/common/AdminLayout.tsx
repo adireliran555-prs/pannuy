@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ReactNode } from "react";
 import {
+  Receipt,
   LayoutDashboard,
   Users,
   Briefcase,
@@ -16,7 +17,7 @@ import {
   Store,
   ExternalLink,
   Wallet,
-  Target, Handshake } from "lucide-react";
+  Target, Handshake, FileSearch } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BRAND_NAME } from "@/lib/branding";
 
@@ -27,9 +28,11 @@ const NAV = [
   { href: "/admin/meetings", label: "פגישות", icon: CalendarCheck },
   { href: "/admin/referrals", label: "הפניות", icon: Target },
   { href: "/admin/agents", label: "סוכנים", icon: Handshake },
+  { href: "/admin/deals", label: "עסקאות", icon: Receipt },
   { href: "/admin/reviews", label: "ביקורות", icon: Star },
   { href: "/admin/payouts", label: "משיכות", icon: Wallet },
   { href: "/admin/activity", label: "פעילות", icon: Activity },
+  { href: "/admin/evidence", label: "ראיות", icon: FileSearch },
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {

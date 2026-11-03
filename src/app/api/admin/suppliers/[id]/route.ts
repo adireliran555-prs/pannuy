@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAdminSession, getSupplierSession } from "@/lib/api-auth";
 import { deleteSupplierPermanently, SupplierNotFoundError } from "@/lib/delete-supplier";
+import { logAdminAction } from "@/lib/activity-admin";
 
 export async function DELETE(
   request: NextRequest,
@@ -15,6 +16,7 @@ export async function DELETE(
 
   try {
     const { slug } = await deleteSupplierPermanently(id);
+    logAdminAction(request, { route: "/api/admin/suppliers/[id]", targetType: "supplier", targetId: id, supplierId: id, body: { action: "delete", slug } });
     const res = NextResponse.json({ success: true, slug });
     if (impersonatedSupplier?.id === id) {
       res.cookies.delete("pannuy_supplier_session");
@@ -54,6 +56,7 @@ export async function PATCH(
 
   try {
     const supplier = await prisma.supplier.update({ where: { id }, data });
+    logAdminAction(request, { route: "/api/admin/suppliers/[id]", targetType: "supplier", targetId: id, supplierId: id, body: data });
     return NextResponse.json({ success: true, supplier: { id: supplier.id, ...data } });
   } catch (err) {
     console.error("[PATCH /api/admin/suppliers/[id]]", err);

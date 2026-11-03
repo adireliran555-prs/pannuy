@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { sendSms } from "@/lib/sms";
 import { APP_URL, BRAND_NAME } from "@/lib/branding";
 import { ReferralStatus } from "@prisma/client";
+import { logEvent, ActivityType } from "@/lib/activity";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -56,6 +57,8 @@ export async function GET(request: NextRequest) {
         id: true,
         status: true,
         followUpCount: true,
+        customerId: true,
+        supplierId: true,
         customer: { select: { phone: true } },
         supplier: { select: { name: true } },
       },
@@ -63,12 +66,31 @@ export async function GET(request: NextRequest) {
 
     for (const ref of dueForFollowUp) {
       const link = `${APP_URL}/r/${ref.id}`;
-      // Only count a follow-up when the SMS was actually delivered — a logged
-      // (unsent) message must not advance the cadence or escalate to NO_ANSWER.
-      const sent = ref.customer?.phone
+      // SMS is dormant, so the in-app notification is the primary channel; SMS is
+      // attempted as well and recorded when it actually goes out.
+      const smsSent = ref.customer?.phone
         ? await sendSms(ref.customer.phone, followUpText(ref.supplier?.name ?? null, link))
         : false;
-      if (!sent) continue;
+      await prisma.notification.create({
+        data: {
+          userId: ref.customerId,
+          type: "REFERRAL_FOLLOWUP",
+          titleHe: "הצלחתם ליצור קשר? 💬",
+          bodyHe: ref.supplier?.name
+            ? `רצינו לוודא שהצלחתם ליצור קשר עם ${ref.supplier.name}. ספרו לנו מה קרה.`
+            : "רצינו לוודא שהצלחתם ליצור קשר עם הספק. ספרו לנו מה קרה.",
+          metadata: { referralId: ref.id, link },
+        },
+      });
+      await logEvent({
+        type: ActivityType.REFERRAL_FOLLOWUP_SENT,
+        actorType: "system",
+        customerId: ref.customerId,
+        supplierId: ref.supplierId,
+        targetType: "Referral",
+        targetId: ref.id,
+        payload: { followUpNumber: ref.followUpCount + 1, channels: smsSent ? ["in_app", "sms"] : ["in_app"] },
+      });
       await prisma.referral.update({
         where: { id: ref.id },
         data: {

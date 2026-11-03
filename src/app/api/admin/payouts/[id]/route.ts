@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAdminSession } from "@/lib/api-auth";
+import { logAdminAction } from "@/lib/activity-admin";
 
 const ALLOWED_STATUSES = ["PENDING", "APPROVED", "PAID", "REJECTED"] as const;
 type PayoutStatus = (typeof ALLOWED_STATUSES)[number];
@@ -89,6 +90,7 @@ export async function PATCH(
 
       return updated;
     });
+    logAdminAction(request, { route: "/api/admin/payouts/[id]", targetType: "payout", targetId: id, supplierId: payout.supplierId, body });
 
     return NextResponse.json({
       success: true,

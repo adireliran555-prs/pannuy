@@ -9,6 +9,7 @@ import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import EmptyState from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
+import PendingOutcomePrompt from "@/components/customer/PendingOutcomePrompt";
 import { useMeetings } from "@/hooks/useMeetings";
 import { useEvent } from "@/hooks/useEvent";
 import { formatHebrewDate } from "@/lib/utils";
@@ -108,6 +109,9 @@ export default function MeetingsPage() {
             נהלו את כל הפגישות עם הספקים
           </p>
         </div>
+
+        {/* "What happened with X?" — referrals we haven't heard back on */}
+        <PendingOutcomePrompt />
 
         {/* Back to the active event plan */}
         {hasActivePlan && (

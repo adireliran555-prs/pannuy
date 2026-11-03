@@ -3,6 +3,7 @@ import { requireCustomerSession } from "@/lib/api-auth";
 import { createOrUpdateReferral } from "@/lib/referrals";
 import { ReferralChannel } from "@prisma/client";
 import prisma from "@/lib/prisma";
+import { logEventAsync, requestMeta, ActivityType } from "@/lib/activity";
 
 // Records a referral when a customer contacts a supplier off-platform (WhatsApp).
 // Called right before opening WhatsApp from the supplier profile.
@@ -31,7 +32,7 @@ export async function POST(request: NextRequest) {
 
     const supplier = await prisma.supplier.findUnique({
       where: { id: supplierId },
-      select: { id: true },
+      select: { id: true, name: true, phone: true },
     });
     if (!supplier) {
       return NextResponse.json(
@@ -45,6 +46,18 @@ export async function POST(request: NextRequest) {
       customerName: session.name,
       supplierId,
       channel: resolvedChannel,
+    });
+
+    logEventAsync({
+      type: ActivityType.WHATSAPP_TAP,
+      actorType: "customer",
+      actorId: session.id,
+      customerId: session.id,
+      supplierId,
+      targetType: "referral",
+      targetId: result?.id ?? null,
+      payload: { channel: resolvedChannel, supplierPhone: supplier.phone, supplierName: supplier.name },
+      meta: requestMeta(request),
     });
 
     return NextResponse.json({ success: true, data: result }, { status: 201 });

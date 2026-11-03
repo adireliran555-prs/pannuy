@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAdminSession } from "@/lib/api-auth";
 import { ReferralStatus } from "@prisma/client";
+import { logAdminAction } from "@/lib/activity-admin";
 
 // Admin updates a referral's status and/or notes from the tracking board.
 export async function PATCH(
@@ -50,8 +51,9 @@ export async function PATCH(
     const updated = await prisma.referral.update({
       where: { id },
       data,
-      select: { id: true, status: true, adminNotes: true },
+      select: { id: true, status: true, adminNotes: true, customerId: true, supplierId: true },
     });
+    logAdminAction(request, { route: "/api/admin/referrals/[id]", targetType: "referral", targetId: id, customerId: updated.customerId, supplierId: updated.supplierId, body });
 
     return NextResponse.json({ success: true, data: updated });
   } catch (err) {

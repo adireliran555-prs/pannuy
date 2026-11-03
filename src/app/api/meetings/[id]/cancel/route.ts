@@ -4,6 +4,7 @@ import { requireCustomerSession } from "@/lib/api-auth";
 import { invalidateAvailabilityCache } from "@/lib/availability";
 import { deleteCalendarEvent } from "@/lib/google-calendar";
 import { israelWallClockToInstant } from "@/lib/timezone";
+import { logEventAsync, requestMeta, ActivityType } from "@/lib/activity";
 
 const MIN_HOURS_BEFORE_CANCELLATION = 24;
 
@@ -120,6 +121,22 @@ export async function PATCH(
     }
 
     await invalidateAvailabilityCache(meeting.supplierId);
+
+    logEventAsync({
+      type: ActivityType.MEETING_CANCELLED,
+      actorType: "customer",
+      actorId: session.id,
+      customerId: session.id,
+      supplierId: meeting.supplierId,
+      targetType: "meeting",
+      targetId: id,
+      payload: {
+        previousStatus: meeting.status,
+        requestedDate: meeting.requestedDate.toISOString().slice(0, 10),
+        startTime: meeting.startTime,
+      },
+      meta: requestMeta(request),
+    });
 
     return NextResponse.json({ success: true });
   } catch (err) {

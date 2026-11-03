@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAdminSession } from "@/lib/api-auth";
 import { z } from "zod";
+import { logAdminAction } from "@/lib/activity-admin";
 
 const schema = z.object({
   isActive: z.boolean().optional(),
@@ -29,6 +30,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       });
       paidCount = r.count;
     }
+    logAdminAction(request, { route: "/api/admin/agents/[id]", targetType: "agent", targetId: id, body: parsed.data });
     return NextResponse.json({ success: true, data: { paidCount } });
   } catch (err) {
     console.error("[PATCH /api/admin/agents/[id]]", err);

@@ -5,6 +5,7 @@ import { invalidateAvailabilityCache } from "@/lib/availability";
 import { createOrUpdateReferral } from "@/lib/referrals";
 import { MeetingType, MeetingStatus, ReferralChannel, Prisma } from "@prisma/client";
 import { z } from "zod";
+import { logEventAsync, requestMeta, ActivityType } from "@/lib/activity";
 
 const timeRe = /^([01]\d|2[0-3]):[0-5]\d$/;
 const createSchema = z
@@ -181,6 +182,26 @@ export async function POST(request: NextRequest) {
     } catch (refErr) {
       console.error("[referral] in-app create failed (non-fatal):", refErr);
     }
+
+    logEventAsync({
+      type: ActivityType.MEETING_REQUESTED,
+      actorType: "customer",
+      actorId: session.id,
+      customerId: session.id,
+      supplierId,
+      targetType: "meeting",
+      targetId: meeting.id,
+      payload: {
+        date,
+        startTime,
+        endTime,
+        meetingType: validMeetingType,
+        referredBySupplierId,
+        refCode,
+        notes: notes ?? null,
+      },
+      meta: requestMeta(request),
+    });
 
     return NextResponse.json({ success: true, data: meeting }, { status: 201 });
   } catch (err) {

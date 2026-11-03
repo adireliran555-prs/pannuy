@@ -19,6 +19,8 @@ export default async function AdminReferralsPage() {
       customerConfirmedAt: true,
       adminNotes: true,
       meetingId: true,
+      customerId: true,
+      supplierId: true,
       customer: { select: { name: true, phone: true } },
       supplier: { select: { name: true, slug: true } },
     },
@@ -36,6 +38,8 @@ export default async function AdminReferralsPage() {
     supplierSlug: r.supplier?.slug ?? "",
     hasMeeting: Boolean(r.meetingId),
     adminNotes: r.adminNotes ?? "",
+    customerId: r.customerId,
+    supplierId: r.supplierId,
   }));
 
   const count = (s: ReferralStatus) => rows.filter((r) => r.status === s).length;
