@@ -83,6 +83,20 @@ export function requestMeta(request: NextRequest | Request | null | undefined): 
   return { ip, userAgent, sessionId };
 }
 
+// JSONB does not preserve key order, so payloads are hashed with sorted keys.
+function sortKeys(v: unknown): unknown {
+  if (Array.isArray(v)) return v.map(sortKeys);
+  if (v && typeof v === "object") {
+    return Object.keys(v as Record<string, unknown>)
+      .sort()
+      .reduce<Record<string, unknown>>((acc, k) => {
+        acc[k] = sortKeys((v as Record<string, unknown>)[k]);
+        return acc;
+      }, {});
+  }
+  return v;
+}
+
 function canonical(input: LogEventInput, prevHash: string | null, createdAt: string): string {
   return JSON.stringify({
     prevHash,
@@ -94,7 +108,7 @@ function canonical(input: LogEventInput, prevHash: string | null, createdAt: str
     supplierId: input.supplierId ?? null,
     targetType: input.targetType ?? null,
     targetId: input.targetId ?? null,
-    payload: input.payload ?? null,
+    payload: sortKeys(input.payload ?? null),
     ip: input.meta?.ip ?? null,
     userAgent: input.meta?.userAgent ?? null,
     sessionId: input.meta?.sessionId ?? null,
