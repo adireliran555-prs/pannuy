@@ -4,6 +4,7 @@ import { verifyOtp, signCustomerToken } from "@/lib/auth";
 import { CustomerSession } from "@/types";
 import { checkOtpIpLimit, clientIp } from "@/lib/otp-ip-limit";
 import { z } from "zod";
+import { resolveAgentReferral } from "@/lib/agents";
 
 const verifySchema = z.object({
   phone: z.string().regex(/^05\d{8}$/),
@@ -39,11 +40,14 @@ export async function POST(request: NextRequest) {
       process.env.NODE_ENV !== "production" &&
       process.env.ALLOW_OTP_BYPASS === "true";
 
+    const referredByAgentId = await resolveAgentReferral(request.cookies.get("pannuy_ref")?.value);
+
     const upsertUser = () =>
       prisma.user.upsert({
         where: { phone },
         create: {
           phone,
+          ...(referredByAgentId ? { referredByAgentId } : {}),
           name: name ?? "משתמש חדש",
           weddingDate: weddingDate ? new Date(`${weddingDate}T00:00:00Z`) : undefined,
           weddingArea: weddingArea ?? undefined,

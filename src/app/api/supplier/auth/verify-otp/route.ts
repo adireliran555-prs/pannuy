@@ -7,6 +7,7 @@ import { SupplierSession } from "@/types";
 import { SUPPLIER_AGREEMENT_VERSION } from "@/lib/legal";
 import { checkOtpIpLimit, clientIp } from "@/lib/otp-ip-limit";
 import { z } from "zod";
+import { resolveAgentReferral } from "@/lib/agents";
 
 const verifySchema = z.object({
   phone: z.string().min(9).max(20),
@@ -63,6 +64,8 @@ export async function POST(request: NextRequest) {
       process.env.NODE_ENV !== "production" &&
       process.env.ALLOW_OTP_BYPASS === "true";
 
+    const referredByAgentId = await resolveAgentReferral(request.cookies.get("pannuy_ref")?.value);
+
     const upsertSupplier = () =>
       prisma.$transaction(async (tx) => {
         const existing = await tx.supplier.findUnique({ where: { phone } });
@@ -87,6 +90,7 @@ export async function POST(request: NextRequest) {
             name: supplierName,
             slug,
             ...(email ? { email } : {}),
+            ...(referredByAgentId ? { referredByAgentId } : {}),
             agreementVersion: SUPPLIER_AGREEMENT_VERSION,
             agreementAcceptedAt: new Date(),
             agreementAcceptedIp: ip,

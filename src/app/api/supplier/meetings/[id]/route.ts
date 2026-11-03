@@ -3,7 +3,8 @@ import prisma from "@/lib/prisma";
 import { requireSupplierSession } from "@/lib/api-auth";
 import { createCalendarEvent, deleteCalendarEvent } from "@/lib/google-calendar";
 import { invalidateAvailabilityCache } from "@/lib/availability";
-import { PLATFORM_COMMISSION_ILS, REFERRAL_COMMISSION_ILS } from "@/lib/payments";
+import { REFERRAL_COMMISSION_ILS } from "@/lib/payments";
+import { computeCommissionIls, computeAgentCommissionIls, commissionRateFor, formatRate } from "@/lib/commission";
 import { israelWallClockToInstant } from "@/lib/timezone";
 import { formatHebrewDate } from "@/lib/utils";
 import { z } from "zod";
@@ -11,6 +12,8 @@ import { z } from "zod";
 const patchSchema = z.object({
   action: z.enum(["confirm", "reject", "complete"]),
   notes: z.string().max(2000).optional(),
+  // Deal value (ILS, pre-VAT) reported on completion — commission is a % of it.
+  dealAmountIls: z.number().int().min(0).max(10_000_000).optional(),
 });
 
 export async function PATCH(
@@ -29,13 +32,21 @@ export async function PATCH(
         { status: 400 }
       );
     }
-    const { action, notes } = parsed.data;
+    const { action, notes, dealAmountIls } = parsed.data;
 
     const meeting = await prisma.meeting.findUnique({
       where: { id },
       include: {
-        customer: { select: { name: true, phone: true } },
-        supplier: { select: { id: true, googleRefreshToken: true, slug: true } },
+        customer: { select: { name: true, phone: true, referredByAgentId: true } },
+        supplier: {
+          select: {
+            id: true,
+            googleRefreshToken: true,
+            slug: true,
+            category: true,
+            referredByAgentId: true,
+          },
+        },
       },
     });
 
@@ -73,6 +84,12 @@ export async function PATCH(
           { status: 400 }
         );
       }
+      if (dealAmountIls === undefined) {
+        return NextResponse.json(
+          { success: false, error: "יש להזין את סכום העסקה (לפני מע\"מ)" },
+          { status: 400 }
+        );
+      }
     } else if (meeting.status !== "PENDING") {
       return NextResponse.json(
         { success: false, error: "ניתן לפעול רק על פגישות בהמתנה" },
@@ -85,23 +102,46 @@ export async function PATCH(
     // referrer's withdrawable balance. Notify the referrer.
     if (action === "complete") {
       const completed = await prisma.$transaction(async (tx) => {
+        const deal = dealAmountIls ?? 0;
+        const commissionIls = computeCommissionIls(meeting.supplier.category, deal);
         const updatedMeeting = await tx.meeting.update({
           where: { id },
-          data: { status: "COMPLETED", ...(notes ? { supplierNotes: notes } : {}) },
-        });
-
-        // The performing supplier owes us a platform commission for this job.
-        // Recorded as PENDING; collected once a payment provider is wired.
-        await tx.paymentTransaction.create({
           data: {
-            supplierId: session.id,
-            type: "COMMISSION",
-            amountIls: PLATFORM_COMMISSION_ILS,
-            status: "PENDING",
-            meetingId: id,
-            note: "עמלת פלטפורמה לאירוע שהושלם",
+            status: "COMPLETED",
+            dealAmountIls: deal,
+            commissionIls,
+            ...(notes ? { supplierNotes: notes } : {}),
           },
         });
+
+        // The performing supplier owes us a platform commission for this job
+        // (% of the deal by category). Recorded as PENDING; collected once a
+        // payment provider is wired.
+        if (commissionIls > 0) {
+          await tx.paymentTransaction.create({
+            data: {
+              supplierId: session.id,
+              type: "COMMISSION",
+              amountIls: commissionIls,
+              status: "PENDING",
+              meetingId: id,
+              note: `עמלת פלטפורמה ${formatRate(commissionRateFor(meeting.supplier.category))} מעסקה של ₪${deal.toLocaleString("he-IL")}`,
+            },
+          });
+        }
+
+        // Agent (סוכן) referral: the customer's agent takes priority over the
+        // supplier's. One earning per meeting; CONFIRMED immediately since the
+        // event already happened.
+        const agentId = meeting.customer.referredByAgentId ?? meeting.supplier.referredByAgentId;
+        const agentIls = computeAgentCommissionIls(deal);
+        if (agentId && agentIls > 0) {
+          await tx.agentEarning.upsert({
+            where: { meetingId: id },
+            create: { agentId, meetingId: id, amountIls: agentIls, status: "CONFIRMED" },
+            update: {},
+          });
+        }
 
         const earning = await tx.affiliateEarning.findUnique({
           where: { meetingId: id },

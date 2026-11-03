@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import { randomInt } from "crypto";
 import bcrypt from "bcryptjs";
-import { CustomerSession, SupplierSession, AdminSession } from "@/types";
+import { CustomerSession, SupplierSession, AdminSession, AgentSession } from "@/types";
 
 function resolveJwtSecret(): string {
   const secret = process.env.JWT_SECRET;
@@ -37,19 +37,27 @@ export function signAdminToken(payload: AdminSession): string {
   } as jwt.SignOptions);
 }
 
+export function signAgentToken(payload: AgentSession): string {
+  return jwt.sign({ ...payload, type: "agent" }, JWT_SECRET, {
+    expiresIn: JWT_EXPIRES_IN,
+  } as jwt.SignOptions);
+}
+
 export function verifyToken(
   token: string
 ):
   | (CustomerSession & { type: "customer" })
   | (SupplierSession & { type: "supplier" })
   | (AdminSession & { type: "admin" })
+  | (AgentSession & { type: "agent" })
   | null {
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
     return decoded as
       | (CustomerSession & { type: "customer" })
       | (SupplierSession & { type: "supplier" })
-      | (AdminSession & { type: "admin" });
+      | (AdminSession & { type: "admin" })
+      | (AgentSession & { type: "agent" });
   } catch {
     return null;
   }

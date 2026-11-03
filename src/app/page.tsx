@@ -189,6 +189,7 @@ export default async function HomePage() {
               </h4>
               <ul className="space-y-2 text-sm text-white/60">
                 <li><Link href="/for-suppliers" className="hover:text-white transition-colors">הצטרפו ל־{BRAND_NAME}</Link></li>
+                <li><Link href="/agent/join" className="hover:text-white transition-colors">סוכנים</Link></li>
                 <li><Link href="/supplier/dashboard" className="hover:text-white transition-colors">פאנל ספקים</Link></li>
               </ul>
             </div>

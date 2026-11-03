@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { verifyToken } from "@/lib/auth";
-import { CustomerSession, SupplierSession, AdminSession } from "@/types";
+import { CustomerSession, SupplierSession, AdminSession, AgentSession } from "@/types";
 
 // ─── Customer auth ────────────────────────────────────────────────────────────
 
@@ -56,6 +56,38 @@ export function requireSupplierSession(
   | { session: SupplierSession & { type: "supplier" }; error: null }
   | { session: null; error: NextResponse } {
   const session = getSupplierSession(request);
+  if (!session) {
+    return {
+      session: null,
+      error: NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
+      ),
+    };
+  }
+  return { session, error: null };
+}
+
+// ─── Agent auth ───────────────────────────────────────────────────────────────
+
+export function getAgentSession(
+  request: NextRequest
+): (AgentSession & { type: "agent" }) | null {
+  const token = request.cookies.get("pannuy_agent_session")?.value;
+  if (!token) return null;
+
+  const decoded = verifyToken(token);
+  if (!decoded || (decoded as { type: string }).type !== "agent") return null;
+
+  return decoded as AgentSession & { type: "agent" };
+}
+
+export function requireAgentSession(
+  request: NextRequest
+):
+  | { session: AgentSession & { type: "agent" }; error: null }
+  | { session: null; error: NextResponse } {
+  const session = getAgentSession(request);
   if (!session) {
     return {
       session: null,

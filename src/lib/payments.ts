@@ -5,9 +5,7 @@
 
 export const MONTHLY_FEE_ILS = 1000;
 
-// Flat platform commission a supplier owes us for each job completed through the
-// platform. Placeholder until booking captures a job price (then make it a %).
-export const PLATFORM_COMMISSION_ILS = 200;
+// Platform commission is a % of the deal by category — see src/lib/commission.ts.
 
 // Flat referral commission paid to the referring supplier per completed job.
 export const REFERRAL_COMMISSION_ILS = 300;

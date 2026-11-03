@@ -8,6 +8,8 @@ import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import EmptyState from "@/components/ui/EmptyState";
 import Modal from "@/components/ui/Modal";
+import Input from "@/components/ui/Input";
+import { DEFAULT_COMMISSION_RATE, formatRate } from "@/lib/commission";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { formatHebrewDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
@@ -67,6 +69,7 @@ export default function SupplierBookingsPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [actionError, setActionError] = useState<{ id: string; message: string } | null>(null);
   const [confirmAction, setConfirmAction] = useState<{ id: string; action: "reject" | "complete" } | null>(null);
+  const [dealAmount, setDealAmount] = useState("");
 
   const { data: meetings = [], mutate, isLoading } = useSWR(
     "/api/supplier/meetings",
@@ -89,16 +92,26 @@ export default function SupplierBookingsPage() {
   };
 
   const handleAction = async (id: string, action: "confirm" | "reject" | "complete") => {
+    let dealAmountIls: number | undefined;
+    if (action === "complete") {
+      const n = Number(dealAmount.replace(/[^\d]/g, ""));
+      if (!Number.isFinite(n) || n <= 0) {
+        setActionError({ id, message: "יש להזין את סכום העסקה (לפני מע\"מ)" });
+        return;
+      }
+      dealAmountIls = n;
+    }
     setActionLoading(id + action);
     setActionError(null);
     try {
       const res = await fetch(`/api/supplier/meetings/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action }),
+        body: JSON.stringify({ action, ...(dealAmountIls !== undefined ? { dealAmountIls } : {}) }),
       });
       if (res.ok) {
         setConfirmAction(null);
+        setDealAmount("");
         mutate();
         return;
       }
@@ -115,10 +128,12 @@ export default function SupplierBookingsPage() {
   };
 
   const confirmTitle = confirmAction?.action === "reject" ? "דחיית בקשת פגישה" : "סיום האירוע";
+  const dealNumber = Number(dealAmount.replace(/[^\d]/g, ""));
+  const commissionPreview = dealNumber > 0 ? Math.round(dealNumber * DEFAULT_COMMISSION_RATE) : null;
   const confirmBody =
     confirmAction?.action === "reject"
       ? "הלקוח יקבל הודעה שהבקשה נדחתה. לא ניתן לבטל פעולה זו. להמשיך?"
-      : "סימון האירוע כהתקיים משחרר עמלות הפניה לספקים שהפנו אליכם. לא ניתן לבטל פעולה זו. להמשיך?";
+      : "הזינו את סכום העסקה שנסגרה. עמלת הפלטפורמה תחושב ממנו, והסימון משחרר עמלות הפניה. לא ניתן לבטל פעולה זו.";
 
   const tabs: { id: Tab; label: string; count: number }[] = [
     { id: "pending", label: "ממתינות", count: pendingMeetings.length },
@@ -315,7 +330,7 @@ export default function SupplierBookingsPage() {
                         האירוע התקיים — סיום
                       </Button>
                       <p className="text-xs text-text-muted mt-1.5 text-center">
-                        סימון האירוע כהושלם משחרר עמלות הפניה לספקים שהפנו אליכם
+                        בסיום תתבקשו להזין את סכום העסקה לחישוב העמלה, והסימון משחרר עמלות הפניה
                       </p>
                     </div>
                   )}
@@ -335,6 +350,24 @@ export default function SupplierBookingsPage() {
         {confirmAction && (
           <div className="space-y-4">
             <p className="text-sm text-text-main leading-relaxed">{confirmBody}</p>
+            {confirmAction.action === "complete" && (
+              <div className="space-y-1.5">
+                <Input
+                  label="סכום העסקה (₪, לפני מע״מ)"
+                  type="text"
+                  inputMode="numeric"
+                  ltr
+                  placeholder="לדוגמה: 8500"
+                  value={dealAmount}
+                  onChange={(e) => setDealAmount(e.target.value)}
+                />
+                {commissionPreview !== null && (
+                  <p className="text-xs text-text-muted">
+                    עמלת הפלטפורמה ({formatRate(DEFAULT_COMMISSION_RATE)}): ₪{commissionPreview.toLocaleString("he-IL")}
+                  </p>
+                )}
+              </div>
+            )}
             {actionError?.id === confirmAction.id && (
               <p role="alert" className="rounded-xl bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
                 {actionError.message}

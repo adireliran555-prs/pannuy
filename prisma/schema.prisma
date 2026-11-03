@@ -7,25 +7,27 @@ datasource db {
 }
 
 model User {
-  id             String    @id @default(uuid())
-  phone          String    @unique
-  name           String
-  email          String?
-  weddingDate    DateTime?
-  weddingArea    String?
-  weddingAreaLat Float?
-  weddingAreaLng Float?
-  sessionToken   String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id                String    @id @default(uuid())
+  phone             String    @unique
+  name              String
+  email             String?
+  weddingDate       DateTime?
+  weddingArea       String?
+  weddingAreaLat    Float?
+  weddingAreaLng    Float?
+  sessionToken      String?
+  referredByAgentId String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
-  meetings      Meeting[]       @relation("CustomerMeetings")
-  saved         SavedSupplier[]
-  reviews       Review[]
-  notifications Notification[]
-  profileViews  ProfileView[]
-  referrals     Referral[]
-  events        Event[]
+  referredByAgent Agent?          @relation(fields: [referredByAgentId], references: [id])
+  meetings        Meeting[]       @relation("CustomerMeetings")
+  saved           SavedSupplier[]
+  reviews         Review[]
+  notifications   Notification[]
+  profileViews    ProfileView[]
+  referrals       Referral[]
+  events          Event[]
 }
 
 model Otp {
@@ -41,43 +43,49 @@ model Otp {
 }
 
 model Supplier {
-  id                  String             @id @default(uuid())
-  slug                String             @unique
-  name                String
-  phone               String             @unique
-  email               String?
-  category            Category           @default(PHOTOGRAPHER)
-  bioHe               String?            @db.Text
-  city                String?
-  serviceAreas        String[]
-  supportedEventTypes String[]           @default(["wedding"])
-  basePriceFrom       Int?
-  basePriceTo         Int?
-  ratingAvg           Float              @default(0)
-  ratingCount         Int                @default(0)
-  isVerified          Boolean            @default(false)
-  isActive            Boolean            @default(false)
-  googleCalendarId    String?
-  googleRefreshToken  String?
-  googleAccessToken   String?
-  googleTokenExpiry   DateTime?
-  responseRate        Float?
-  sessionToken        String?
-  createdAt           DateTime           @default(now())
-  updatedAt           DateTime           @updatedAt
-  affiliateCode       String?            @unique
-  warningCount        Int                @default(0)
-  subscriptionStatus  SubscriptionStatus @default(INACTIVE)
-  subscriptionStartAt DateTime?
-  highlights          String[] // admin-curated praise points (replaces star reviews)
-  agreementVersion    String? // supplier agreement version accepted at signup
-  agreementAcceptedAt DateTime?
-  agreementAcceptedIp String?
-  googleChannelId     String? // Google Calendar push-notification channel
-  googleChannelToken  String? // secret token validated on webhook calls
-  googleResourceId    String?
-  googleChannelExpiry DateTime?
+  id                       String                    @id @default(uuid())
+  slug                     String                    @unique
+  name                     String
+  phone                    String                    @unique
+  email                    String?
+  category                 Category                  @default(PHOTOGRAPHER)
+  bioHe                    String?                   @db.Text
+  city                     String?
+  serviceAreas             String[]
+  supportedEventTypes      String[]                  @default(["wedding"])
+  basePriceFrom            Int?
+  basePriceTo              Int?
+  ratingAvg                Float                     @default(0)
+  ratingCount              Int                       @default(0)
+  isVerified               Boolean                   @default(false)
+  isActive                 Boolean                   @default(false)
+  googleCalendarId         String?
+  googleRefreshToken       String?
+  googleAccessToken        String?
+  googleTokenExpiry        DateTime?
+  responseRate             Float?
+  sessionToken             String?
+  createdAt                DateTime                  @default(now())
+  updatedAt                DateTime                  @updatedAt
+  affiliateCode            String?                   @unique
+  warningCount             Int                       @default(0)
+  subscriptionStatus       SubscriptionStatus        @default(INACTIVE)
+  subscriptionStartAt      DateTime?
+  highlights               String[] // admin-curated praise points (replaces star reviews)
+  agreementVersion         String? // supplier agreement version accepted at signup
+  agreementAcceptedAt      DateTime?
+  agreementAcceptedIp      String?
+  googleChannelId          String? // Google Calendar push-notification channel
+  googleChannelToken       String? // secret token validated on webhook calls
+  googleResourceId         String?
+  googleChannelExpiry      DateTime?
+  // Read-only ICS subscription (iCloud / Outlook) — alternative to Google OAuth
+  externalCalendarUrl      String?
+  externalCalendarProvider ExternalCalendarProvider?
+  externalCalendarSyncedAt DateTime?
+  referredByAgentId        String?
 
+  referredByAgent    Agent?                 @relation(fields: [referredByAgentId], references: [id])
   photos             SupplierPhoto[]
   packages           SupplierPackage[]
   availability       AvailabilitySlot[]
@@ -99,6 +107,46 @@ model Supplier {
   @@index([category])
   @@index([isActive, isVerified])
   @@index([googleChannelId])
+  @@index([referredByAgentId])
+}
+
+enum ExternalCalendarProvider {
+  ICLOUD
+  OUTLOOK
+}
+
+// Agents (סוכנים) are not suppliers — they only hold a profile + referral code and
+// earn a referral commission on deals closed by customers/suppliers they brought.
+model Agent {
+  id                  String    @id @default(uuid())
+  phone               String    @unique
+  name                String
+  email               String?
+  referralCode        String    @unique
+  isActive            Boolean   @default(true)
+  agreementVersion    String?
+  agreementAcceptedAt DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  referredCustomers User[]
+  referredSuppliers Supplier[]
+  earnings          AgentEarning[]
+}
+
+model AgentEarning {
+  id        String          @id @default(uuid())
+  agentId   String
+  meetingId String          @unique
+  amountIls Int
+  status    AffiliateStatus @default(PENDING)
+  createdAt DateTime        @default(now())
+  paidAt    DateTime?
+
+  agent   Agent   @relation(fields: [agentId], references: [id])
+  meeting Meeting @relation(fields: [meetingId], references: [id])
+
+  @@index([agentId])
 }
 
 model SupplierWarning {
@@ -244,6 +292,8 @@ model AvailabilitySlot {
 enum AvailabilitySource {
   GOOGLE
   MANUAL
+  ICLOUD
+  OUTLOOK
 }
 
 model Meeting {
@@ -259,9 +309,12 @@ model Meeting {
   supplierNotes        String?       @db.Text
   googleEventId        String?
   referredBySupplierId String?
+  dealAmountIls        Int? // deal value reported by the supplier on completion (pre-VAT)
+  commissionIls        Int? // platform commission charged for this deal
   createdAt            DateTime      @default(now())
   updatedAt            DateTime      @updatedAt
 
+  agentEarning     AgentEarning?
   customer         User              @relation("CustomerMeetings", fields: [customerId], references: [id])
   supplier         Supplier          @relation("SupplierMeetings", fields: [supplierId], references: [id])
   review           Review?

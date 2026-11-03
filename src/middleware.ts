@@ -10,6 +10,7 @@ const SUPPLIER_PROTECTED_PREFIXES = [
   "/supplier/packages",
   "/supplier/finances",
 ];
+const AGENT_PROTECTED_PREFIXES = ["/agent/dashboard"];
 // /admin protected, but /admin/login is not.
 const ADMIN_PROTECTED_PREFIX = "/admin";
 
@@ -84,6 +85,18 @@ export async function middleware(request: NextRequest) {
     if (!supplierPayload || supplierPayload.type !== "supplier") {
       const res = NextResponse.redirect(new URL("/supplier/login", request.url));
       res.cookies.delete("pannuy_supplier_session");
+      return res;
+    }
+    return NextResponse.next();
+  }
+
+  if (AGENT_PROTECTED_PREFIXES.some((p) => pathname.startsWith(p))) {
+    const agentToken = request.cookies.get("pannuy_agent_session")?.value;
+    if (!agentToken) return NextResponse.redirect(new URL("/agent/login", request.url));
+    const agentPayload = await decodeJwtPayload(agentToken);
+    if (!agentPayload || agentPayload.type !== "agent") {
+      const res = NextResponse.redirect(new URL("/agent/login", request.url));
+      res.cookies.delete("pannuy_agent_session");
       return res;
     }
     return NextResponse.next();

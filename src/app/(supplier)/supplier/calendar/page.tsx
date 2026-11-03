@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { ChevronRight, ChevronLeft, RefreshCw, Calendar, CheckCircle } from "lucide-react";
 import SupplierDashboardLayout from "@/components/common/SupplierDashboardLayout";
 import Button from "@/components/ui/Button";
+import ExternalCalendarCard from "@/components/supplier/ExternalCalendarCard";
 import { HEBREW_DAYS, HEBREW_MONTHS, getDaysInMonth, getFirstDayOfMonth } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { BRAND_CALENDAR_NAME, BRAND_NAME } from "@/lib/branding";
@@ -155,6 +156,25 @@ export default function SupplierCalendarPage() {
   const [blockedDays, setBlockedDays] = useState<BlockedDay[]>([]);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [isTogglingBlock, setIsTogglingBlock] = useState(false);
+  const [external, setExternal] = useState<{
+    provider: "ICLOUD" | "OUTLOOK" | null;
+    url: string | null;
+    syncedAt: string | null;
+  } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/supplier/profile")
+      .then((r) => r.json())
+      .then((j) => {
+        const sp = j.data ?? j.supplier ?? j;
+        setExternal({
+          provider: sp?.externalCalendarProvider ?? null,
+          url: sp?.externalCalendarUrl ?? null,
+          syncedAt: sp?.externalCalendarSyncedAt ?? null,
+        });
+      })
+      .catch(() => setExternal({ provider: null, url: null, syncedAt: null }));
+  }, []);
 
   const loadData = useCallback(async (y: number, m: number) => {
     const [meetingsRes, blockedRes] = await Promise.all([
@@ -306,6 +326,16 @@ export default function SupplierCalendarPage() {
         >
           <GoogleCalendarBanner onSynced={() => loadData(year, month)} />
         </Suspense>
+
+        {/* iPhone (iCloud) / Outlook — read-only ICS subscription */}
+        {external && (
+          <ExternalCalendarCard
+            initialProvider={external.provider}
+            initialUrl={external.url}
+            initialSyncedAt={external.syncedAt}
+            onSynced={() => loadData(year, month)}
+          />
+        )}
 
         {/* Calendar */}
         <div className="bg-white rounded-2xl border border-border overflow-hidden">

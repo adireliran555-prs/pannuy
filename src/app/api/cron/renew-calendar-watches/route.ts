@@ -4,6 +4,7 @@ import {
   registerCalendarWatch,
   stopCalendarWatch,
 } from "@/lib/google-calendar";
+import { syncExternalCalendar } from "@/lib/external-calendar";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -59,11 +60,31 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // iCloud / Outlook ICS feeds have no push channel — re-pull them daily here.
+    let externalSynced = 0;
+    let externalFailed = 0;
+    const externals = await prisma.supplier.findMany({
+      where: { externalCalendarUrl: { not: null } },
+      take: 500,
+      select: { id: true },
+    });
+    for (const s of externals) {
+      try {
+        await syncExternalCalendar(s.id);
+        externalSynced++;
+      } catch (extErr) {
+        console.error("[cron/renew-calendar-watches] external", s.id, extErr);
+        externalFailed++;
+      }
+    }
+
     return NextResponse.json({
       success: true,
       considered: suppliers.length,
       renewed,
       failed,
+      externalSynced,
+      externalFailed,
     });
   } catch (err) {
     console.error("[cron/renew-calendar-watches]", err);

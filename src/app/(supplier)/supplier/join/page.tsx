@@ -17,6 +17,7 @@ import TopEventsLogo from "@/components/common/TopEventsLogo";
 import EventTypePicker from "@/components/common/EventTypePicker";
 import { uploadToCloudinary, cloudinaryEnabled } from "@/lib/cloudinary";
 import { SUPPLIER_AGREEMENT_URL } from "@/lib/legal";
+import SupplierAgreementModal from "@/components/common/SupplierAgreementModal";
 
 // Categories offered when joining — legacy categories (FLORIST, BRIDAL_SUITE) are excluded.
 const JOIN_CATEGORIES = [
@@ -83,9 +84,7 @@ export default function SupplierJoinPage() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [coreSaved, setCoreSaved] = useState(false);
   const [agreementAccepted, setAgreementAccepted] = useState(false);
-  const [commissionAccepted, setCommissionAccepted] = useState(false);
-  const [circumventionAccepted, setCircumventionAccepted] = useState(false);
-  const [agreementAttempted, setAgreementAttempted] = useState(false);
+  const [agreementOpen, setAgreementOpen] = useState(false);
 
   // Step 2 state
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -212,12 +211,14 @@ export default function SupplierJoinPage() {
     resolver: zodResolver(step1Schema),
   });
 
-  const allAgreementsAccepted =
-    agreementAccepted && commissionAccepted && circumventionAccepted;
+  // Step 1 submit opens the agreement modal; the OTP is sent only after acceptance.
+  const onStep1Submit = async () => {
+    setAgreementOpen(true);
+  };
 
-  const onStep1Submit = async (data: Step1Data) => {
-    setAgreementAttempted(true);
-    if (!allAgreementsAccepted) return;
+  const handleAgreementAccept = async () => {
+    const data = getValues();
+    setAgreementAccepted(true);
     setIsLoading(true);
     try {
       const res = await fetch("/api/supplier/auth/send-otp", {
@@ -228,8 +229,10 @@ export default function SupplierJoinPage() {
       const json = await res.json();
       if (!res.ok) {
         setOtpError(json.error ?? "שגיאה בשליחת קוד");
+        setAgreementOpen(false);
         return;
       }
+      setAgreementOpen(false);
       setStage("otp");
     } finally {
       setIsLoading(false);
@@ -251,7 +254,7 @@ export default function SupplierJoinPage() {
             otp: value,
             name,
             email,
-            agreementAccepted: allAgreementsAccepted,
+            agreementAccepted,
           }),
         });
         const json = await res.json();
@@ -472,58 +475,16 @@ export default function SupplierJoinPage() {
                   error={errors.email?.message}
                   {...register("email")}
                 />
-                <div className="space-y-3 pt-2 border-t border-border">
-                  <p className="text-xs font-semibold text-text-muted">
-                    לפני ההצטרפות, יש לאשר את{" "}
-                    <Link
-                      href={SUPPLIER_AGREEMENT_URL}
-                      target="_blank"
-                      className="text-primary underline"
-                    >
-                      הסכם ההתקשרות עם ספקים
-                    </Link>
-                    :
-                  </p>
-                  <label className="flex items-start gap-2 text-sm text-text-main cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="mt-0.5 rounded accent-primary"
-                      checked={agreementAccepted}
-                      onChange={(e) => setAgreementAccepted(e.target.checked)}
-                    />
-                    <span>קראתי ואני מאשר/ת את הסכם ההתקשרות עם ספקים במלואו.</span>
-                  </label>
-                  <label className="flex items-start gap-2 text-sm text-text-main cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="mt-0.5 rounded accent-primary"
-                      checked={commissionAccepted}
-                      onChange={(e) => setCommissionAccepted(e.target.checked)}
-                    />
-                    <span>
-                      קראתי ואני מאשר/ת במיוחד את סעיף העמלות: עמלת הצלחה בלבד
-                      מכל עסקה שמקורה בפנייה מהפלטפורמה — ללא דמי מנוי חודשיים.
-                    </span>
-                  </label>
-                  <label className="flex items-start gap-2 text-sm text-text-main cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="mt-0.5 rounded accent-primary"
-                      checked={circumventionAccepted}
-                      onChange={(e) => setCircumventionAccepted(e.target.checked)}
-                    />
-                    <span>
-                      קראתי ואני מאשר/ת את סעיף איסור עקיפת הפלטפורמה ואת תקופת
-                      ההתקשרות (שנה, המתחדשת אוטומטית אלא אם נמסרה הודעה 90 יום
-                      מראש), לרבות פיצוי מוסכם בסך ₪40,000 במקרה של הפרה.
-                    </span>
-                  </label>
-                  {agreementAttempted && !allAgreementsAccepted && (
-                    <p className="text-red-500 text-xs font-medium">
-                      יש לאשר את שלוש התיבות כדי להמשיך
-                    </p>
-                  )}
-                </div>
+                <p className="text-xs text-text-muted">
+                  בלחיצה על ״המשיכו״ יוצג{" "}
+                  <Link href={SUPPLIER_AGREEMENT_URL} target="_blank" className="text-primary underline">
+                    הסכם ההתקשרות עם ספקים
+                  </Link>{" "}
+                  — כולל טבלת העמלות והפיצויים המוסכמים — לאישור לפני סיום ההרשמה.
+                </p>
+                {otpError && stage === "form" && (
+                  <p role="alert" className="text-red-500 text-xs font-medium">{otpError}</p>
+                )}
                 <Button type="submit" fullWidth size="lg" isLoading={isLoading}>
                   המשיכו
                 </Button>
@@ -1015,6 +976,12 @@ export default function SupplierJoinPage() {
           )}
         </div>
       </div>
+      <SupplierAgreementModal
+        open={agreementOpen}
+        onClose={() => setAgreementOpen(false)}
+        onAccept={handleAgreementAccept}
+        isLoading={isLoading}
+      />
     </div>
   );
 }

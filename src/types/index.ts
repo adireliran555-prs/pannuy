@@ -22,6 +22,13 @@ export interface AdminSession {
   phone: string;
 }
 
+export interface AgentSession {
+  id: string;
+  name: string;
+  phone: string;
+  referralCode: string;
+}
+
 // ─── Generic API envelope ─────────────────────────────────────────────────────
 
 export interface ApiResponse<T = unknown> {
