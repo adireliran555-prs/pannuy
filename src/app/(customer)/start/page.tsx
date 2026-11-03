@@ -84,6 +84,10 @@ function StartPageContent() {
         return;
       }
       setFormData(data);
+      if (json.skipOtp) {
+        await handleOtpChange("000000", data);
+        return;
+      }
       setStage("otp");
       setResendCooldown(RESEND_COOLDOWN);
       setDevOtp(json.devOtp ?? null);
@@ -94,7 +98,10 @@ function StartPageContent() {
     }
   };
 
-  const handleOtpChange = async (value: string) => {
+  // `dataOverride` lets the bypass path verify right after send-otp, before the
+  // formData state update has landed.
+  const handleOtpChange = async (value: string, dataOverride?: FormData) => {
+    const fd = dataOverride ?? formData;
     setOtp(value);
     setOtpError("");
 
@@ -104,7 +111,7 @@ function StartPageContent() {
         const res = await fetch("/api/auth/verify-otp", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ phone: formData?.phone, otp: value, name: formData?.name }),
+          body: JSON.stringify({ phone: fd?.phone, otp: value, name: fd?.name }),
         });
         const json = await res.json();
         if (!res.ok) {

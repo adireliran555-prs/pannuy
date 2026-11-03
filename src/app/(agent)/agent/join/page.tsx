@@ -64,6 +64,10 @@ export default function AgentJoinPage() {
       }
       setPhone(normalized);
       setDevOtp(json.devOtp ?? null);
+      if (json.skipOtp) {
+        await handleOtpChange("000000", normalized);
+        return;
+      }
       setStage("otp");
     } catch {
       setOtpError("שגיאת תקשורת. נסו שוב.");
@@ -72,7 +76,7 @@ export default function AgentJoinPage() {
     }
   };
 
-  const handleOtpChange = async (value: string) => {
+  const handleOtpChange = async (value: string, phoneOverride?: string) => {
     setOtp(value);
     setOtpError("");
     if (value.length !== 6) return;
@@ -83,7 +87,7 @@ export default function AgentJoinPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          phone,
+          phone: phoneOverride ?? phone,
           otp: value,
           name,
           ...(email ? { email } : {}),

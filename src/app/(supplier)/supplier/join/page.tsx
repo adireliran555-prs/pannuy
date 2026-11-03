@@ -233,13 +233,17 @@ export default function SupplierJoinPage() {
         return;
       }
       setAgreementOpen(false);
+      if (json.skipOtp) {
+        await handleOtpChange("000000", true);
+        return;
+      }
       setStage("otp");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleOtpChange = async (value: string) => {
+  const handleOtpChange = async (value: string, accepted = agreementAccepted) => {
     setOtp(value);
     setOtpError("");
     if (value.length === 6) {
@@ -254,7 +258,7 @@ export default function SupplierJoinPage() {
             otp: value,
             name,
             email,
-            agreementAccepted,
+            agreementAccepted: accepted,
           }),
         });
         const json = await res.json();

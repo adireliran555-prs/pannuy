@@ -92,11 +92,15 @@ export default function AgentLoginPage() {
     setIsLoading(true);
     setOtpError("");
     try {
-      const json = await postJson<{ success: boolean; devOtp?: string }>(
+      const json = await postJson<{ success: boolean; devOtp?: string; skipOtp?: boolean }>(
         "/api/agent/auth/send-otp",
         { phone: normalized }
       );
       setPhone(normalized);
+      if (json.skipOtp) {
+        await handleOtpChange("000000", normalized);
+        return;
+      }
       setStage("otp");
       setOtp("");
       setOtpKey((k) => k + 1);
@@ -113,14 +117,14 @@ export default function AgentLoginPage() {
     await sendCode(data.phone);
   };
 
-  const handleOtpChange = async (value: string) => {
+  const handleOtpChange = async (value: string, phoneOverride?: string) => {
     setOtp(value);
     setOtpError("");
     if (value.length !== 6) return;
 
     setIsLoading(true);
     try {
-      await postJson("/api/agent/auth/verify-otp", { phone, otp: value });
+      await postJson("/api/agent/auth/verify-otp", { phone: phoneOverride ?? phone, otp: value });
       window.location.href = "/agent/dashboard";
     } catch (err) {
       setOtpError(err instanceof Error ? err.message : "קוד שגוי");
