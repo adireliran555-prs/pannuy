@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Heebo } from "next/font/google";
+import { heebo } from "@/app/fonts";
 import "./globals.css";
 import ImpersonationBanner from "@/components/common/ImpersonationBanner";
 import {
@@ -10,12 +10,6 @@ import {
   OG_IMAGE_PATH,
 } from "@/lib/branding";
 
-const heebo = Heebo({
-  subsets: ["hebrew", "latin"],
-  variable: "--font-heebo",
-  display: "swap",
-  weight: ["400", "500", "600", "700", "800", "900"],
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(APP_URL),

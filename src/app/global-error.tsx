@@ -1,12 +1,7 @@
 "use client";
 
-import { Heebo } from "next/font/google";
+import { heebo } from "@/app/fonts";
 
-const heebo = Heebo({
-  subsets: ["hebrew", "latin"],
-  display: "swap",
-  weight: ["400", "700", "900"],
-});
 
 export default function GlobalError({
   error,
