@@ -257,7 +257,7 @@ export default function SupplierJoinPage() {
             phone,
             otp: value,
             name,
-            email,
+            ...(email ? { email } : {}),
             agreementAccepted: accepted,
           }),
         });

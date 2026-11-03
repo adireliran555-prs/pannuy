@@ -14,7 +14,7 @@ const verifySchema = z.object({
   phone: z.string().min(9).max(20),
   otp: z.string().regex(/^\d{6}$/),
   name: z.string().trim().min(1).max(100).optional(),
-  email: z.string().email().max(200).optional(),
+  email: z.preprocess((v) => (v === "" ? undefined : v), z.string().email().max(200).optional()),
   agreementAccepted: z.boolean().optional(),
 });
 
