@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import slugify from "slugify";
 import prisma from "@/lib/prisma";
-import { verifyOtp, signSupplierToken } from "@/lib/auth";
+import { verifyOtp, signSupplierToken, otpBypassEnabled } from "@/lib/auth";
 import { normalizeIsraeliPhone } from "@/lib/utils";
 import { SupplierSession } from "@/types";
 import { SUPPLIER_AGREEMENT_VERSION } from "@/lib/legal";
@@ -60,9 +60,7 @@ export async function POST(request: NextRequest) {
     const forwardedFor = request.headers.get("x-forwarded-for");
     const ip = forwardedFor?.split(",")[0]?.trim() ?? null;
 
-    const skipOtpCheck =
-      process.env.NODE_ENV !== "production" &&
-      process.env.ALLOW_OTP_BYPASS === "true";
+    const skipOtpCheck = otpBypassEnabled();
 
     const referredByAgentId = await resolveAgentReferral(request.cookies.get("pannuy_ref")?.value);
 

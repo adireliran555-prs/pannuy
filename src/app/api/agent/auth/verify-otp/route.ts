@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { verifyOtp, signAgentToken } from "@/lib/auth";
+import { verifyOtp, signAgentToken, otpBypassEnabled } from "@/lib/auth";
 import { normalizeIsraeliPhone } from "@/lib/utils";
 import { AgentSession } from "@/types";
 import { AGENT_TERMS_VERSION } from "@/lib/legal";
@@ -49,8 +49,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const skipOtpCheck =
-      process.env.NODE_ENV !== "production" && process.env.ALLOW_OTP_BYPASS === "true";
+    const skipOtpCheck = otpBypassEnabled();
 
     const upsertAgent = async () => {
       const existing = await prisma.agent.findUnique({ where: { phone } });

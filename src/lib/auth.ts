@@ -81,3 +81,13 @@ export async function hashOtp(otp: string): Promise<string> {
 export async function verifyOtp(plain: string, hash: string): Promise<boolean> {
   return bcrypt.compare(plain, hash);
 }
+
+/**
+ * True when OTP codes should be accepted without verification.
+ * Production honors OTP_BYPASS=true (no SMS provider yet — any 6-digit code works).
+ * Dev honors ALLOW_OTP_BYPASS=true. Never applied to admin login.
+ */
+export function otpBypassEnabled(): boolean {
+  if (process.env.OTP_BYPASS === "true") return true;
+  return process.env.NODE_ENV !== "production" && process.env.ALLOW_OTP_BYPASS === "true";
+}

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { verifyOtp, signCustomerToken } from "@/lib/auth";
+import { verifyOtp, signCustomerToken, otpBypassEnabled } from "@/lib/auth";
 import { CustomerSession } from "@/types";
 import { checkOtpIpLimit, clientIp } from "@/lib/otp-ip-limit";
 import { z } from "zod";
@@ -36,9 +36,7 @@ export async function POST(request: NextRequest) {
     }
 
 
-    const skipOtpCheck =
-      process.env.NODE_ENV !== "production" &&
-      process.env.ALLOW_OTP_BYPASS === "true";
+    const skipOtpCheck = otpBypassEnabled();
 
     const referredByAgentId = await resolveAgentReferral(request.cookies.get("pannuy_ref")?.value);
 
