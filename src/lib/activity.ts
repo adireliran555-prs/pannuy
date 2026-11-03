@@ -6,7 +6,7 @@
 // user-facing action, so callers do not need to await or try/catch.
 
 import { createHash } from "crypto";
-import type { NextRequest } from "next/server";
+import { after, type NextRequest } from "next/server";
 import type { Prisma, ActivityEvent as ActivityEventRow } from "@prisma/client";
 import prisma from "@/lib/prisma";
 
@@ -144,9 +144,17 @@ export async function logEvent(input: LogEventInput): Promise<void> {
   }
 }
 
-/** Fire-and-forget wrapper for use inside request handlers. */
+/**
+ * Fire-and-forget wrapper for request handlers. Uses Next's `after()` so the
+ * write finishes after the response is sent instead of being frozen with the
+ * serverless function; falls back to a detached promise outside request scope.
+ */
 export function logEventAsync(input: LogEventInput): void {
-  void logEvent(input);
+  try {
+    after(() => logEvent(input));
+  } catch {
+    void logEvent(input);
+  }
 }
 
 /**
