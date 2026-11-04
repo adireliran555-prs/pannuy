@@ -240,6 +240,7 @@ function StartPageContent() {
                     <Input
                       label="שם מלא"
                       placeholder="שם פרטי ושם משפחה"
+                      className="ps-10"
                       error={nameError || errors.name?.message}
                       {...register("name")}
                     />
