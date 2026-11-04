@@ -71,13 +71,24 @@ function extractOcrText(info: unknown): string {
   }
 }
 
+export type ScanStatus = "clean" | "flagged" | "unavailable";
+
 export interface PhoneScanResult {
-  /** A phone number was detected in the image. */
-  hasPhone: boolean;
-  /** The matched number (for logging). */
+  /** clean = OCR ran and found nothing; flagged = contact details found;
+   *  unavailable = OCR could not run (no creds, quota exhausted, outage, timeout). */
+  status: ScanStatus;
+  /** The matched contact detail (for logging). */
   matched?: string;
-  /** OCR was skipped (not configured) — caller should allow the upload. */
+  /** Why OCR was unavailable. */
+  reason?: string;
+  /** @deprecated compat — true when status === "flagged" */
+  hasPhone: boolean;
+  /** @deprecated compat — true when status === "unavailable" */
   skipped?: boolean;
+}
+
+function unavailable(reason: string): PhoneScanResult {
+  return { status: "unavailable", reason, hasPhone: false, skipped: true };
 }
 
 /**
@@ -91,8 +102,8 @@ export interface PhoneScanResult {
 export async function scanImageForPhone(
   imageUrl: string
 ): Promise<PhoneScanResult> {
-  if (!ocrEnabled()) return { hasPhone: false, skipped: true };
-  if (!imageUrl) return { hasPhone: false, skipped: true };
+  if (!ocrEnabled()) return unavailable("not_configured");
+  if (!imageUrl) return unavailable("no_url");
 
   const timestamp = Math.floor(Date.now() / 1000).toString();
   const signed: Record<string, string> = { ocr: "adv_ocr", timestamp };
@@ -110,9 +121,10 @@ export async function scanImageForPhone(
       { method: "POST", body: form, signal: AbortSignal.timeout(20_000) }
     );
     if (!res.ok) {
-      console.error("[OCR] Cloudinary upload failed:", res.status, await res.text());
-      // Fail open: don't block uploads on an OCR outage.
-      return { hasPhone: false, skipped: true };
+      const body = await res.text();
+      console.error("[OCR] Cloudinary upload failed:", res.status, body);
+      // 420 = add-on monthly quota exhausted. Callers must NOT treat this as clean.
+      return unavailable(res.status === 420 || /rate limit/i.test(body) ? "quota_exhausted" : `http_${res.status}`);
     }
     const json = (await res.json()) as { info?: unknown; public_id?: string };
 
@@ -121,10 +133,12 @@ export async function scanImageForPhone(
 
     const text = extractOcrText(json.info);
     const matched = textContainsPhone(text);
-    return matched ? { hasPhone: true, matched } : { hasPhone: false };
+    return matched
+      ? { status: "flagged", matched, hasPhone: true }
+      : { status: "clean", hasPhone: false };
   } catch (err) {
     console.error("[OCR] scan error:", err);
-    return { hasPhone: false, skipped: true };
+    return unavailable(err instanceof Error && err.name === "TimeoutError" ? "timeout" : "error");
   }
 }
 

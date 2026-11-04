@@ -1,4 +1,5 @@
 import prisma from "@/lib/prisma";
+import { PUBLIC_PHOTO_WHERE } from "@/lib/photo-pii";
 
 /** Minimum profile for a supplier to appear in customer search. */
 export function isSupplierListingReady(supplier: {
@@ -17,7 +18,7 @@ export async function maybeActivateSupplierListing(supplierId: string): Promise<
       isActive: true,
       name: true,
       category: true,
-      _count: { select: { photos: true } },
+      _count: { select: { photos: { where: PUBLIC_PHOTO_WHERE } } },
     },
   });
 

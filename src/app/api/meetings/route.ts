@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { PUBLIC_PHOTO_WHERE } from "@/lib/photo-pii";
 import prisma from "@/lib/prisma";
 import { requireCustomerSession } from "@/lib/api-auth";
 import { invalidateAvailabilityCache } from "@/lib/availability";
@@ -244,7 +245,7 @@ export async function GET(request: NextRequest) {
             email: true,
             meetingAddress: true,
             photos: {
-              where: { type: "PROFILE" },
+              where: { type: "PROFILE", ...PUBLIC_PHOTO_WHERE },
               take: 1,
             },
           },

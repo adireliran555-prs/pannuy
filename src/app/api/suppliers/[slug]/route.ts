@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { PUBLIC_PHOTO_WHERE } from "@/lib/photo-pii";
 import prisma from "@/lib/prisma";
 import { getCache, setCache } from "@/lib/redis";
 
@@ -36,6 +37,7 @@ export async function GET(
         highlights: true,
         createdAt: true,
         photos: {
+          where: PUBLIC_PHOTO_WHERE,
           orderBy: { sortOrder: "asc" },
         },
         packages: {

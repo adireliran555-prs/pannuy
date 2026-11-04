@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { PUBLIC_PHOTO_WHERE } from "@/lib/photo-pii";
 import prisma from "@/lib/prisma";
 import { requireCustomerSession } from "@/lib/api-auth";
 import { logEventAsync, requestMeta, ActivityType } from "@/lib/activity";
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest) {
             ratingCount: true,
             isVerified: true,
             photos: {
-              where: { type: { in: ["PROFILE", "COVER"] } },
+              where: { type: { in: ["PROFILE", "COVER"] }, ...PUBLIC_PHOTO_WHERE },
               orderBy: { sortOrder: "asc" },
               take: 2,
             },

@@ -22,7 +22,7 @@ export default async function AdminSuppliersPage() {
       warningCount: true,
       highlights: true,
       createdAt: true,
-      _count: { select: { meetings: true, profileViews: true } },
+      _count: { select: { meetings: true, profileViews: true, photos: { where: { piiScanStatus: "PENDING" } } } },
     },
   });
 
@@ -42,6 +42,7 @@ export default async function AdminSuppliersPage() {
     createdAt: s.createdAt.toISOString(),
     meetings: s._count.meetings,
     views: s._count.profileViews,
+    pendingPhotos: s._count.photos,
   }));
 
   return (

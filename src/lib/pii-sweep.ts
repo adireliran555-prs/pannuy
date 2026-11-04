@@ -5,16 +5,67 @@ import prisma from "@/lib/prisma";
 import { findPii, redactPii } from "@/lib/pii";
 import { recordPiiViolation } from "@/lib/pii-warning";
 import { delCache } from "@/lib/redis";
+import { scanPhotoRecord } from "@/lib/photo-pii";
 
 export interface PiiSweepResult {
   scanned: number;
   suppliersFlagged: number;
   fieldsRedacted: number;
   failed: number;
+  photosScanned: number;
+  photosFlagged: number;
+  photosPending: number;
+  quotaExhausted: boolean;
+}
+
+/**
+ * Scans photos awaiting review within a per-run OCR budget (the Cloudinary OCR
+ * add-on has a small monthly quota). PENDING (hidden) first, then LEGACY.
+ * Stops at the first "unavailable" result — the quota is gone for today.
+ */
+export async function runPhotoSweep(
+  budget = Number(process.env.PHOTO_SCAN_BUDGET ?? 40)
+): Promise<Pick<PiiSweepResult, "photosScanned" | "photosFlagged" | "photosPending" | "quotaExhausted">> {
+  const out = { photosScanned: 0, photosFlagged: 0, photosPending: 0, quotaExhausted: false };
+  const queue = await prisma.supplierPhoto.findMany({
+    where: { piiScanStatus: { in: ["PENDING", "LEGACY"] } },
+    orderBy: { createdAt: "asc" },
+    take: Math.max(budget, 1) * 4,
+    select: { id: true, cloudinaryUrl: true, publicId: true, supplierId: true, piiScanStatus: true },
+  });
+  queue.sort((a, b) =>
+    a.piiScanStatus === b.piiScanStatus ? 0 : a.piiScanStatus === "PENDING" ? -1 : 1
+  );
+  for (const photo of queue) {
+    if (out.photosScanned >= budget) break;
+    try {
+      const r = await scanPhotoRecord(photo, { source: "sweep" });
+      if (r.status === "unavailable") {
+        out.quotaExhausted = r.reason === "quota_exhausted" || out.quotaExhausted;
+        console.warn("[pii-sweep] OCR unavailable:", r.reason);
+        break;
+      }
+      out.photosScanned++;
+      if (r.status === "flagged") out.photosFlagged++;
+    } catch (err) {
+      console.error("[pii-sweep] photo", photo.id, err);
+    }
+  }
+  out.photosPending = await prisma.supplierPhoto.count({ where: { piiScanStatus: "PENDING" } });
+  return out;
 }
 
 export async function runPiiSweep(limit = 1000): Promise<PiiSweepResult> {
-  const result: PiiSweepResult = { scanned: 0, suppliersFlagged: 0, fieldsRedacted: 0, failed: 0 };
+  const result: PiiSweepResult = {
+    scanned: 0,
+    suppliersFlagged: 0,
+    fieldsRedacted: 0,
+    failed: 0,
+    photosScanned: 0,
+    photosFlagged: 0,
+    photosPending: 0,
+    quotaExhausted: false,
+  };
 
   const suppliers = await prisma.supplier.findMany({
     where: { isActive: true },
@@ -91,6 +142,12 @@ export async function runPiiSweep(limit = 1000): Promise<PiiSweepResult> {
       console.error("[pii-sweep] supplier", s.id, err);
       result.failed++;
     }
+  }
+
+  try {
+    Object.assign(result, await runPhotoSweep());
+  } catch (err) {
+    console.error("[pii-sweep] photo pass", err);
   }
 
   return result;

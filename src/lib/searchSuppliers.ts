@@ -1,4 +1,5 @@
 import prisma from "@/lib/prisma";
+import { PUBLIC_PHOTO_WHERE } from "@/lib/photo-pii";
 import { Category } from "@prisma/client";
 import { isValidEventTypeId } from "@/lib/event-types";
 import { isDayFullyBlocked } from "@/lib/availability";
@@ -42,7 +43,7 @@ export interface SearchResult {
 const DEFAULT_LIMIT = 12;
 
 const PHOTO_SELECT = {
-  where: { type: { in: ["PROFILE", "COVER"] as ("PROFILE" | "COVER")[] } },
+  where: { type: { in: ["PROFILE", "COVER"] as ("PROFILE" | "COVER")[] }, ...PUBLIC_PHOTO_WHERE },
   orderBy: { sortOrder: "asc" as const },
 };
 

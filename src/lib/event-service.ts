@@ -3,6 +3,7 @@
 // payload (event + ordered items + budget/progress summary) used by the API.
 
 import prisma from "@/lib/prisma";
+import { PUBLIC_PHOTO_WHERE } from "@/lib/photo-pii";
 import type { BudgetMode, Category, PlanItemStatus, Prisma } from "@prisma/client";
 import {
   PLAN_PYRAMID,
@@ -77,7 +78,7 @@ const SUPPLIER_MINI_SELECT = {
   city: true,
   category: true,
   photos: {
-    where: { type: { in: ["PROFILE", "COVER"] } },
+    where: { type: { in: ["PROFILE", "COVER"] }, ...PUBLIC_PHOTO_WHERE },
     orderBy: { sortOrder: "asc" },
     take: 1,
   },

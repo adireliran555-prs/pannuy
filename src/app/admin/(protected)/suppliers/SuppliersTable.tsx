@@ -19,6 +19,7 @@ interface Row {
   isVerified: boolean;
   isActive: boolean;
   warningCount: number;
+  pendingPhotos: number;
   highlights: string[];
   createdAt: string;
   meetings: number;
@@ -188,6 +189,11 @@ export default function SuppliersTable({ initialRows }: { initialRows: Row[] }) 
                       <div className="flex flex-wrap gap-1">
                         <Pill on={r.isVerified} onClick={() => toggle(r.id, "isVerified", !r.isVerified)} disabled={busyId === r.id} onLabel="מאומת" offLabel="לא מאומת" />
                         <Pill on={r.isActive} onClick={() => toggle(r.id, "isActive", !r.isActive)} disabled={busyId === r.id} onLabel="פעיל" offLabel="כבוי" greenWhenOn />
+                        {r.pendingPhotos > 0 && (
+                          <span className="inline-flex items-center rounded-full bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 text-[11px] font-bold">
+                            {r.pendingPhotos} תמונות בבדיקה
+                          </span>
+                        )}
                         {r.warningCount > 0 && (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border bg-red-50 text-red-700 border-red-200">
                             <AlertTriangle className="h-3 w-3" />

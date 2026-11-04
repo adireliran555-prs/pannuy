@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PUBLIC_PHOTO_WHERE } from "@/lib/photo-pii";
 import { notFound } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { normalizeSupplier } from "@/lib/supplier";
@@ -33,7 +34,7 @@ const SUPPLIER_SELECT = {
   responseRate: true,
   highlights: true,
   createdAt: true,
-  photos: { orderBy: { sortOrder: "asc" as const } },
+  photos: { where: PUBLIC_PHOTO_WHERE, orderBy: { sortOrder: "asc" as const } },
   packages: { orderBy: { price: "asc" as const } },
   reviews: {
     where: { isVisible: true },
@@ -53,7 +54,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       city: true,
       category: true,
       photos: {
-        where: { type: { in: ["COVER", "PROFILE"] } },
+        where: { type: { in: ["COVER", "PROFILE"] }, ...PUBLIC_PHOTO_WHERE },
         orderBy: { sortOrder: "asc" },
         take: 1,
         select: { cloudinaryUrl: true },

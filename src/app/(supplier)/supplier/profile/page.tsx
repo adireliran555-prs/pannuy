@@ -35,6 +35,7 @@ interface PackageState {
 interface PhotoState {
   id: string;
   url: string;
+  pending?: boolean;
 }
 
 interface LandingImportPackage {
@@ -130,9 +131,10 @@ export default function SupplierProfilePage() {
           setPriceFrom(s.basePriceFrom?.toString() ?? "");
           setPriceTo(s.basePriceTo?.toString() ?? "");
           setPhotos(
-            (s.photos ?? []).map((p: { id: string; cloudinaryUrl: string }) => ({
+            (s.photos ?? []).map((p: { id: string; cloudinaryUrl: string; piiScanStatus?: string }) => ({
               id: p.id,
               url: p.cloudinaryUrl,
+              pending: p.piiScanStatus === "PENDING",
             }))
           );
           setPackages(
@@ -216,7 +218,10 @@ export default function SupplierProfilePage() {
     if (!res.ok || !json.success) {
       throw new Error(json.error ?? "שמירת התמונה נכשלה");
     }
-    setPhotos((prev) => [...prev, { id: json.data.id, url: json.data.cloudinaryUrl }]);
+    setPhotos((prev) => [
+      ...prev,
+      { id: json.data.id, url: json.data.cloudinaryUrl, pending: json.pendingReview === true },
+    ]);
   };
 
   const handleFileUpload = async (files: FileList | null) => {
@@ -767,6 +772,11 @@ export default function SupplierProfilePage() {
                       referrerPolicy="no-referrer"
                       loading="lazy"
                     />
+                    {photo.pending && (
+                      <span className="absolute bottom-1 inset-x-1 rounded-lg bg-amber-500/90 text-white text-[11px] font-bold text-center py-0.5">
+                        בבדיקה — תוצג ללקוחות לאחר אישור
+                      </span>
+                    )}
                     <button
                       type="button"
                       onClick={() => removePhoto(photo)}

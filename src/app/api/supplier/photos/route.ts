@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     // reachable only through the app. Reject (and remove) any image whose OCR
     // text contains an Israeli phone number.
     const scan = await scanImageForPhone(url);
-    if (scan.hasPhone) {
+    if (scan.status === "flagged") {
       console.warn(`[photos] rejected image with phone for supplier ${session.id}: ${scan.matched}`);
       await deleteCloudinaryAsset(publicId);
       await recordPiiViolation(session.id, {
@@ -68,6 +68,11 @@ export async function POST(request: NextRequest) {
         ? (type as PhotoType)
         : PhotoType.PORTFOLIO;
 
+    // Never fail open: if OCR couldn't run (quota/outage) the photo is stored as
+    // PENDING and hidden from customers until the daily sweep clears it.
+    const pendingReview = scan.status === "unavailable";
+    if (pendingReview) console.warn(`[photos] OCR unavailable (${scan.reason}) — photo pending for supplier ${session.id}`);
+
     const photo = await prisma.supplierPhoto.create({
       data: {
         supplierId: session.id,
@@ -75,6 +80,8 @@ export async function POST(request: NextRequest) {
         publicId,
         type: photoType,
         sortOrder: sortOrder ?? 0,
+        piiScanStatus: pendingReview ? "PENDING" : "CLEAN",
+        piiScannedAt: pendingReview ? null : new Date(),
       },
     });
 
@@ -82,7 +89,16 @@ export async function POST(request: NextRequest) {
     revalidatePath(`/suppliers/${session.slug}`);
     await maybeActivateSupplierListing(session.id);
 
-    return NextResponse.json({ success: true, data: photo }, { status: 201 });
+    return NextResponse.json(
+      {
+        success: true,
+        data: photo,
+        ...(pendingReview
+          ? { pendingReview: true, message: "התמונה נשמרה ותוצג ללקוחות לאחר בדיקה אוטומטית" }
+          : {}),
+      },
+      { status: 201 }
+    );
   } catch (err) {
     console.error("[POST /api/supplier/photos]", err);
     return NextResponse.json(

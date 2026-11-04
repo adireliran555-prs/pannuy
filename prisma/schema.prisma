@@ -240,17 +240,28 @@ enum SubscriptionStatus {
 }
 
 model SupplierPhoto {
-  id            String    @id @default(uuid())
+  id            String        @id @default(uuid())
   supplierId    String
   cloudinaryUrl String
   publicId      String
-  type          PhotoType @default(PORTFOLIO)
-  sortOrder     Int       @default(0)
-  createdAt     DateTime  @default(now())
+  type          PhotoType     @default(PORTFOLIO)
+  sortOrder     Int           @default(0)
+  createdAt     DateTime      @default(now())
+  // Contact-detail scan state. Only CLEAN and LEGACY photos are shown publicly;
+  // PENDING photos wait for the OCR quota, FLAGGED ones are deleted by the sweep.
+  piiScanStatus PiiScanStatus @default(PENDING)
+  piiScannedAt  DateTime?
 
   supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
 
   @@index([supplierId])
+}
+
+enum PiiScanStatus {
+  PENDING // uploaded, not yet scanned — hidden from customers
+  CLEAN
+  FLAGGED
+  LEGACY // pre-dates scanning; visible, queued for the sweep
 }
 
 enum PhotoType {
