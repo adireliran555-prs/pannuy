@@ -195,6 +195,8 @@ export async function POST(request: NextRequest) {
         maxAge: SESSION_COOKIE_MAX_AGE,
         path: "/",
       });
+    } else {
+      response.cookies.delete("pannuy_admin_session");
     }
     return response;
   } catch (err) {

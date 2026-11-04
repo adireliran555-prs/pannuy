@@ -22,13 +22,16 @@ export default function Navbar() {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    fetch("/api/auth/me")
-      .then((r) => r.json())
-      .then((json) => setIsLoggedIn(json.success === true))
-      .catch(() => {});
-    fetch("/api/admin/auth/me")
-      .then((r) => setIsAdmin(r.ok))
-      .catch(() => {});
+    // Admin button only when the admin cookie belongs to the logged-in customer.
+    Promise.all([
+      fetch("/api/auth/me").then((r) => r.json()).catch(() => null),
+      fetch("/api/admin/auth/me").then((r) => (r.ok ? r.json() : null)).catch(() => null),
+    ]).then(([me, admin]) => {
+      const loggedIn = me?.success === true;
+      setIsLoggedIn(loggedIn);
+      const userPhone: string | undefined = me?.user?.phone ?? me?.data?.phone;
+      setIsAdmin(loggedIn && !!admin?.admin?.phone && admin.admin.phone === userPhone);
+    });
   }, []);
 
   const isOnboarding =
