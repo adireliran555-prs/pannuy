@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
-import { Search, Heart, Calendar, User, Camera, ClipboardList } from "lucide-react";
+import { Search, Heart, Calendar, User, Camera, ClipboardList, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Button from "@/components/ui/Button";
 import TopEventsLogo from "@/components/common/TopEventsLogo";
@@ -19,11 +19,15 @@ const MOBILE_NAV = [
 export default function Navbar() {
   const pathname = usePathname();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/me")
       .then((r) => r.json())
       .then((json) => setIsLoggedIn(json.success === true))
+      .catch(() => {});
+    fetch("/api/admin/auth/me")
+      .then((r) => setIsAdmin(r.ok))
       .catch(() => {});
   }, []);
 
@@ -83,6 +87,13 @@ export default function Navbar() {
 
           {/* Account — left side (top-left) in RTL */}
           <div className="flex items-center gap-3">
+            {isAdmin && (
+              <Link href="/admin">
+                <Button size="sm" variant="secondary" leftIcon={<Shield className="h-4 w-4" />}>
+                  ניהול
+                </Button>
+              </Link>
+            )}
             {isLoggedIn ? (
               <Link href="/dashboard/profile">
                 <Button

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import slugify from "slugify";
 import prisma from "@/lib/prisma";
-import { verifyOtp, signSupplierToken, otpBypassEnabled } from "@/lib/auth";
+import { verifyOtp, signSupplierToken, signAdminToken, isAdminPhone, otpBypassEnabled } from "@/lib/auth";
 import { normalizeIsraeliPhone } from "@/lib/utils";
 import { SupplierSession } from "@/types";
 import { SUPPLIER_AGREEMENT_VERSION } from "@/lib/legal";
@@ -187,6 +187,15 @@ export async function POST(request: NextRequest) {
       path: "/",
     });
     response.cookies.delete("pannuy_session");
+    if (isAdminPhone(phone)) {
+      response.cookies.set("pannuy_admin_session", signAdminToken({ phone }), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: SESSION_COOKIE_MAX_AGE,
+        path: "/",
+      });
+    }
     return response;
   } catch (err) {
     console.error("[POST /api/supplier/auth/verify-otp]", err);

@@ -26,6 +26,10 @@ export default function AdminLoginPage() {
       if (!res.ok || !j.success) {
         setError(j.error ?? "שגיאה");
       } else {
+        if (j.skipOtp) {
+          await verify("000000");
+          return;
+        }
         setStep("otp");
         // Dev mode (no SMS configured): the code comes back in the response —
         // fill it in and log straight in.

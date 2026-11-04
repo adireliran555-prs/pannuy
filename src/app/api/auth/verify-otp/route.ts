@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { verifyOtp, signCustomerToken, otpBypassEnabled } from "@/lib/auth";
+import { verifyOtp, signCustomerToken, signAdminToken, isAdminPhone, otpBypassEnabled } from "@/lib/auth";
 import { CustomerSession } from "@/types";
 import { checkOtpIpLimit, clientIp } from "@/lib/otp-ip-limit";
 import { z } from "zod";
@@ -158,6 +158,15 @@ export async function POST(request: NextRequest) {
       path: "/",
     });
     response.cookies.delete("pannuy_supplier_session");
+    if (isAdminPhone(phone)) {
+      response.cookies.set("pannuy_admin_session", signAdminToken({ phone }), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: SESSION_COOKIE_MAX_AGE,
+        path: "/",
+      });
+    }
     return response;
   } catch (err) {
     console.error("[POST /api/auth/verify-otp]", err);

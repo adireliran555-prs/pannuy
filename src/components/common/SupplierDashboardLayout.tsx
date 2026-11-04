@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Calendar, BookOpen, BarChart3, User, LogOut, DollarSign, Receipt } from "lucide-react";
+import { LayoutDashboard, Calendar, BookOpen, BarChart3, User, LogOut, DollarSign, Receipt, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -29,8 +29,10 @@ export default function SupplierDashboardLayout({
   const pathname = usePathname();
   const router = useRouter();
   const [supplierInitial, setSupplierInitial] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
+    fetch("/api/admin/auth/me").then((r) => setIsAdmin(r.ok)).catch(() => {});
     fetch("/api/supplier/auth/me")
       .then((r) => r.json())
       .then((json) => {
@@ -58,6 +60,11 @@ export default function SupplierDashboardLayout({
                 </div>
                 <h2 className="font-bold text-text-main text-base">פאנל הספקים</h2>
                 <p className="text-text-muted text-xs">ניהול העסק שלכם</p>
+                {isAdmin && (
+                  <Link href="/admin" className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-primary underline">
+                    <Shield className="h-3.5 w-3.5" /> פאנל ניהול
+                  </Link>
+                )}
               </div>
               <nav className="space-y-1">
                 {NAV_ITEMS.map(({ href, label, icon: Icon }) => {

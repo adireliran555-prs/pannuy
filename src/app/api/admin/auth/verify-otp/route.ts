@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { verifyOtp, signAdminToken, isAdminPhone } from "@/lib/auth";
+import { verifyOtp, signAdminToken, isAdminPhone, otpBypassEnabled } from "@/lib/auth";
 import { checkOtpIpLimit, clientIp } from "@/lib/otp-ip-limit";
 import { z } from "zod";
 
@@ -30,19 +30,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "אין הרשאה" }, { status: 403 });
     }
 
-    const otpRecord = await prisma.otp.findFirst({
-      where: { phone, used: false, expiresAt: { gt: new Date() } },
-      orderBy: { createdAt: "desc" },
-    });
+    const otpRecord = otpBypassEnabled()
+      ? null
+      : await prisma.otp.findFirst({
+          where: { phone, used: false, expiresAt: { gt: new Date() } },
+          orderBy: { createdAt: "desc" },
+        });
 
-    if (!otpRecord) {
+    if (!otpBypassEnabled() && !otpRecord) {
       return NextResponse.json(
         { success: false, error: "קוד שגוי או פג תוקף" },
         { status: 401 }
       );
     }
 
-    if (otpRecord.attempts >= MAX_OTP_ATTEMPTS) {
+    if (otpRecord && otpRecord.attempts >= MAX_OTP_ATTEMPTS) {
       await prisma.otp.update({
         where: { id: otpRecord.id },
         data: { used: true },
@@ -53,7 +55,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!(await verifyOtp(otp, otpRecord.hash))) {
+    if (otpRecord && !(await verifyOtp(otp, otpRecord.hash))) {
       const updated = await prisma.otp.update({
         where: { id: otpRecord.id },
         data: { attempts: { increment: 1 } },
@@ -75,10 +77,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Atomically claim the code so two concurrent verifies can't both win.
-    const claimed = await prisma.otp.updateMany({
-      where: { id: otpRecord.id, used: false },
-      data: { used: true },
-    });
+    const claimed = otpRecord
+      ? await prisma.otp.updateMany({ where: { id: otpRecord.id, used: false }, data: { used: true } })
+      : { count: 1 };
     if (claimed.count !== 1) {
       return NextResponse.json(
         { success: false, error: "קוד שגוי או פג תוקף" },

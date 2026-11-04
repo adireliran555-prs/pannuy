@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { generateOtp, hashOtp, isAdminPhone } from "@/lib/auth";
+import { generateOtp, hashOtp, isAdminPhone, otpBypassEnabled } from "@/lib/auth";
 import { sendOtp, devOtpEchoEnabled } from "@/lib/sms";
 import { checkOtpIpLimit, clientIp } from "@/lib/otp-ip-limit";
 
@@ -66,6 +66,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      skipOtp: otpBypassEnabled(),
       ...(devOtpEchoEnabled() ? { devOtp: otp } : {}),
     });
   } catch (err) {
