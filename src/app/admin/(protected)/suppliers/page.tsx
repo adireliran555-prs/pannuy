@@ -22,7 +22,7 @@ export default async function AdminSuppliersPage() {
       warningCount: true,
       highlights: true,
       createdAt: true,
-      _count: { select: { meetings: true, profileViews: true, photos: { where: { piiScanStatus: "PENDING" } } } },
+      _count: { select: { meetings: true, profileViews: true, photos: { where: { piiScanStatus: { in: ["PENDING", "FLAGGED"] } } } } },
     },
   });
 
