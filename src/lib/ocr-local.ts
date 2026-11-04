@@ -57,13 +57,31 @@ async function fetchImage(url: string): Promise<Buffer> {
 }
 
 /** Runs OCR over all renders and returns the merged text. Throws on engine failure. */
+const OCR_TIMEOUT_MS = 25_000;
+
+function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+    p.then((v) => { clearTimeout(t); resolve(v); }, (e) => { clearTimeout(t); reject(e); });
+  });
+}
+
 export async function ocrImageText(imageUrl: string): Promise<string> {
-  const worker = await getWorker();
-  const texts: string[] = [];
-  for (const u of ocrRenderUrls(imageUrl)) {
-    const buf = await fetchImage(u);
-    const { data } = await worker.recognize(buf);
-    texts.push(data.text ?? "");
+  // A crashed worker thread never settles its promise — always bound the wait,
+  // and drop the worker so the next call starts a fresh one.
+  try {
+    const worker = await withTimeout(getWorker(), OCR_TIMEOUT_MS, "ocr worker init");
+    const texts: string[] = [];
+    for (const u of ocrRenderUrls(imageUrl)) {
+      const buf = await fetchImage(u);
+      const { data } = await withTimeout(worker.recognize(buf), OCR_TIMEOUT_MS, "ocr recognize");
+      texts.push(data.text ?? "");
+    }
+    return texts.join("\n");
+  } catch (e) {
+    const w = workerPromise;
+    workerPromise = null;
+    w?.then((x) => x.terminate()).catch(() => {});
+    throw e;
   }
-  return texts.join("\n");
 }

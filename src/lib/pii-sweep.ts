@@ -36,8 +36,10 @@ export async function runPhotoSweep(
   queue.sort((a, b) =>
     a.piiScanStatus === b.piiScanStatus ? 0 : a.piiScanStatus === "PENDING" ? -1 : 1
   );
+  // Time-box so the daily cron never hits the 60s function limit.
+  const deadline = Date.now() + Number(process.env.PHOTO_SCAN_TIME_MS ?? 35_000);
   for (const photo of queue) {
-    if (out.photosScanned >= budget) break;
+    if (out.photosScanned >= budget || Date.now() > deadline) break;
     try {
       const r = await scanPhotoRecord(photo, { source: "sweep" });
       if (r.status === "unavailable") {
