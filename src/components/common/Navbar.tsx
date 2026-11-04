@@ -87,7 +87,7 @@ export default function Navbar() {
 
           {/* Account — left side (top-left) in RTL */}
           <div className="flex items-center gap-3">
-            {isAdmin && (
+            {isAdmin && isLoggedIn && (
               <Link href="/admin">
                 <Button size="sm" variant="secondary" leftIcon={<Shield className="h-4 w-4" />}>
                   ניהול
