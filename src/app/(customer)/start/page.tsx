@@ -17,7 +17,8 @@ import { returnToFromSearch, sanitizeReturnTo } from "@/lib/return-to";
 import { getEventContext } from "@/lib/event-context";
 
 const schema = z.object({
-  name: z.string().min(2, "שם חייב להכיל לפחות 2 תווים"),
+  // Name is only required when registering; "already have an account" mode skips it.
+  name: z.string().optional(),
   phone: z
     .string()
     .min(10, "מספר טלפון לא תקין")
@@ -50,6 +51,8 @@ function StartPageContent() {
   const [resendCooldown, setResendCooldown] = useState(0);
   const [otpKey, setOtpKey] = useState(0);
   const [devOtp, setDevOtp] = useState<string | null>(null);
+  const [mode, setMode] = useState<"signup" | "login">("signup");
+  const [nameError, setNameError] = useState("");
 
   const RESEND_COOLDOWN = 45;
 
@@ -70,6 +73,11 @@ function StartPageContent() {
   });
 
   const onSubmit = async (data: FormData) => {
+    setNameError("");
+    if (mode === "signup" && (data.name ?? "").trim().length < 2) {
+      setNameError("שם חייב להכיל לפחות 2 תווים");
+      return;
+    }
     setIsLoading(true);
     setOtpError("");
     try {
@@ -111,7 +119,12 @@ function StartPageContent() {
         const res = await fetch("/api/auth/verify-otp", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ phone: fd?.phone, otp: value, name: fd?.name }),
+          body: JSON.stringify({
+            phone: fd?.phone,
+            otp: value,
+            ...(mode === "signup" && fd?.name ? { name: fd.name.trim() } : {}),
+            loginOnly: mode === "login",
+          }),
         });
         const json = await res.json();
         if (!res.ok) {
@@ -212,23 +225,27 @@ function StartPageContent() {
             <>
               <div>
                 <h1 className="text-2xl font-black text-text-main">
-                  היי! נשמח להכיר 👋
+                  {mode === "signup" ? "היי! נשמח להכיר 👋" : "ברוכים השבים 👋"}
                 </h1>
                 <p className="text-text-muted text-sm mt-1">
-                  מלאו פרטים בסיסיים כדי להמשיך
+                  {mode === "signup"
+                    ? "מלאו פרטים בסיסיים כדי להמשיך"
+                    : "הזינו את מספר הטלפון שאיתו נרשמתם"}
                 </p>
               </div>
 
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                <div className="relative">
-                  <Input
-                    label="שם מלא"
-                    placeholder="שם פרטי ושם משפחה"
-                    error={errors.name?.message}
-                    {...register("name")}
-                  />
-                  <User className="absolute start-3 top-9 h-4 w-4 text-text-muted pointer-events-none" />
-                </div>
+                {mode === "signup" && (
+                  <div className="relative">
+                    <Input
+                      label="שם מלא"
+                      placeholder="שם פרטי ושם משפחה"
+                      error={nameError || errors.name?.message}
+                      {...register("name")}
+                    />
+                    <User className="absolute start-3 top-9 h-4 w-4 text-text-muted pointer-events-none" />
+                  </div>
+                )}
 
                 <div className="relative">
                   <Input
@@ -338,9 +355,34 @@ function StartPageContent() {
         </div>
 
         {/* Footer note */}
-        <p className="text-center text-xs text-text-muted mt-6">
-          יש לכם כבר חשבון? אותו מספר טלפון משמש גם לכניסה וגם להרשמה.
-        </p>
+        {stage === "form" && (
+          <p className="text-center text-sm text-text-muted mt-6">
+            {mode === "signup" ? (
+              <>
+                יש לכם כבר חשבון?{" "}
+                <button
+                  type="button"
+                  onClick={() => { setMode("login"); setOtpError(""); setNameError(""); }}
+                  className="text-primary font-bold underline"
+                >
+                  לחצו כאן
+                </button>{" "}
+                להתחברות עם מספר הטלפון בלבד.
+              </>
+            ) : (
+              <>
+                עדיין אין לכם חשבון?{" "}
+                <button
+                  type="button"
+                  onClick={() => { setMode("signup"); setOtpError(""); }}
+                  className="text-primary font-bold underline"
+                >
+                  הירשמו כאן
+                </button>
+              </>
+            )}
+          </p>
+        )}
       </div>
     </div>
   );

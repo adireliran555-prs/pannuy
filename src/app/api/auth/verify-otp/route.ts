@@ -13,6 +13,8 @@ const verifySchema = z.object({
   name: z.string().trim().min(1).max(100).optional(),
   weddingDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   weddingArea: z.string().max(200).optional(),
+  // "Already have an account" flow: never create a user, just sign in.
+  loginOnly: z.boolean().optional(),
 });
 
 const SESSION_COOKIE_MAX_AGE = 7 * 24 * 60 * 60;
@@ -27,7 +29,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    const { phone, otp, name, weddingDate, weddingArea } = parsed.data;
+    const { phone, otp, name, weddingDate, weddingArea, loginOnly } = parsed.data;
 
     if (!(await checkOtpIpLimit(clientIp(request), 30, "verify"))) {
       return NextResponse.json(
@@ -42,6 +44,12 @@ export async function POST(request: NextRequest) {
     const referredByAgentId = await resolveAgentReferral(request.cookies.get("pannuy_ref")?.value);
 
     const existedBefore = await prisma.user.findUnique({ where: { phone }, select: { id: true } });
+    if (loginOnly && !existedBefore) {
+      return NextResponse.json(
+        { success: false, error: "לא מצאנו חשבון עם המספר הזה. הירשמו תחילה." },
+        { status: 404 }
+      );
+    }
     const upsertUser = () =>
       prisma.user.upsert({
         where: { phone },
