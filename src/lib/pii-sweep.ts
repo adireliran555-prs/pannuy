@@ -24,7 +24,7 @@ export interface PiiSweepResult {
  * Stops at the first "unavailable" result — the quota is gone for today.
  */
 export async function runPhotoSweep(
-  budget = Number(process.env.PHOTO_SCAN_BUDGET ?? 40)
+  budget = Number(process.env.PHOTO_SCAN_BUDGET ?? 20)
 ): Promise<Pick<PiiSweepResult, "photosScanned" | "photosFlagged" | "photosPending" | "quotaExhausted">> {
   const out = { photosScanned: 0, photosFlagged: 0, photosPending: 0, quotaExhausted: false };
   const queue = await prisma.supplierPhoto.findMany({
