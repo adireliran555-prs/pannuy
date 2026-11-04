@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import prisma from "@/lib/prisma";
+import { scanFields, PII_ERROR_MESSAGE } from "@/lib/pii";
+import { recordPiiViolation } from "@/lib/pii-warning";
+
 import { requireSupplierSession } from "@/lib/api-auth";
 import { delCache } from "@/lib/redis";
 import { maybeActivateSupplierListing } from "@/lib/supplier-activation";
@@ -14,6 +17,7 @@ const patchSchema = z
     name: z.string().trim().min(1).max(100).optional(),
     bioHe: z.string().max(5000).optional(),
     city: z.string().max(100).optional(),
+    meetingAddress: z.string().max(300).nullable().optional(),
     serviceAreas: z.array(z.string().max(100)).max(50).optional(),
     supportedEventTypes: z.array(z.string().max(50)).max(20).optional(),
     basePriceFrom: z.number().int().nonnegative().nullable().optional(),
@@ -43,6 +47,7 @@ export async function GET(request: NextRequest) {
         category: true,
         bioHe: true,
         city: true,
+        meetingAddress: true,
         serviceAreas: true,
         supportedEventTypes: true,
         basePriceFrom: true,
@@ -97,8 +102,14 @@ export async function PATCH(request: NextRequest) {
         { status: 400 }
       );
     }
-    const { name, bioHe, city, serviceAreas, supportedEventTypes, basePriceFrom, basePriceTo, email, category } =
+    const { name, bioHe, city, meetingAddress, serviceAreas, supportedEventTypes, basePriceFrom, basePriceTo, email, category } =
       parsed.data;
+
+    const piiIssue = scanFields({ name, bioHe, meetingAddress: (parsed.data as { meetingAddress?: string }).meetingAddress });
+    if (piiIssue) {
+      await recordPiiViolation(session.id, { ...piiIssue, source: "save", meta: requestMeta(request) });
+      return NextResponse.json({ success: false, code: "PII", error: PII_ERROR_MESSAGE }, { status: 400 });
+    }
 
     const nextSupportedEventTypes =
       supportedEventTypes !== undefined
@@ -132,6 +143,7 @@ export async function PATCH(request: NextRequest) {
         ...(nextCategory !== undefined ? { category: nextCategory } : {}),
         ...(bioHe !== undefined ? { bioHe } : {}),
         ...(city !== undefined ? { city } : {}),
+        ...(meetingAddress !== undefined ? { meetingAddress: meetingAddress || null } : {}),
         ...(serviceAreas !== undefined ? { serviceAreas } : {}),
         ...(nextSupportedEventTypes !== undefined
           ? { supportedEventTypes: nextSupportedEventTypes }

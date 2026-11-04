@@ -32,6 +32,8 @@ export const ActivityType = {
   SUPPLIER_PROFILE_UPDATED: "SUPPLIER_PROFILE_UPDATED",
   ADMIN_ACTION: "ADMIN_ACTION",
   AGENT_EARNING_CREATED: "AGENT_EARNING_CREATED",
+  PII_VIOLATION: "PII_VIOLATION",
+  MEETING_VIDEO_JOINED: "MEETING_VIDEO_JOINED",
 } as const;
 export type ActivityType = (typeof ActivityType)[keyof typeof ActivityType];
 

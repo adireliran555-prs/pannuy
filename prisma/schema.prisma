@@ -85,6 +85,7 @@ model Supplier {
   externalCalendarProvider ExternalCalendarProvider?
   externalCalendarSyncedAt DateTime?
   referredByAgentId        String?
+  meetingAddress           String? // where in-person intro meetings happen; revealed to the customer only after confirmation
 
   referredByAgent    Agent?                 @relation(fields: [referredByAgentId], references: [id])
   photos             SupplierPhoto[]

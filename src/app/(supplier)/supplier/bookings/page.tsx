@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import useSWR from "swr";
+import Link from "next/link";
 import { Video, Phone, Users, Calendar, Clock, CheckCircle, X } from "lucide-react";
 import SupplierDashboardLayout from "@/components/common/SupplierDashboardLayout";
 import Button from "@/components/ui/Button";
@@ -318,7 +319,15 @@ export default function SupplierBookingsPage() {
                   )}
 
                   {meeting.status === "CONFIRMED" && (
-                    <div className="pt-2 border-t border-border">
+                    <div className="pt-2 border-t border-border space-y-2">
+                      {meeting.meetingType === "VIDEO" && (
+                        <Link href={`/meet/${meeting.id}`} className="block">
+                          <Button size="sm" fullWidth>
+                            <Video className="h-4 w-4" />
+                            הצטרפו לשיחת וידאו
+                          </Button>
+                        </Link>
+                      )}
                       <Button
                         size="sm"
                         variant="secondary"

@@ -49,6 +49,7 @@ interface LandingImportData {
   name?: string | null;
   bioHe?: string | null;
   email?: string | null;
+  meetingAddress?: string | null;
   category?: string | null;
   serviceAreas?: string[];
   basePriceFrom?: number | null;
@@ -77,6 +78,7 @@ export default function SupplierProfilePage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"info" | "photos" | "packages">("info");
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
 
@@ -90,6 +92,7 @@ export default function SupplierProfilePage() {
   const [slug, setSlug] = useState("");
   const [category, setCategory] = useState("");
   const [bio, setBio] = useState("");
+  const [meetingAddress, setMeetingAddress] = useState("");
   const [selectedAreas, setSelectedAreas] = useState<string[]>([]);
   const [selectedEventTypes, setSelectedEventTypes] = useState<string[]>(["wedding"]);
   const [priceFrom, setPriceFrom] = useState("");
@@ -119,6 +122,7 @@ export default function SupplierProfilePage() {
           setSlug(s.slug ?? "");
           setCategory(s.category ?? "");
           setBio(s.bioHe ?? "");
+          setMeetingAddress(s.meetingAddress ?? "");
           setSelectedAreas(s.serviceAreas ?? []);
           setSelectedEventTypes(
             s.supportedEventTypes?.length ? s.supportedEventTypes : ["wedding"]
@@ -178,13 +182,20 @@ export default function SupplierProfilePage() {
           name: name || undefined,
           category: category || undefined,
           bioHe: bio || undefined,
+          meetingAddress: meetingAddress.trim() || null,
           serviceAreas: selectedAreas.length > 0 ? selectedAreas : undefined,
           supportedEventTypes: selectedEventTypes,
           basePriceFrom: priceFrom ? Number(priceFrom) : undefined,
           basePriceTo: priceTo ? Number(priceTo) : undefined,
         }),
       });
-      if (res.ok) showSuccess();
+      if (res.ok) {
+        setSaveError(null);
+        showSuccess();
+      } else {
+        const j = await res.json().catch(() => ({}));
+        setSaveError(typeof j.error === "string" ? j.error : "השמירה נכשלה. נסו שוב.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -426,6 +437,13 @@ export default function SupplierProfilePage() {
 
   const handleSavePackages = async () => {
     setIsLoading(true);
+    setSaveError(null);
+    let firstError: string | null = null;
+    const captureError = async (res: Response) => {
+      if (res.ok || firstError) return;
+      const j = await res.json().catch(() => ({}));
+      firstError = typeof j.error === "string" ? j.error : "השמירה נכשלה. נסו שוב.";
+    };
     try {
       for (const pkg of packages) {
         if (!pkg.name || !pkg.price) continue;
@@ -437,11 +455,12 @@ export default function SupplierProfilePage() {
           isPopular: pkg.isPopular,
         };
         if (pkg.id) {
-          await fetch(`/api/supplier/packages/${pkg.id}`, {
+          const resPatch = await fetch(`/api/supplier/packages/${pkg.id}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body),
           });
+          await captureError(resPatch);
         } else {
           const res = await fetch("/api/supplier/packages", {
             method: "POST",
@@ -455,10 +474,13 @@ export default function SupplierProfilePage() {
                 prev.map((p) => (p === pkg ? { ...p, id: json.data.id } : p))
               );
             }
+          } else {
+            await captureError(res);
           }
         }
       }
-      showSuccess();
+      if (firstError) setSaveError(firstError);
+      else showSuccess();
     } finally {
       setIsLoading(false);
     }
@@ -640,6 +662,19 @@ export default function SupplierProfilePage() {
               />
             </div>
 
+            <div>
+              <label className="text-sm font-semibold text-text-main block mb-1.5">כתובת לפגישות היכרות פיזיות</label>
+              <input
+                type="text"
+                value={meetingAddress}
+                onChange={(e) => setMeetingAddress(e.target.value)}
+                maxLength={300}
+                placeholder="לדוגמה: הסטודיו, רחוב הרצל 10, תל אביב"
+                className="w-full h-11 rounded-xl border border-border px-4 text-base text-text-main focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+              />
+              <p className="text-xs text-text-muted mt-1">נחשפת ללקוח רק לאחר אישור פגישה</p>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-semibold text-text-main block mb-1.5">מחיר מינימלי (₪)</label>
@@ -663,6 +698,11 @@ export default function SupplierProfilePage() {
               </div>
             </div>
 
+            {saveError && (
+              <p role="alert" className="rounded-xl bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
+                {saveError}
+              </p>
+            )}
             <Button fullWidth size="lg" isLoading={isLoading} onClick={handleSaveInfo}>
               שמרו שינויים
             </Button>
@@ -895,6 +935,11 @@ export default function SupplierProfilePage() {
               </button>
             )}
 
+            {saveError && (
+              <p role="alert" className="rounded-xl bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
+                {saveError}
+              </p>
+            )}
             <Button fullWidth size="lg" isLoading={isLoading} onClick={handleSavePackages}>
               שמרו שינויים
             </Button>

@@ -8,7 +8,6 @@ import {
   Heart,
   CheckCircle,
   ChevronRight,
-  Phone,
   Sparkles,
 } from "lucide-react";
 import Button from "@/components/ui/Button";
@@ -177,31 +176,8 @@ export default function SupplierProfileClient({
     }
   };
 
-  const handleWhatsApp = () => {
-    if (!waPhone) return;
-    // Record this as a referral (lead) so we can follow it up — fire-and-forget
-    // so it never blocks opening WhatsApp.
-    fetch("/api/referrals", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ supplierId: supplier.id, channel: "WHATSAPP" }),
-      keepalive: true,
-    }).catch(() => {});
-    const msg = encodeURIComponent(`היי ${supplier.name}, ראיתי את הפרופיל שלך ב־${BRAND_NAME} ואשמח לשמוע פרטים 🎉`);
-    window.open(`https://wa.me/${waPhone}?text=${msg}`, "_blank");
-  };
-
   const bioShort = supplier.bio.length > 200 && !bioExpanded;
   const categoryLabel = CATEGORY_LABELS_SINGULAR[supplier.category] ?? supplier.category;
-
-  // Build a wa.me target from the supplier phone (strip non-digits, normalize
-  // Israeli local numbers to +972). Falls back to a generic share if missing.
-  const phoneDigits = (supplier.phone ?? "").replace(/\D/g, "");
-  const waPhone = phoneDigits
-    ? phoneDigits.startsWith("0")
-      ? `972${phoneDigits.slice(1)}`
-      : phoneDigits
-    : "";
 
   return (
     <div className="min-h-screen bg-surface pb-28 lg:pb-8">
@@ -481,20 +457,12 @@ export default function SupplierProfileClient({
                       router.push(withReturnTo(`/book/${supplier.id}`, `/suppliers/${supplier.slug}`))
                     }
                   >
-                    קבעו פגישה
+                    קבעו פגישת היכרות
                   </Button>
-
-                  {/* WhatsApp — only when the supplier has a phone on file */}
-                  {waPhone && (
-                    <button
-                      type="button"
-                      onClick={handleWhatsApp}
-                      className="w-full flex items-center justify-center gap-2 py-3 rounded-full border-2 border-[#25D366] text-[#25D366] hover:bg-[#25D366] hover:text-white font-semibold text-sm transition-all"
-                    >
-                      <Phone className="h-4 w-4" />
-                      שלחו הודעת WhatsApp
-                    </button>
-                  )}
+                  <p className="text-xs text-text-muted text-center leading-relaxed">
+                    הקשר הראשון עם הספק נעשה דרך פגישת היכרות. לאחר אישור הפגישה תקבלו את
+                    פרטי הקשר ומקום המפגש.
+                  </p>
 
                   <button
                     onClick={handleToggleSave}
@@ -530,16 +498,6 @@ export default function SupplierProfileClient({
           </Button>
         ) : (
           <>
-            {waPhone && (
-              <button
-                type="button"
-                onClick={handleWhatsApp}
-                className="flex items-center justify-center gap-2 px-4 py-3 rounded-full border-2 border-[#25D366] text-[#25D366] font-semibold text-sm transition-all hover:bg-[#25D366] hover:text-white flex-shrink-0"
-              >
-                <Phone className="h-4 w-4" />
-                WhatsApp
-              </button>
-            )}
             <Button
               size="lg"
               fullWidth

@@ -5,6 +5,8 @@ import { requireSupplierSession } from "@/lib/api-auth";
 import { delCache } from "@/lib/redis";
 import { maybeActivateSupplierListing } from "@/lib/supplier-activation";
 import { scanImageForPhone, deleteCloudinaryAsset } from "@/lib/cloudinary-ocr";
+import { recordPiiViolation } from "@/lib/pii-warning";
+import { requestMeta } from "@/lib/activity";
 import { PhotoType } from "@prisma/client";
 import { isOwnCloudinaryUrl } from "@/lib/cloudinary-server";
 
@@ -44,6 +46,12 @@ export async function POST(request: NextRequest) {
     if (scan.hasPhone) {
       console.warn(`[photos] rejected image with phone for supplier ${session.id}: ${scan.matched}`);
       await deleteCloudinaryAsset(publicId);
+      await recordPiiViolation(session.id, {
+        field: "photo",
+        hits: [{ kind: "phone", match: scan.matched ?? "", index: 0 }],
+        source: "photo",
+        meta: requestMeta(request),
+      }).catch(() => {});
       return NextResponse.json(
         {
           success: false,

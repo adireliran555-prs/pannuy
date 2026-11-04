@@ -5,6 +5,7 @@ import {
   stopCalendarWatch,
 } from "@/lib/google-calendar";
 import { syncExternalCalendar } from "@/lib/external-calendar";
+import { runPiiSweep } from "@/lib/pii-sweep";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -78,6 +79,14 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Daily contact-details sweep over supplier text (chained here — Hobby cron limit).
+    let piiSweep: Awaited<ReturnType<typeof runPiiSweep>> | null = null;
+    try {
+      piiSweep = await runPiiSweep();
+    } catch (sweepErr) {
+      console.error("[cron/renew-calendar-watches] pii sweep", sweepErr);
+    }
+
     return NextResponse.json({
       success: true,
       considered: suppliers.length,
@@ -85,6 +94,7 @@ export async function GET(request: NextRequest) {
       failed,
       externalSynced,
       externalFailed,
+      piiSweep,
     });
   } catch (err) {
     console.error("[cron/renew-calendar-watches]", err);

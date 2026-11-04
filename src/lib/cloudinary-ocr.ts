@@ -10,6 +10,7 @@
 // Without them this is a no-op (allows the upload) so the app keeps working.
 
 import crypto from "crypto";
+import { firstPii } from "@/lib/pii";
 
 const CLOUD_NAME =
   process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ??
@@ -29,6 +30,10 @@ export function ocrEnabled(): boolean {
  */
 export function textContainsPhone(text: string): string | null {
   if (!text) return null;
+  // OCR output splits numbers across lines/tokens; collapse whitespace first,
+  // then delegate to the shared detector (phones, emails, links, handles).
+  const hit = firstPii(text.replace(/\s+/g, " "));
+  if (hit) return hit.match;
   const compact = text.replace(/[\s\-.()‏‎]/g, "");
   const match = compact.match(/(?:\+?972|0)(?:\d){8,9}/);
   return match ? match[0] : null;

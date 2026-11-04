@@ -3,6 +3,9 @@ import { revalidatePath } from "next/cache";
 import prisma from "@/lib/prisma";
 import { requireSupplierSession } from "@/lib/api-auth";
 import { delCache } from "@/lib/redis";
+import { scanFields, PII_ERROR_MESSAGE } from "@/lib/pii";
+import { recordPiiViolation } from "@/lib/pii-warning";
+import { requestMeta } from "@/lib/activity";
 
 async function getOwnedPackage(id: string, supplierId: string) {
   const pkg = await prisma.supplierPackage.findUnique({ where: { id } });
@@ -34,6 +37,12 @@ export async function PATCH(
       includes?: string[];
       isPopular?: boolean;
     };
+
+    const piiIssue = scanFields({ nameHe, descHe, includes });
+    if (piiIssue) {
+      await recordPiiViolation(session.id, { ...piiIssue, source: "save", meta: requestMeta(request) });
+      return NextResponse.json({ success: false, code: "PII", error: PII_ERROR_MESSAGE }, { status: 400 });
+    }
 
     const updated = await prisma.supplierPackage.update({
       where: { id },

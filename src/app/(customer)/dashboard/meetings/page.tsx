@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Calendar, Video, Phone, Users, Clock, CheckCircle, XCircle, AlertCircle, ClipboardList } from "lucide-react";
+import { Calendar, Video, Phone, Users, Clock, CheckCircle, XCircle, AlertCircle, ClipboardList, MapPin, Mail, Lock } from "lucide-react";
 import DashboardLayout from "@/components/common/DashboardLayout";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
@@ -277,6 +277,46 @@ export default function MeetingsPage() {
                         <p className="mt-2 text-sm text-text-muted bg-surface rounded-lg px-3 py-2 border border-border/50">
                           {meeting.customerNotes}
                         </p>
+                      )}
+
+                      {meeting.status === "PENDING" && (
+                        <p className="mt-3 flex items-center gap-1.5 text-xs text-text-muted bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                          <Lock className="h-3.5 w-3.5 flex-shrink-0" />
+                          פרטי הקשר ייחשפו לאחר שהספק יאשר את הפגישה
+                        </p>
+                      )}
+
+                      {(meeting.status === "CONFIRMED" || meeting.status === "COMPLETED") && meeting.supplier?.phone && (
+                        <div className="mt-3 rounded-xl border border-green-200 bg-green-50 px-3 py-2.5 space-y-1.5">
+                          <p className="text-xs font-bold text-green-800">פרטי הפגישה</p>
+                          <a href={`tel:${meeting.supplier.phone}`} className="flex items-center gap-1.5 text-sm text-text-main">
+                            <Phone className="h-3.5 w-3.5 text-green-700" />
+                            <span className="ltr">{meeting.supplier.phone}</span>
+                          </a>
+                          {meeting.supplier.email && (
+                            <a href={`mailto:${meeting.supplier.email}`} className="flex items-center gap-1.5 text-sm text-text-main">
+                              <Mail className="h-3.5 w-3.5 text-green-700" />
+                              <span className="ltr">{meeting.supplier.email}</span>
+                            </a>
+                          )}
+                          {meeting.meetingType === "IN_PERSON" && (
+                            <p className="flex items-center gap-1.5 text-sm text-text-main">
+                              <MapPin className="h-3.5 w-3.5 text-green-700" />
+                              {meeting.supplier.meetingAddress ?? "הספק יעדכן את מקום המפגש"}
+                            </p>
+                          )}
+                          {meeting.meetingType === "PHONE" && (
+                            <p className="text-xs text-text-muted">הספק יתקשר אליכם בשעה שנקבעה</p>
+                          )}
+                          {meeting.meetingType === "VIDEO" && meeting.status === "CONFIRMED" && (
+                            <Link href={`/meet/${meeting.id}`} className="block pt-1">
+                              <Button size="sm" fullWidth>
+                                <Video className="h-4 w-4" />
+                                הצטרפו לשיחת וידאו
+                              </Button>
+                            </Link>
+                          )}
+                        </div>
                       )}
 
                       <div className="flex gap-2 mt-3">

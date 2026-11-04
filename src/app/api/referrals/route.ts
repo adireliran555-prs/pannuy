@@ -1,71 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireCustomerSession } from "@/lib/api-auth";
-import { createOrUpdateReferral } from "@/lib/referrals";
-import { ReferralChannel } from "@prisma/client";
-import prisma from "@/lib/prisma";
-import { logEventAsync, requestMeta, ActivityType } from "@/lib/activity";
+import { NextResponse } from "next/server";
 
-// Records a referral when a customer contacts a supplier off-platform (WhatsApp).
-// Called right before opening WhatsApp from the supplier profile.
-export async function POST(request: NextRequest) {
-  try {
-    const { session, error } = requireCustomerSession(request);
-    if (error) return error;
-
-    const body = await request.json().catch(() => ({}));
-    const { supplierId, channel } = body as {
-      supplierId?: string;
-      channel?: string;
-    };
-
-    if (!supplierId) {
-      return NextResponse.json(
-        { success: false, error: "supplierId חובה" },
-        { status: 400 }
-      );
-    }
-
-    const resolvedChannel =
-      channel && Object.values(ReferralChannel).includes(channel as ReferralChannel)
-        ? (channel as ReferralChannel)
-        : ReferralChannel.WHATSAPP;
-
-    const supplier = await prisma.supplier.findUnique({
-      where: { id: supplierId },
-      select: { id: true, name: true, phone: true },
-    });
-    if (!supplier) {
-      return NextResponse.json(
-        { success: false, error: "ספק לא נמצא" },
-        { status: 404 }
-      );
-    }
-
-    const result = await createOrUpdateReferral({
-      customerId: session.id,
-      customerName: session.name,
-      supplierId,
-      channel: resolvedChannel,
-    });
-
-    logEventAsync({
-      type: ActivityType.WHATSAPP_TAP,
-      actorType: "customer",
-      actorId: session.id,
-      customerId: session.id,
-      supplierId,
-      targetType: "referral",
-      targetId: result?.id ?? null,
-      payload: { channel: resolvedChannel, supplierPhone: supplier.phone, supplierName: supplier.name },
-      meta: requestMeta(request),
-    });
-
-    return NextResponse.json({ success: true, data: result }, { status: 201 });
-  } catch (err) {
-    console.error("[POST /api/referrals]", err);
-    return NextResponse.json(
-      { success: false, error: "שגיאה פנימית" },
-      { status: 500 }
-    );
-  }
+// Off-platform (WhatsApp) contact was removed: the first contact between a
+// customer and a supplier is always a scheduled intro meeting. Kept so stale
+// clients fail loudly instead of silently.
+export async function POST() {
+  return NextResponse.json(
+    { success: false, error: "יצירת קשר אפשרית רק דרך קביעת פגישת היכרות" },
+    { status: 410 }
+  );
 }

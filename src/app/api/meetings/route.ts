@@ -240,6 +240,9 @@ export async function GET(request: NextRequest) {
             name: true,
             category: true,
             city: true,
+            phone: true,
+            email: true,
+            meetingAddress: true,
             photos: {
               where: { type: "PROFILE" },
               take: 1,
@@ -250,7 +253,46 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ success: true, data: meetings });
+    // Supplier contact details are revealed only once the supplier confirmed the
+    // intro meeting (or it already happened). The address only for in-person.
+    const meta = requestMeta(request);
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const data = await Promise.all(
+      meetings.map(async (m) => {
+        const { phone, email, meetingAddress, ...publicSupplier } = m.supplier;
+        const revealed = m.status === "CONFIRMED" || m.status === "COMPLETED";
+        if (!revealed) return { ...m, supplier: publicSupplier };
+        const address = m.meetingType === "IN_PERSON" ? meetingAddress : null;
+        if (m.status === "CONFIRMED") {
+          const already = await prisma.activityEvent.findFirst({
+            where: {
+              type: ActivityType.SUPPLIER_CONTACT_EXPOSED,
+              customerId: session.id,
+              targetType: "meeting",
+              targetId: m.id,
+              createdAt: { gte: since },
+            },
+            select: { id: true },
+          });
+          if (!already) {
+            logEventAsync({
+              type: ActivityType.SUPPLIER_CONTACT_EXPOSED,
+              actorType: "customer",
+              actorId: session.id,
+              customerId: session.id,
+              supplierId: m.supplierId,
+              targetType: "meeting",
+              targetId: m.id,
+              payload: { supplierPhone: phone, supplierEmail: email, meetingAddress: address, meetingType: m.meetingType },
+              meta,
+            });
+          }
+        }
+        return { ...m, supplier: { ...publicSupplier, phone, email, meetingAddress: address } };
+      })
+    );
+
+    return NextResponse.json({ success: true, data });
   } catch (err) {
     console.error("[GET /api/meetings]", err);
     return NextResponse.json(

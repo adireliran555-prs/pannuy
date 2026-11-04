@@ -23,7 +23,6 @@ const SUPPLIER_SELECT = {
   category: true,
   bioHe: true,
   city: true,
-  phone: true,
   serviceAreas: true,
   supportedEventTypes: true,
   basePriceFrom: true,

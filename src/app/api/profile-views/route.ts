@@ -62,22 +62,6 @@ export async function POST(request: NextRequest) {
       payload: { source, slug: supplier.slug },
       meta,
     });
-    // The public profile renders the supplier phone (WhatsApp CTA), so a
-    // logged-in view is a contact exposure. The page itself is ISR-cached and
-    // cannot read cookies, so the exposure is recorded here.
-    if (session?.id && supplier.phone) {
-      logEventAsync({
-        type: ActivityType.SUPPLIER_CONTACT_EXPOSED,
-        actorType: "customer",
-        actorId: session.id,
-        customerId: session.id,
-        supplierId,
-        targetType: "supplier",
-        targetId: supplierId,
-        payload: { supplierPhone: supplier.phone, supplierName: supplier.name, slug: supplier.slug },
-        meta,
-      });
-    }
 
     return NextResponse.json({ success: true });
   } catch (err) {

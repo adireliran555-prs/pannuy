@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { redactPii } from "@/lib/pii";
 import { requireSupplierSession } from "@/lib/api-auth";
 import { getAppUrl } from "@/lib/app-url";
 import { mirrorImagesParallel } from "@/lib/cloudinary-server";
@@ -59,15 +60,21 @@ export async function POST(request: NextRequest) {
       data: {
         sourceUrl: parsed.sourceUrl,
         followedUrls,
-        name: parsed.name,
-        bioHe: parsed.bioHe,
+        name: redactPii(parsed.name ?? "") || parsed.name,
+        bioHe: parsed.bioHe ? redactPii(parsed.bioHe) : parsed.bioHe,
         phone: parsed.phone,
         email: parsed.email,
         category: parsed.category,
         serviceAreas: parsed.serviceAreas,
         basePriceFrom: parsed.basePriceFrom,
         basePriceTo: parsed.basePriceTo,
-        packages: parsed.packages.filter((p) => p.price > 0),
+        packages: parsed.packages
+          .filter((p) => p.price > 0)
+          .map((p) => ({
+            ...p,
+            nameHe: redactPii(p.nameHe),
+            includes: p.includes.map((t) => redactPii(t)),
+          })),
         images: mirrored.map((m) => m.url),
         imageUploads: mirrored.map(({ url: imageUrl, publicId }) => ({ url: imageUrl, publicId })),
         stats: {
