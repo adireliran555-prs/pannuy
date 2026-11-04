@@ -9,6 +9,7 @@
 //   CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET  (Cloudinary OCR add-on must be on)
 // Without them this is a no-op (allows the upload) so the app keeps working.
 
+import { ocrImageText } from "@/lib/ocr-local";
 import crypto from "crypto";
 import { firstPii } from "@/lib/pii";
 
@@ -32,11 +33,10 @@ export function textContainsPhone(text: string): string | null {
   if (!text) return null;
   // OCR output splits numbers across lines/tokens; collapse whitespace first,
   // then delegate to the shared detector (phones, emails, links, handles).
+  // No compact-digits fallback: squashing "14:30 15:30 17:00" into one digit run
+  // produced false phone hits on schedule graphics.
   const hit = firstPii(text.replace(/\s+/g, " "));
-  if (hit) return hit.match;
-  const compact = text.replace(/[\s\-.()‏‎]/g, "");
-  const match = compact.match(/(?:\+?972|0)(?:\d){8,9}/);
-  return match ? match[0] : null;
+  return hit ? hit.match : null;
 }
 
 function sign(params: Record<string, string>): string {
@@ -102,6 +102,20 @@ function unavailable(reason: string): PhoneScanResult {
 export async function scanImageForPhone(
   imageUrl: string
 ): Promise<PhoneScanResult> {
+  // 1) Free self-hosted OCR first — no quota. Only fall through to Cloudinary
+  //    if the local engine itself fails (not when it simply finds nothing).
+  if (imageUrl) {
+    try {
+      const text = await ocrImageText(imageUrl);
+      const matched = textContainsPhone(text);
+      return matched
+        ? { status: "flagged", matched, hasPhone: true }
+        : { status: "clean", hasPhone: false };
+    } catch (err) {
+      console.error("[OCR] local engine failed, falling back to Cloudinary:", err);
+    }
+  }
+
   if (!ocrEnabled()) return unavailable("not_configured");
   if (!imageUrl) return unavailable("no_url");
 

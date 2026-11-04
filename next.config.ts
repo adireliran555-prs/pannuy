@@ -13,6 +13,14 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // tesseract.js spawns a worker thread from its own files and loads WASM at
+  // runtime — keep it external and make sure Vercel ships it with the language data.
+  serverExternalPackages: ["tesseract.js", "tesseract.js-core"],
+  outputFileTracingIncludes: {
+    "/api/supplier/photos": ["./tessdata/**", "./node_modules/tesseract.js/**", "./node_modules/tesseract.js-core/**"],
+    "/api/cron/pii-sweep": ["./tessdata/**", "./node_modules/tesseract.js/**", "./node_modules/tesseract.js-core/**"],
+    "/api/cron/renew-calendar-watches": ["./tessdata/**", "./node_modules/tesseract.js/**", "./node_modules/tesseract.js-core/**"],
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

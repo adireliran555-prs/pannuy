@@ -10,6 +10,8 @@ import { requestMeta } from "@/lib/activity";
 import { PhotoType } from "@prisma/client";
 import { isOwnCloudinaryUrl } from "@/lib/cloudinary-server";
 
+export const maxDuration = 60;
+
 export async function POST(request: NextRequest) {
   try {
     const { session, error } = requireSupplierSession(request);
